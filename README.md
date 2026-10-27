@@ -12,7 +12,11 @@
 
 An embeddable performance monitor for browser games and interactive graphics. It runs inside your app, so the slowdown and the evidence are in the same place. Inspect frame pacing, time the systems you name, catch the slow frame with the frames around it, export the recording and open it offline.
 
-**Zero runtime dependencies.** Your app owns its frame loop. jank.js does not upload measurements, does not invent GPU timings and does not round in your favour.
+**A ~4.3 KB core performance monitor. Zero runtime dependencies. Add the live panel for ~23 KB total.**
+
+Gzipped production sizes after minification and tree shaking with Vite: core means `createDiagnostics`; the panel total includes CSS. No font downloads. Measured from this checkout; sizes vary with your imports and bundler.
+
+Your app owns its frame loop. jank.js does not upload measurements, does not invent GPU timings and does not round in your favour.
 
 **See it catch something:** [Junktro](https://junktro.junklab.au/), a deliberately heavy CRT desktop built to give jank.js something to measure.
 
