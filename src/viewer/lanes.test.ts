@@ -1,3 +1,5 @@
+import { buildInfo } from "../core/build-info.ts";
+
 import { describe, expect, it } from "vitest";
 
 import { createDiagnostics } from "../core/diagnostics.ts";
@@ -167,7 +169,7 @@ describe("viewer lanes", () => {
 
     const line = environmentLine(recording, lanes);
 
-    expect(line).toContain("jank.js 0.1.0");
+    expect(line).toContain(`jank.js ${buildInfo.version}`);
 
     expect(line).toContain("lane fixture 1.0");
 

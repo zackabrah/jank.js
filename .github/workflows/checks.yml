@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: checks-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -60,3 +60,52 @@ jobs:
           name: browser-failure-traces
           path: test-results
           retention-days: 7
+
+  version:
+    name: Version merged PRs
+    needs: [check, browser]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: read
+    outputs:
+      created: ${{ steps.release.outputs.created }}
+      commit: ${{ steps.release.outputs.commit }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Plan pending PR version bumps
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/version-main.mjs plan
+      - if: steps.plan.outputs.changed == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.plan.outputs.changed == 'true'
+        run: pnpm check && pnpm test:package
+      - name: Commit and tag the verified version
+        if: steps.plan.outputs.changed == 'true'
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/release/version-main.mjs publish
+      - name: Build the tagged package identity
+        if: steps.release.outputs.created == 'true'
+        run: pnpm pack --pack-destination artifacts
+      - uses: actions/upload-artifact@v6
+        if: steps.release.outputs.created == 'true'
+        with:
+          name: versioned-jank-js-${{ steps.release.outputs.version }}
+          path: artifacts/*.tgz

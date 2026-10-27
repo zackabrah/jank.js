@@ -40,6 +40,10 @@ test("full panel reads a running game, freezes the display and exports the recor
 
   await expect(panel).toHaveAttribute("data-mode", "full");
 
+  await expect(slot(page, "build-info")).toHaveText(
+    /^v\d+\.\d+\.\d+ · [a-f0-9]{8}( · local changes)?$/,
+  );
+
   await expect(slot(page, "fps")).toHaveText(/^\d+$/);
 
   await page.getByRole("button", { name: "REC", exact: true }).click();

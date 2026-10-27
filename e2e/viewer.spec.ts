@@ -141,6 +141,10 @@ test("single HTML viewer loads offline, inspects scopes, navigates and rejects b
 test("hosted viewer is part of the static build", async ({ page }) => {
   await page.goto("/viewer/");
 
+  await expect(page.locator('[data-k="build-info"]')).toHaveText(
+    /^v\d+\.\d+\.\d+ · [a-f0-9]{8}( · local changes)?$/,
+  );
+
   await page.getByLabel("Recording file").setInputFiles({
     name: "capture.json",
     mimeType: "application/json",

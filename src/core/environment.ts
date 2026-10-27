@@ -1,3 +1,5 @@
+import { buildInfo } from "./build-info.ts";
+
 import type {
   RecordingEnvironment,
   RecordingMetadata,
@@ -58,7 +60,7 @@ export function recordingMetadata(
     typeof window !== "undefined" && typeof navigator !== "undefined";
 
   return {
-    jankVersion: "0.1.0",
+    jankVersion: buildInfo.version,
     application: application ? { ...application } : null,
     createdAt: new Date().toISOString(),
     devTools,

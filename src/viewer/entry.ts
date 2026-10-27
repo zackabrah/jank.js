@@ -1,3 +1,5 @@
+import { buildLabel } from "../core/build-info.ts";
+
 import { createRecordingViewModel } from "./model.ts";
 
 import { MAX_RECORDING_BYTES, serializeRecording } from "../core/recording.ts";
@@ -57,7 +59,7 @@ app.innerHTML = `<header class="jank-viewer-top"><h1 class="jank-viewer-brand"><
 <section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">EVENTS</span><span class="jank-viewer-dim">within 10 frames</span></h2><div data-k="i-events"></div></section>
 <p class="jank-viewer-legend-text">solid: measured in this frame<br>dashed: periodic or delayed sample<br>unattributed frame interval: browser work, scheduling, waiting or idle, not only uninstrumented code</p>
 <div class="jank-viewer-actions"><button type="button" class="jank-viewer-btn jank-viewer-primary" data-action="export-capture">EXPORT CAPTURE</button><button type="button" class="jank-viewer-btn" data-action="copy-frame">COPY FRAME</button></div></aside></div>
-<footer class="jank-viewer-status"><span><i class="jank-viewer-mark"></i><b data-k="s-frame">FRAME –</b><span class="jank-viewer-muted" data-k="s-range"></span></span><span class="jank-viewer-push"><span role="alert" data-k="error"></span><span class="jank-viewer-dim" role="status" data-k="s-format">no recording open</span></span></footer>`;
+<footer class="jank-viewer-status"><span class="jank-viewer-dim" data-k="build-info" aria-label="jank.js viewer build">${buildLabel}</span><span><i class="jank-viewer-mark"></i><b data-k="s-frame">FRAME –</b><span class="jank-viewer-muted" data-k="s-range"></span></span><span class="jank-viewer-push"><span role="alert" data-k="error"></span><span class="jank-viewer-dim" role="status" data-k="s-format">no recording open</span></span></footer>`;
 
 const slot = (key: string) =>
   app.querySelector<HTMLElement>(`[data-k="${key}"]`)!;

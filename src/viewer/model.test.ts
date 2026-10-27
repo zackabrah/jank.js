@@ -1,3 +1,5 @@
+import { buildInfo } from "../core/build-info.ts";
+
 import { expect, it } from "vitest";
 
 import { createDiagnostics } from "../core/diagnostics.ts";
@@ -33,7 +35,7 @@ it("keeps a valid recording after import errors and exposes independent inspecti
 
   state.metadata.jankVersion = "changed";
 
-  expect(viewer.snapshot()?.metadata.jankVersion).toBe("0.1.0");
+  expect(viewer.snapshot()?.metadata.jankVersion).toBe(buildInfo.version);
 
   expect(() => viewer.selectFrame(999)).toThrow("not in");
 
