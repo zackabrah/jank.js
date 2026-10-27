@@ -21,6 +21,8 @@ catches up the pending PRs. Build artifacts are produced again from the tagged
 commit so their displayed commit is accurate. This does not publish to npm or
 create a GitHub release.
 
+npm publication is a separate, manually dispatched workflow. See [npm publishing](publishing.md) for the initial account setup, dry runs and publishing an existing version tag. Versioning does not trigger it automatically.
+
 Enable Actions write access for contents and allow the version job's bot to
 update main/tags under your repository rules. The workflow declares only the
 required write permission; it does not bypass branch protection. If your rules
