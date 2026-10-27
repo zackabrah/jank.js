@@ -91,7 +91,6 @@ Use a positioned container, import the stylesheet, and call `refresh` from your 
 ```js
 import { createDiagnostics, createPerformanceTray } from "jank.js";
 import "jank.js/style.css";
-// Optional: import "jank.js/font.css";
 
 const shell = document.querySelector("#app"); // CSS: position: relative
 const monitor = createDiagnostics();
@@ -212,6 +211,6 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md), the [release guide](docs/releasing.md),
   ·:·  EOF  ·:·
 ```
 
-MIT licensed, copyright Isaac Johnson. Extracted from Junklab Engine 0.94.1 (d6f5036), with independent packaging and a generic API. [Third-party notices](THIRD_PARTY_NOTICES.md) cover the derived control styling and the optional IBM Plex Mono font.
+MIT licensed, copyright Isaac Johnson. Extracted from Junklab Engine 0.94.1 (d6f5036), with independent packaging and a generic API. [Third-party notices](THIRD_PARTY_NOTICES.md) cover derived styling and historical dependencies. The panel and viewer use system monospace fonts.
 
 Made by [Isaac Johnson](https://github.com/zackabrah) at Junklab, Australia.

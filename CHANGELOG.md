@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Use system monospace fonts in the panel and offline viewer, removing bundled font downloads. The `jank.js/font.css` export remains as an empty compatibility stylesheet.
+- Minify packaged panel CSS while retaining the `--jank-*` theming properties.
+
 ## 0.1.0 — Unreleased
 
 Initial public release.

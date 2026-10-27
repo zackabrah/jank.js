@@ -1,5 +1,4 @@
 @import "../performance/tokens.css";
-@import "../performance/font.css";
 
 /* jank.js viewer. The same flat system as the panel: hairlines, one mono face. */
 html.jank-viewer {

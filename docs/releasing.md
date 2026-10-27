@@ -22,4 +22,4 @@ Update CHANGELOG.md and the version, commit verified changes, then tag and publi
 
 ## Testing a build in another project
 
-Build and pack this repository, then install the archive in the other project with `pnpm add /path/to/jank.js-0.1.0.tgz`. Import `jank.js`, `jank.js/style.css`, optional `jank.js/font.css` and adapters through their public exports, and copy `jank.js/viewer.html` to the project’s static viewer route. Do not import from this repository’s `src` tree. After publication, replace the archive dependency with a pinned published version.
+Build and pack this repository, then install the archive in the other project with `pnpm add /path/to/jank.js-0.1.0.tgz`. Import `jank.js`, `jank.js/style.css` and adapters through their public exports, and copy `jank.js/viewer.html` to the project’s static viewer route. Do not import from this repository’s `src` tree. After publication, replace the archive dependency with a pinned published version.

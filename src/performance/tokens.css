@@ -16,7 +16,7 @@
   --jank-miss: #f26032; /* over budget. nothing else. */
   --jank-row: #161616; /* the one highlighted row */
 
-  --jank-font: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --jank-font: ui-monospace, Menlo, Consolas, monospace;
   --jank-size-axis: 10px;
   --jank-size-label: 11px;
   --jank-size-body: 12px;

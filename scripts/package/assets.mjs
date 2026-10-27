@@ -1,30 +1,30 @@
-import { copyFile, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
-// One self-contained stylesheet: the tokens are the theming surface, inlined ahead of the panel.
-const tokens = await readFile("src/performance/tokens.css", "utf8");
+import { build } from "vite";
 
-const panel = await readFile("src/performance/tray.css", "utf8");
+// Bundle the token import and minify with the same CSS pipeline as the viewer.
+const styles = await build({
+  configFile: false,
+  publicDir: false,
+  build: {
+    target: "es2023",
+    write: false,
+    cssMinify: "lightningcss",
+    rolldownOptions: { input: "src/performance/tray.css" },
+  },
+});
 
-await writeFile(
-  "dist-package/style.css",
-  panel.replace('@import "./tokens.css";', tokens),
+const stylesheet = styles.output.find(
+  (file) => file.type === "asset" && file.fileName.endsWith(".css"),
 );
 
-await Promise.all(
-  [400, 500, 600].map((weight) =>
-    copyFile(
-      `src/performance/ui/ibm-plex-mono-${weight}.woff2`,
-      `dist-package/ibm-plex-mono-${weight}.woff2`,
-    ),
-  ),
-);
+if (!stylesheet) throw new Error("The panel CSS build emitted no stylesheet");
+
+await writeFile("dist-package/style.css", stylesheet.source);
 
 await writeFile(
   "dist-package/font.css",
-  (await readFile("src/performance/font.css", "utf8")).replaceAll(
-    "./ui/ibm-plex-mono-",
-    "./ibm-plex-mono-",
-  ),
+  await readFile("src/performance/font.css", "utf8"),
 );
 
 // TypeScript leaves source extensions in declaration specifiers. Publish conventional
