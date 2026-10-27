@@ -16,6 +16,8 @@ Use labelled fields, selectors and buttons for authoring controls. JSON is an ex
 
 Tests should exercise behavioral risks: lifecycle, delayed GPU samples, recording boundaries, overlapping work and package consumers. Keep commits focused and verified. Include the problem, behavior change and checks in a pull request; do not publish packages or deploy a site as part of an ordinary code change.
 
+Write commit messages as [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). After staging, `pnpm commit` composes one with commitizen; confirming a breaking change there adds `!` to the header. Each merged PR receives one version bump from its title, description and commit messages: a breaking change is major, `feat` is minor and anything else is a patch. See [the versioning guide](https://github.com/zackabrah/jank.js/blob/main/docs/versioning.md).
+
 Report bugs with browser/OS, reproduction steps, expected and actual behavior, and an optional recording stripped of private application labels or values. The library has no telemetry. New public API behavior and recording-format changes belong in CHANGELOG.md and docs.
 
 Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md). Report security issues privately as described in [SECURITY.md](SECURITY.md), not in a public issue.

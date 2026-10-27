@@ -22,7 +22,8 @@
     "release:prepare": "pnpm check:full && pnpm pack --pack-destination artifacts/npm",
     "bench": "pnpm build:package && node scripts/benchmark.mjs",
     "preview": "vite preview --outDir dist/viewer --host 127.0.0.1 --port 5183 --strictPort",
-    "verify:boundary": "node scripts/verify-boundary.mjs"
+    "verify:boundary": "node scripts/verify-boundary.mjs",
+    "commit": "cz"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -31,6 +32,8 @@
     "@types/node": "22.20.3",
     "@types/three": "0.186.0",
     "@types/web": "0.0.356",
+    "commitizen": "4.3.2",
+    "cz-git": "1.14.0",
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
     "oxlint-tsgolint": "7.0.2001",
@@ -38,6 +41,15 @@
     "typescript": "7.0.2",
     "vite": "8.3.0",
     "vitest": "5.0.1"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-git",
+      "markBreakingChangeMode": true,
+      "allowBreakingChanges": [],
+      "maxHeaderLength": 72,
+      "breaklineNumber": 72
+    }
   },
   "engines": {
     "node": ">=22.12.0"

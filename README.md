@@ -3,6 +3,8 @@
 <p>
   <img alt="Measured, not simulated" src="docs/readme/badge-measured.svg" height="22">
   <img alt="Zero dependencies" src="docs/readme/badge-deps.svg" height="22">
+  <img alt="~4.3 KB core" src="docs/readme/badge-core.svg" height="22">
+  <img alt="~23 KB with the live panel" src="docs/readme/badge-panel.svg" height="22">
   <img alt="MIT" src="docs/readme/badge-mit.svg" height="22">
   <img alt="v0.1.0" src="docs/readme/badge-version.svg" height="22">
   <img alt="A Junklab production" src="docs/readme/badge-junklab.svg" height="22">
