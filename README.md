@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-ascii-dark.svg">
-  <img alt="JANK.JS in ASCII relief. Junklab presents an embeddable performance monitor for browser games. Every frame leaves a trace." src="docs/readme/banner-ascii-light.svg" width="100%">
-</picture>
+<img alt="JANK.JS in ASCII relief beside its trace ring: 249 recorded frames written around a circle, the four that missed the budget in orange. Junklab presents an embeddable performance monitor for browser games." src="docs/readme/banner-ascii-dark.svg" width="100%">
 
 <p>
   <img alt="Measured, not simulated" src="docs/readme/badge-measured.svg" height="22">
@@ -16,6 +13,8 @@
 An embeddable performance monitor for browser games and interactive graphics. It runs inside your app, so the slowdown and the evidence are in the same place. Inspect frame pacing, time the systems you name, catch the slow frame with the frames around it, export the recording and open it offline.
 
 **Zero runtime dependencies.** Your app owns its frame loop. jank.js does not upload measurements, does not invent GPU timings and does not round in your favour.
+
+**See it catch something:** [Junktro](https://junktro.junklab.au/), a deliberately heavy CRT desktop built to give jank.js something to measure.
 
 ```text
   ·:·  JANK.JS v0.1.0  ·:·  A JUNKLAB PRODUCTION  ·:·
