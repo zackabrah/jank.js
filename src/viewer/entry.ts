@@ -47,7 +47,7 @@ const app = document.querySelector<HTMLElement>("#app")!;
 app.innerHTML = `<header class="jank-viewer-top"><h1 class="jank-viewer-brand"><span class="jank-viewer-word">JANK.JS</span><span class="jank-viewer-dim jank-viewer-tracked">VIEWER</span></h1><span class="jank-viewer-dim">/</span><span class="jank-viewer-file" data-k="file">no recording</span><span class="jank-viewer-chip" title="nothing is fetched or uploaded">OFFLINE</span><span class="jank-viewer-push"><label class="jank-viewer-btn" for="recording-file">OPEN</label><input id="recording-file" class="jank-viewer-picker" type="file" accept=".json,application/json" aria-label="Recording file"><button type="button" class="jank-viewer-btn" data-action="export" disabled>EXPORT</button></span></header>
 <p class="jank-viewer-env"><span data-k="env">open a recording exported by the panel</span><span data-k="totals"></span></p>
 <div class="jank-viewer-empty" data-k="empty"><p>drop a recording here, or OPEN one.</p><p class="jank-viewer-dim">nothing leaves this machine.</p></div>
-<section class="jank-viewer-session" aria-label="Session overview" data-k="session-box" hidden><div class="jank-viewer-side"><span class="jank-viewer-tracked jank-viewer-muted">SESSION</span><span class="jank-viewer-dim" data-k="bucket"></span></div><canvas data-k="session" aria-hidden="true"></canvas></section>
+<section class="jank-viewer-session" aria-label="Session overview" data-k="session-box" hidden><div class="jank-viewer-side"><span class="jank-viewer-tracked jank-viewer-muted">SESSION</span><span class="jank-viewer-dim" data-k="bucket"></span></div><canvas data-k="session" aria-hidden="true" title="Click to jump; drag to pan the visible range"></canvas></section>
 <div class="jank-viewer-main" data-k="main" hidden><div class="jank-viewer-left"><div class="jank-viewer-timeline" tabindex="0" role="slider" aria-label="Playhead" data-k="slider"><canvas data-k="timeline" aria-hidden="true"></canvas></div>
 <section class="jank-viewer-captures" aria-label="Captures"><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">CAPTURES</span><span class="jank-viewer-dim" data-k="rule"></span></h2><div role="table" aria-label="Captures" data-k="capture-table"><div role="rowgroup"><div role="row" class="jank-viewer-sr"><span role="columnheader">rank</span><span role="columnheader">frame</span><span role="columnheader">frame time</span><span role="columnheader">nearest event</span><span role="columnheader">open</span></div></div><div data-k="capture-rows" role="rowgroup"></div></div><p class="jank-viewer-dim jank-viewer-pad" data-k="capture-empty" hidden>no frame crossed the threshold in this recording.</p></section></div>
 <aside class="jank-viewer-inspector" aria-label="Frame inspector"><div class="jank-viewer-ihead"><span class="jank-viewer-chip jank-viewer-on" data-k="i-frame"></span><span class="jank-viewer-push jank-viewer-dim"><span data-k="i-capture"></span><button type="button" class="jank-viewer-icon" data-action="prev-capture" aria-label="Previous capture">◂</button><button type="button" class="jank-viewer-icon" data-action="next-capture" aria-label="Next capture">▸</button></span></div>
@@ -140,9 +140,11 @@ function load(source: string, file: string) {
   // Open on the worst capture, or on the first frame when nothing crossed the threshold.
   selected = marks.find((mark) => mark.rank === 1)?.at ?? 0;
 
-  start = Math.max(0, selected - (inViewCount() >> 1));
-
   renderStatic();
+
+  measureSurfaces();
+
+  start = Math.max(0, selected - (inViewCount() >> 1));
 
   update();
 }
@@ -242,6 +244,29 @@ function clampStart() {
   start = Math.max(0, Math.min(recording.frames.length - inViewCount(), start));
 }
 
+// The canvases are hidden until a recording opens. Observe and measure their
+// own layout, which can change without resizing the outer app.
+function measureSurfaces() {
+  const nextSession = Math.max(
+    200,
+    Math.floor(surface("session").clientWidth || sessionWidth),
+  );
+
+  const nextTimeline = Math.max(
+    LEFT + RIGHT + 40,
+    Math.floor(surface("timeline").clientWidth || timelineWidth),
+  );
+
+  const changed =
+    nextSession !== sessionWidth || nextTimeline !== timelineWidth;
+
+  sessionWidth = nextSession;
+
+  timelineWidth = nextTimeline;
+
+  return changed;
+}
+
 function update() {
   if (queued) return;
 
@@ -251,6 +276,10 @@ function update() {
     queued = false;
 
     if (!recording || !lanes) return;
+
+    measureSurfaces();
+
+    clampStart();
 
     theme ??= graphTheme(document.documentElement);
 
@@ -392,12 +421,6 @@ function drawSession(
     Math.max(3, right - left),
     tall + 4,
   );
-
-  context.fillStyle = colors.text;
-
-  context.fillRect(left - 1, top + 24, 3, 12);
-
-  context.fillRect(right - 1, top + 24, 3, 12);
 
   const tick = axisStep(Math.max(1, info.ids.at(-1)! - info.ids[0]!));
 
@@ -1235,7 +1258,9 @@ slot("timeline").addEventListener("click", (event) => {
 
   const bounds = slot("timeline").getBoundingClientRect();
 
-  const at = start + Math.floor((event.clientX - bounds.left - LEFT) / PITCH);
+  const x = ((event.clientX - bounds.left) / bounds.width) * timelineWidth;
+
+  const at = start + Math.floor((x - LEFT) / PITCH);
 
   if (
     at >= start &&
@@ -1274,6 +1299,8 @@ session.addEventListener("pointerdown", (event) => {
 
   session.setPointerCapture(event.pointerId);
 
+  session.style.cursor = "grabbing";
+
   update();
 });
 
@@ -1290,24 +1317,31 @@ session.addEventListener("pointermove", (event) => {
   update();
 });
 
-session.addEventListener("pointerup", () => {
+function endSessionDrag() {
   dragging = null;
 
+  session.style.removeProperty("cursor");
+
   if (recording) model.selectFrame(recording.frames[selected]!.id);
-});
+}
 
-new ResizeObserver(() => {
-  sessionWidth = Math.max(200, Math.floor(session.clientWidth || sessionWidth));
+session.addEventListener("pointerup", endSessionDrag);
 
-  timelineWidth = Math.max(
-    LEFT + RIGHT + 40,
-    Math.floor(slot("timeline").clientWidth || timelineWidth),
-  );
+session.addEventListener("pointercancel", endSessionDrag);
+
+session.addEventListener("lostpointercapture", endSessionDrag);
+
+const resize = new ResizeObserver(() => {
+  if (!measureSurfaces()) return;
 
   clampStart();
 
   update();
-}).observe(app);
+});
+
+resize.observe(session);
+
+resize.observe(surface("timeline"));
 
 let generation = 0;
 
