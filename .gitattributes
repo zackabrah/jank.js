@@ -1,0 +1,4 @@
+# Keep LF on every platform; Windows checkouts otherwise fail the format check.
+* text=auto eol=lf
+*.png binary
+*.woff2 binary
