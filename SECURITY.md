@@ -4,7 +4,7 @@ jank.js runs entirely in the browser. It has no server, account, telemetry or up
 
 ## Reporting a vulnerability
 
-Report vulnerabilities privately through GitHub's private vulnerability reporting: open the repository's **Security** tab and choose **Report a vulnerability**. Please do not open a public issue. Include the affected version, the browser and operating system, and steps to reproduce; a recording that triggers the problem helps.
+Report vulnerabilities privately through GitHub's private vulnerability reporting: open the repository's **Security** tab and choose **Report a vulnerability**. If you can't use GitHub, email hello@junklab.au. Please do not open a public issue. Include the affected version, the browser and operating system, and steps to reproduce; a recording that triggers the problem helps.
 
 ## Supported versions
 

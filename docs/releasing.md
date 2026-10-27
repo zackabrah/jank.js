@@ -2,7 +2,7 @@
 
 This repository releases only the performance tool and recording viewer.
 
-Before the first publication, add the real `repository`, `bugs` and `homepage` URLs to `package.json`; npm uses them for the package page and to resolve the README’s relative links. Recording format version 2 is independent of the package version. When bumping the package, update `src/core/environment.ts` too; `pnpm test:package` fails if the two disagree.
+Keep the `repository`, `bugs` and `homepage` fields in `package.json` pointing at the public repository; npm uses them for the package page and to resolve the README’s relative links, and `pnpm verify:boundary` fails if one is missing. Before the first publication, make the repository public and enable private vulnerability reporting under **Settings → Advanced Security**, which `SECURITY.md` relies on. Recording format version 2 is independent of the package version. When bumping the package, update `src/core/environment.ts` too; `pnpm test:package` fails if the two disagree.
 
 ## Verify and assemble
 

@@ -54,6 +54,18 @@ assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);
 
 assert.equal(Object.keys(manifest.peerDependencies ?? {}).length, 0);
 
+// npm links the package page and the README's relative links through these.
+for (const [field, value] of Object.entries({
+  homepage: manifest.homepage,
+  "repository.url": manifest.repository?.url,
+  "bugs.url": manifest.bugs?.url,
+})) {
+  assert.ok(
+    typeof value === "string" && value.trim() !== "",
+    `package.json needs ${field}`,
+  );
+}
+
 for (const dependency of ["gsap"]) {
   assert.ok(
     !(dependency in manifest.devDependencies),

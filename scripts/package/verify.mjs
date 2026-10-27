@@ -78,6 +78,9 @@ try {
       "LICENSE",
       "THIRD_PARTY_NOTICES.md",
       "README.md",
+      // Targets of the packaged README and CONTRIBUTING links.
+      "CODE_OF_CONDUCT.md",
+      "SECURITY.md",
       "licenses/ibm-plex-mono-OFL.txt",
       "licenses/shadcn-ui.txt",
       "dist-package/style.css",

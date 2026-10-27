@@ -45,6 +45,14 @@
   "description": "An embeddable, dependency-free performance monitor for browser games and interactive graphics.",
   "license": "MIT",
   "author": "Isaac Johnson",
+  "homepage": "https://github.com/zackabrah/jank.js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zackabrah/jank.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zackabrah/jank.js/issues"
+  },
   "keywords": [
     "performance",
     "profiler",
@@ -58,7 +66,9 @@
     "licenses",
     "THIRD_PARTY_NOTICES.md",
     "CHANGELOG.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md"
   ],
   "sideEffects": [
     "**/*.css"
