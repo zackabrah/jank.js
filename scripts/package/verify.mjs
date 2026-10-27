@@ -117,10 +117,12 @@ try {
 
   await writeFile(
     join(temp, "consumer.mjs"),
-    `import { createDiagnostics, createPreparationProfiler, createRecordingViewModel, serializeRecording } from 'jank.js';
+    `import { buildInfo, createDiagnostics, createPreparationProfiler, createRecordingViewModel, serializeRecording } from 'jank.js';
 import { createThreeWebGpuSource } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer } from 'jank.js/adapters/three';
 import assert from 'node:assert/strict';
+assert.equal(buildInfo.version, ${JSON.stringify(manifest.version)});
+assert.match(buildInfo.commit, /^[a-f0-9]{40}$/);
 const monitor = createDiagnostics(); monitor.frame(performance.now(), 16, 1, 2);
 assert.equal(monitor.snapshot().frames.length, 1);
 assert.equal(monitor.export().format, 'jank.js-recording');

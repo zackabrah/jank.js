@@ -1,3 +1,5 @@
+import { readBuildInfo } from "./build-info.mjs";
+
 import { build } from "vite";
 
 import { readFile, writeFile, readdir, mkdir } from "node:fs/promises";
@@ -26,6 +28,7 @@ const licensePanel = `<details class="license-notices"><summary>Licenses</summar
 
 await build({
   configFile: false,
+  define: { JANK_BUILD_INFO: JSON.stringify(readBuildInfo()) },
   publicDir: false,
   build: {
     target: "es2023",

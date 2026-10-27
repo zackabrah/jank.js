@@ -141,6 +141,10 @@ test("single HTML viewer loads offline, inspects scopes, navigates and rejects b
 test("hosted viewer is part of the static build", async ({ page }) => {
   await page.goto("/viewer/");
 
+  await expect(page.locator('[data-k="build-info"]')).toHaveText(
+    /^v\d+\.\d+\.\d+ · [a-f0-9]{8}( · local changes)?$/,
+  );
+
   await page.getByLabel("Recording file").setInputFiles({
     name: "capture.json",
     mimeType: "application/json",
@@ -183,10 +187,37 @@ test("the panel hands its recording to the viewer, which inspects captures frame
   ] as const) {
     await page.waitForTimeout(wait);
 
+    if (step.startsWith("spike")) {
+      // Captures group spikes within ten recorded frames, not a wall-clock gap.
+      // Wait for the preceding spike to be sampled and leave a separate window
+      // even when a busy browser delivers fewer frames during the sleeps above.
+      await page.waitForFunction(() => {
+        const previous = window.fixture.spikeFrames.at(-1);
+
+        const latest = window.fixture.monitor.export().frames.at(-1)?.id;
+
+        return (
+          previous === undefined ||
+          (latest !== undefined && latest - previous > 20)
+        );
+      });
+    }
+
+    const spikesBefore = await page.evaluate(
+      () => window.fixture.spikeFrames.length,
+    );
+
     await page.evaluate((name) => {
       if (name.startsWith("spike")) window.fixture.spike(Number(name.slice(6)));
       else if (name) window.fixture.event(name);
     }, step);
+
+    if (step.startsWith("spike")) {
+      await page.waitForFunction(
+        (before) => window.fixture.spikeFrames.length > before,
+        spikesBefore,
+      );
+    }
   }
 
   /* oxlint-enable no-await-in-loop */

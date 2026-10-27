@@ -1,3 +1,5 @@
+import { buildLabel } from "../../core/build-info.ts";
+
 /** Static panel markup. Values are written later as text; nothing here is host-supplied. */
 export interface PanelSections {
   gpu: boolean;
@@ -51,5 +53,5 @@ export function panelMarkup(id: string, has: PanelSections) {
 <section class="jank-sec">${heading("CAPTURED", '<span class="jank-meta" data-k="captured-meta"></span>')}<div data-k="captures"></div><p class="jank-note jank-pad" data-k="captures-empty">nothing captured yet. that is a good sign, or a quiet build.</p></section>
 <div class="jank-actions"><button type="button" class="jank-btn jank-primary" data-action="viewer"${viewerTitle}>OPEN IN VIEWER</button><button type="button" class="jank-btn jank-push" data-action="export-capture">EXPORT JSON</button></div><p class="jank-error" role="alert" data-k="capture-error" hidden></p></div>
 </div>
-<section class="jank-sec jank-overhead" aria-label="jank.js overhead">${heading("OVERHEAD", '<span class="jank-meta">ms avg · peak</span>')}<div class="jank-kv"><span>collection</span><span><span data-k="oh-collect">–</span> <i>· <span data-k="oh-collect-peak">–</span></i></span></div><div class="jank-kv"><span>panel refresh</span><span><span data-k="oh-refresh">–</span> <i>· <span data-k="oh-refresh-peak">–</span></i></span></div><p class="jank-note" data-k="oh-note">excludes browser paint and GPU work</p><p class="jank-foot"><span data-k="honest-cpu"></span><span data-k="honest-gpu"></span></p></section></div>`;
+<section class="jank-sec jank-overhead" aria-label="jank.js overhead">${heading("OVERHEAD", '<span class="jank-meta">ms avg · peak</span>')}<div class="jank-kv"><span>collection</span><span><span data-k="oh-collect">–</span> <i>· <span data-k="oh-collect-peak">–</span></i></span></div><div class="jank-kv"><span>panel refresh</span><span><span data-k="oh-refresh">–</span> <i>· <span data-k="oh-refresh-peak">–</span></i></span></div><p class="jank-note" data-k="oh-note">excludes browser paint and GPU work</p><p class="jank-foot"><span data-k="honest-cpu"></span><span data-k="honest-gpu"></span></p><p class="jank-note" data-k="build-info" aria-label="jank.js build">${buildLabel}</p></section></div>`;
 }

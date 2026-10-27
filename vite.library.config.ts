@@ -1,6 +1,9 @@
+import { readBuildInfo } from "./scripts/build-info.mjs";
+
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  define: { JANK_BUILD_INFO: JSON.stringify(readBuildInfo()) },
   publicDir: false,
   build: {
     target: "es2023",

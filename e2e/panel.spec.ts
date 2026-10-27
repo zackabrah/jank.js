@@ -40,6 +40,10 @@ test("full panel reads a running game, freezes the display and exports the recor
 
   await expect(panel).toHaveAttribute("data-mode", "full");
 
+  await expect(slot(page, "build-info")).toHaveText(
+    /^v\d+\.\d+\.\d+ · [a-f0-9]{8}( · local changes)?$/,
+  );
+
   await expect(slot(page, "fps")).toHaveText(/^\d+$/);
 
   await page.getByRole("button", { name: "REC", exact: true }).click();
@@ -229,7 +233,8 @@ test("LOADING lays the stages on one axis beside the cold run and every session"
     page.locator('[data-k="sessions"] .jank-row .jank-k'),
   ).toHaveText(["#1 cold", "#2", "#3", "#4 now"]);
 
-  await expect(slot(page, "total")).toHaveText(/^\d+\.\d$/);
+  // The shared axis switches from milliseconds to seconds for slower cold runs.
+  await expect(slot(page, "total")).toHaveText(/^\d+\.\d{1,2}$/);
 
   await shoot(page, info, "panel-loading");
 

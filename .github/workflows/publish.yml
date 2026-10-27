@@ -1,0 +1,63 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Verify and pack only; do not publish to npm"
+        type: boolean
+        default: true
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Match the browser release gate's supported CI platform.
+    runs-on: macos-latest
+    timeout-minutes: 30
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Use the verified npm CLI with trusted publishing support
+        run: npm install --global npm@11.20.0
+      - name: Require the matching release tag on main
+        run: node scripts/release/verify-npm-release.mjs
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install chromium firefox webkit
+      - name: Run the release gate and pack
+        run: pnpm release:prepare
+      - name: Verify the built identity and preview publication
+        run: |
+          node scripts/release/verify-npm-release.mjs --built
+          npm publish ./artifacts/npm/*.tgz --dry-run --ignore-scripts
+      - uses: actions/upload-artifact@v6
+        with:
+          name: npm-${{ github.ref_name }}
+          path: artifacts/npm/*.tgz
+          if-no-files-found: error
+      - name: Publish the verified tarball with npm trusted publishing
+        if: ${{ !inputs.dry_run }}
+        run: npm publish ./artifacts/npm/*.tgz --ignore-scripts
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: npm-release-failure-traces
+          path: test-results
+          retention-days: 7

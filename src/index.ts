@@ -1,3 +1,5 @@
+export { buildInfo, type BuildInfo } from "./core/build-info.ts";
+
 /** Public browser monitor API. Importing the module does not access the DOM. */
 export { createDiagnostics } from "./core/diagnostics.ts";
 
