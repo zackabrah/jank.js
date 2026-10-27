@@ -86,9 +86,6 @@ try {
       "dist-package/style.css",
       "dist-package/font.css",
       "dist-package/viewer.html",
-      "dist-package/ibm-plex-mono-400.woff2",
-      "dist-package/ibm-plex-mono-500.woff2",
-      "dist-package/ibm-plex-mono-600.woff2",
     ].map((file) => readFile(join(installed, file))),
   );
 
@@ -100,6 +97,20 @@ try {
   assert.ok(viewer.includes("jank.js recording viewer"));
 
   assert.ok(viewer.includes("Recording file"));
+
+  assert.ok(!viewer.includes("@font-face"), "The viewer must use system fonts");
+
+  assert.ok(
+    !packageFiles.some((file) => /\.(woff2?|otf|ttf)$/i.test(file)),
+    "The package must not ship font binaries",
+  );
+
+  const font = await readFile(join(installed, "dist-package/font.css"), "utf8");
+
+  assert.ok(
+    !/@font-face|url\(|@import/i.test(font),
+    "The legacy font.css entry must not load fonts",
+  );
 
   assert.equal(manifest.exports["./viewer.html"], "./dist-package/viewer.html");
 
@@ -184,7 +195,7 @@ export function counters(info: ThreeRendererInfo) { return registerThreeRenderer
   run(executable("vite"), ["build"], temp);
 
   console.log(
-    "Package verified: isolated install, zero runtime dependencies, public imports, declarations, CSS/font assets and consumer build.",
+    "Package verified: isolated install, zero runtime dependencies, public imports, declarations, system fonts, CSS assets and consumer build.",
   );
 } catch (error) {
   if (error.stdout) console.error(error.stdout.toString());

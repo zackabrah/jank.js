@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-ascii-dark.svg">
-  <img alt="JANK.JS in ASCII relief. Junklab presents an embeddable performance monitor for browser games. Every frame leaves a trace." src="docs/readme/banner-ascii-light.svg" width="100%">
-</picture>
+<img alt="JANK.JS in ASCII relief beside its trace ring: 249 recorded frames written around a circle, the four that missed the budget in orange. Junklab presents an embeddable performance monitor for browser games." src="docs/readme/banner-ascii-dark.svg" width="100%">
 
 <p>
   <img alt="Measured, not simulated" src="docs/readme/badge-measured.svg" height="22">
@@ -15,7 +12,13 @@
 
 An embeddable performance monitor for browser games and interactive graphics. It runs inside your app, so the slowdown and the evidence are in the same place. Inspect frame pacing, time the systems you name, catch the slow frame with the frames around it, export the recording and open it offline.
 
-**Zero runtime dependencies.** Your app owns its frame loop. jank.js does not upload measurements, does not invent GPU timings and does not round in your favour.
+**A ~4.3 KB core performance monitor. Zero runtime dependencies. Add the live panel for ~23 KB total.**
+
+Gzipped production sizes after minification and tree shaking with Vite: core means `createDiagnostics`; the panel total includes CSS. No font downloads. Measured from this checkout; sizes vary with your imports and bundler.
+
+Your app owns its frame loop. jank.js does not upload measurements, does not invent GPU timings and does not round in your favour.
+
+**See it catch something:** [Junktro](https://junktro.junklab.au/), a deliberately heavy CRT desktop built to give jank.js something to measure.
 
 ```text
   ·:·  JANK.JS v0.1.0  ·:·  A JUNKLAB PRODUCTION  ·:·
@@ -92,7 +95,6 @@ Use a positioned container, import the stylesheet, and call `refresh` from your 
 ```js
 import { createDiagnostics, createPerformanceTray } from "jank.js";
 import "jank.js/style.css";
-// Optional: import "jank.js/font.css";
 
 const shell = document.querySelector("#app"); // CSS: position: relative
 const monitor = createDiagnostics();
@@ -213,6 +215,6 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md), the [release guide](docs/releasing.md),
   ·:·  EOF  ·:·
 ```
 
-MIT licensed, copyright Isaac Johnson. Extracted from Junklab Engine 0.94.1 (d6f5036), with independent packaging and a generic API. [Third-party notices](THIRD_PARTY_NOTICES.md) cover the derived control styling and the optional IBM Plex Mono font.
+MIT licensed, copyright Isaac Johnson. Extracted from Junklab Engine 0.94.1 (d6f5036), with independent packaging and a generic API. [Third-party notices](THIRD_PARTY_NOTICES.md) cover derived styling and historical dependencies. The panel and viewer use system monospace fonts.
 
 Made by [Isaac Johnson](https://github.com/zackabrah) at Junklab, Australia.

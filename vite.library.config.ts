@@ -17,6 +17,6 @@ export default defineConfig({
       formats: ["es"],
     },
     sourcemap: true,
-    minify: false,
+    minify: "oxc",
   },
 });

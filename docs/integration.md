@@ -158,20 +158,20 @@ The reported value is the **sum of render-pass durations** for one completed ren
 
 ## Appearance and theming
 
-Import `jank.js/style.css` for the panel. It is self-contained: every rule is scoped under `.jank` and sets the properties it needs (font, colours, box sizing, line height), so the host's CSS does not restyle the panel and the panel does not leak into the host. Import `jank.js/font.css` as well to load IBM Plex Mono (400, 500 and 600, Latin subset, about 45 KB); without it the panel uses the platform monospace.
+Import `jank.js/style.css` for the panel. It is self-contained: every rule is scoped under `.jank` and sets the properties it needs (font, colours, box sizing, line height), so the host's CSS does not restyle the panel and the panel does not leak into the host. The panel and offline viewer use system monospace fonts with no font downloads. Existing `jank.js/font.css` imports still resolve to an empty compatibility stylesheet and can be removed. Override `--jank-font` to use a host-provided font.
 
 The jank.js tokens are the theming surface. They are defined on `.jank` in `src/performance/tokens.css`, which `style.css` includes. Override any of them with a rule on `.jank` that loads after the stylesheet:
 
-| Token                                                                       | Default                                | Used for                                                    |
-| --------------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------- |
-| `--jank-ink`                                                                | `#0a0a0a`                              | Panel background                                            |
-| `--jank-line`, `--jank-line-strong`, `--jank-control`                       | greys                                  | Section rules, the panel outline and inputs, button borders |
-| `--jank-graph`, `--jank-faint`, `--jank-dim`, `--jank-muted`, `--jank-soft` | greys                                  | Bars, leaders, labels, secondary values, ghost series       |
-| `--jank-text`, `--jank-bright`                                              | `#e8e8e8`, `#fff`                      | Values, inverted controls, the newest frame                 |
-| `--jank-miss`                                                               | `#f26032`                              | Over budget, and nothing else                               |
-| `--jank-row`                                                                | `#161616`                              | The one highlighted row                                     |
-| `--jank-font`                                                               | IBM Plex Mono, then platform monospace | The only typeface                                           |
-| `--jank-panel-w`, `--jank-mini-w`, `--jank-line-h`, `--jank-inset`          | 360, 240, 28, 20 px                    | Sizes and the distance from the docked corner               |
+| Token                                                                       | Default             | Used for                                                    |
+| --------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
+| `--jank-ink`                                                                | `#0a0a0a`           | Panel background                                            |
+| `--jank-line`, `--jank-line-strong`, `--jank-control`                       | greys               | Section rules, the panel outline and inputs, button borders |
+| `--jank-graph`, `--jank-faint`, `--jank-dim`, `--jank-muted`, `--jank-soft` | greys               | Bars, leaders, labels, secondary values, ghost series       |
+| `--jank-text`, `--jank-bright`                                              | `#e8e8e8`, `#fff`   | Values, inverted controls, the newest frame                 |
+| `--jank-miss`                                                               | `#f26032`           | Over budget, and nothing else                               |
+| `--jank-row`                                                                | `#161616`           | The one highlighted row                                     |
+| `--jank-font`                                                               | Platform monospace  | The only typeface                                           |
+| `--jank-panel-w`, `--jank-mini-w`, `--jank-line-h`, `--jank-inset`          | 360, 240, 28, 20 px | Sizes and the distance from the docked corner               |
 
 Text sizes, tracking, padding and control heights have tokens too; see `tokens.css`. Set `--jank-z-index` on the container to change the panel's stacking order (default 30). Dark is the only theme: the panel is a measuring instrument, and orange keeps one meaning.
 

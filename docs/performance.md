@@ -34,4 +34,4 @@ The first v1 measurement identified live snapshot copying as a cost worth reduci
 
 Run `pnpm bench` to produce `artifacts/overhead.json`, or `pnpm bench docs/verification/overhead.json` to refresh the [current raw report](verification/overhead.json). Run on an otherwise idle machine and compare equivalent workloads. More systems, scopes, custom views, DevTools recording and real GPU providers can cost more.
 
-The library ships unminified ESM for downstream bundling. The optional IBM Plex Mono font contains three Latin-subset WOFF2 files, embedded in the offline viewer. The core has zero runtime dependencies; application and renderer bundle sizes are outside these measurements.
+The library ships minified ESM with internal identifier mangling and source maps for downstream bundling and debugging. Packaged panel CSS is minified. The panel and offline viewer use system monospace fonts; no font files are bundled. The core has zero runtime dependencies; application and renderer bundle sizes are outside these measurements.
