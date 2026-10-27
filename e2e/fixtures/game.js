@@ -103,6 +103,8 @@ const tray = createPerformanceTray({
 
 let extra = 0;
 
+const spikeFrames = [];
+
 function frame(at) {
   const id = monitor.beginFrame(at);
 
@@ -127,6 +129,8 @@ function frame(at) {
   animation.end(token);
 
   token = scene.begin();
+
+  if (extra) spikeFrames.push(id);
 
   spin(1 + extra);
 
@@ -256,6 +260,8 @@ async function session(kind, scale, hits, misses) {
 window.fixture = {
   monitor,
   tray,
+  /** IDs of the frames the spikes made heavy, so tests can tell them from stalls. */
+  spikeFrames,
   /** Real work: a heavy scene update on the next frame, with the events around it. */
   spike(ms = 40) {
     monitor.event("wave 3");

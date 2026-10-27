@@ -221,12 +221,43 @@ test("the panel hands its recording to the viewer, which inspects captures frame
     `capture 1 / ${total}`,
   );
 
-  // Automation can stall a headless frame too; inspect a spike the fixture made.
+  // Automation can stall a headless frame too, and a stall within ten frames of a spike
+  // joins its capture as the longer frame. Open the capture, then step to the frame the
+  // fixture made heavy.
   const spike = rows.filter({ hasText: "spawn ×184" }).first();
 
   await spike.getByRole("button").click();
 
   await expect(spike).toHaveAttribute("data-on", "");
+
+  const shownFrame = async () =>
+    Number(
+      (await viewer.locator('[data-k="i-frame"]').textContent())?.replace(
+        /\D/g,
+        "",
+      ),
+    );
+
+  const opened = await shownFrame();
+
+  const spikeFrames = await page.evaluate(() => window.fixture.spikeFrames);
+
+  expect(spikeFrames).toHaveLength(3);
+
+  const heavy = spikeFrames.reduce((best, id) =>
+    Math.abs(id - opened) < Math.abs(best - opened) ? id : best,
+  );
+
+  const playhead = viewer.getByRole("slider", { name: "Playhead" });
+
+  await playhead.focus();
+
+  /* oxlint-disable no-await-in-loop */
+  for (let i = 0; i < Math.abs(heavy - opened); i++)
+    await viewer.keyboard.press(heavy > opened ? "ArrowRight" : "ArrowLeft");
+
+  /* oxlint-enable no-await-in-loop */
+  await expect.poll(shownFrame).toBe(heavy);
 
   await expect(viewer.locator('[data-k="i-likely"]')).toHaveText(
     "scene update",
@@ -237,12 +268,15 @@ test("the panel hands its recording to the viewer, which inspects captures frame
     "miss",
   );
 
+  // Back on the capture for the navigation checks below.
+  await spike.getByRole("button").click();
+
+  await expect.poll(shownFrame).toBe(opened);
+
   // GPU samples are periodic: the section shows passes or says the frame has none.
   await expect(viewer.locator('[data-k="i-gpu"]')).toContainText(
     /no sample from this frame|shadow/,
   );
-
-  const playhead = viewer.getByRole("slider", { name: "Playhead" });
 
   const first = await playhead.getAttribute("aria-valuenow");
 

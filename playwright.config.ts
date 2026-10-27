@@ -1,5 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
+// JANK on a phone keypad: a port of its own, so other local preview servers don't collide.
+const port = 5265;
+
+const origin = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: "./e2e",
   workers: 1,
@@ -7,7 +12,7 @@ export default defineConfig({
   reporter: "list",
   use: {
     headless: true,
-    baseURL: "http://127.0.0.1:4182",
+    baseURL: origin,
     viewport: { width: 1440, height: 1000 },
     trace: "retain-on-failure",
   },
@@ -17,9 +22,8 @@ export default defineConfig({
     { name: "webkit", use: { browserName: "webkit" } },
   ],
   webServer: {
-    command:
-      "pnpm exec vite preview --outDir dist/viewer --host 127.0.0.1 --port 4182 --strictPort",
-    url: "http://127.0.0.1:4182/viewer/",
+    command: `pnpm exec vite preview --outDir dist/viewer --host 127.0.0.1 --port ${port} --strictPort`,
+    url: `${origin}/viewer/`,
     reuseExistingServer: false,
   },
 });

@@ -8,6 +8,7 @@ declare global {
   interface Window {
     fixture: {
       monitor: Diagnostics;
+      spikeFrames: number[];
       spike(ms?: number): void;
 
       event(label: string): void;
