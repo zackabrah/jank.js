@@ -8,6 +8,8 @@ Keep a blank line between every statement, including function declarations. `pnp
 
 Keep runtime dependencies at zero unless a documented benefit justifies a change. Framework-specific adapters must remain optional. The host owns simulation/rendering clocks, GPU resources and renderer settings. Avoid allocating in frame collection without measuring the cost. Run `pnpm bench` when changing collection or refresh behavior, and report the environment and measurement limits with results.
 
+Package JavaScript is minified with Vite's Oxc minifier, including internal identifier mangling. Public exports and property names remain stable. Vite preserves the annotations and whitespace needed for tree shaking in ES library builds; consuming applications can compact the final bundle further. Source maps remain available for debugging. The offline viewer is also minified. This makes distributed code smaller and less readable, but does not hide the source or provide code protection.
+
 For npm release preparation, use `pnpm release:prepare` from a clean checkout. It runs the full release gate and writes a tarball to `artifacts/npm` without publishing. Maintainers should follow [the npm publishing guide](https://github.com/zackabrah/jank.js/blob/main/docs/publishing.md) for first-publish setup and the manual release workflow.
 
 Use labelled fields, selectors and buttons for authoring controls. JSON is an export format, not an authoring interface. Preserve keyboard operation, scoped styles, cleanup and unavailable measurements. Don't claim GPU timings based on CPU submission durations.
