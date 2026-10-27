@@ -1,0 +1,23 @@
+/* IBM Plex Mono, Latin subset, the three weights the tool uses. Optional: without
+   this file the tool falls back to the platform monospace named in --jank-font. */
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("./ui/ibm-plex-mono-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("./ui/ibm-plex-mono-500.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("./ui/ibm-plex-mono-600.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}

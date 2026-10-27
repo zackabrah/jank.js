@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "reference/**",
+    "dist/**",
+    "dist-package/**",
+    "artifacts/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    "pnpm-lock.yaml",
+    "OPEN RECORDING VIEWER.html"
+  ]
+}

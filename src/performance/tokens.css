@@ -1,0 +1,39 @@
+/* jank.js tool tokens. Dark only. One typeface. Orange is a measurement, never an accent.
+   This is the theming surface: override these on `.jank` (panel) or `.jank-viewer`. */
+.jank,
+.jank-viewer {
+  --jank-ink: #0a0a0a; /* panel and viewer background */
+  --jank-line: #1f1f1f; /* section rules, graph guides, table rules */
+  --jank-line-strong: #2e2e2e; /* the 1 px outline around the panel, inputs */
+  --jank-control: #3a3a3a; /* button borders */
+  --jank-graph: #333333; /* normal frame bars, lane bars */
+  --jank-faint: #6a6a6a; /* dotted leaders, disabled text */
+  --jank-dim: #7a7a7a; /* labels, footnotes */
+  --jank-muted: #a3a3a3; /* secondary values, inactive tabs, units */
+  --jank-soft: #d4d4d4; /* ghost series, secondary bars */
+  --jank-text: #e8e8e8; /* primary text, active tab fill, primary button fill */
+  --jank-bright: #ffffff; /* the newest frame, the playhead, hover text */
+  --jank-miss: #f26032; /* over budget. nothing else. */
+  --jank-row: #161616; /* the one highlighted row */
+
+  --jank-font: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --jank-size-axis: 10px;
+  --jank-size-label: 11px;
+  --jank-size-body: 12px;
+  --jank-size-tile: 22px;
+  --jank-size-headline: 34px;
+  --jank-track-label: 0.12em;
+  --jank-track-wordmark: 0.18em;
+
+  --jank-pad-x: 10px;
+  --jank-pad-y: 8px;
+  --jank-header-h: 28px;
+  --jank-tabs-h: 24px;
+  --jank-button-h: 20px;
+  --jank-panel-w: 360px;
+  --jank-mini-w: 240px;
+  --jank-line-h: 28px;
+  --jank-bar-pitch: 3px; /* 4px in the viewer */
+  --jank-radius: 0;
+  --jank-inset: 20px; /* distance from the docked corner */
+}

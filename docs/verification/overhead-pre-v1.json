@@ -1,0 +1,262 @@
+{
+  "measuredAt": "2026-10-26T08:55:52.559Z",
+  "browser": "153.0.8010.12",
+  "platform": "darwin arm64",
+  "cpu": "Apple M3 Max",
+  "units": "milliseconds",
+  "methodology": "Three sequential repetitions per state. Each run seeds 600 history entries, warms up 30 real animation frames, then measures 120. One Canvas 2D system, 1200x800 viewport, system font, no GPU provider. Monitor timing includes collection and synchronous UI refresh plus timer overhead, excludes scene drawing, browser paint and GPU execution. Baseline measures timer/loop overhead. Headless results are illustrative, not a universal performance guarantee.",
+  "runs": [
+    {
+      "repetition": 1,
+      "state": "baseline",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.0018333335717519124,
+        "p95": 0.004999995231628418,
+        "max": 0.015000104904174805
+      },
+      "sceneCpuMs": {
+        "mean": 0.18162500063578288,
+        "p95": 0.25500011444091797,
+        "max": 0.4099999666213989
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 1,
+      "state": "collapsed",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.029916665951410928,
+        "p95": 0.17499995231628418,
+        "max": 0.42500007152557373
+      },
+      "sceneCpuMs": {
+        "mean": 0.1706250051657359,
+        "p95": 0.24000000953674316,
+        "max": 0.38999998569488525
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 1,
+      "state": "expanded",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.03854166865348816,
+        "p95": 0.36500000953674316,
+        "max": 0.6299999952316284
+      },
+      "sceneCpuMs": {
+        "mean": 0.11583333512147267,
+        "p95": 0.18500006198883057,
+        "max": 0.25999999046325684
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 1,
+      "state": "recording",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.04512499670187632,
+        "p95": 0.4299999475479126,
+        "max": 0.5549999475479126
+      },
+      "sceneCpuMs": {
+        "mean": 0.14225000937779744,
+        "p95": 0.19000005722045898,
+        "max": 0.21000003814697266
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 2,
+      "state": "baseline",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.0011249999205271402,
+        "p95": 0.004999995231628418,
+        "max": 0.029999971389770508
+      },
+      "sceneCpuMs": {
+        "mean": 0.1626250058412552,
+        "p95": 0.2250000238418579,
+        "max": 0.2749999761581421
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 2,
+      "state": "collapsed",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.022625001271565755,
+        "p95": 0.16499996185302734,
+        "max": 0.21000003814697266
+      },
+      "sceneCpuMs": {
+        "mean": 0.17220833003520966,
+        "p95": 0.23500001430511475,
+        "max": 0.31000006198883057
+      },
+      "frameIntervalMs": {
+        "mean": 16.666041666666665,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 2,
+      "state": "expanded",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.03620832959810893,
+        "p95": 0.315000057220459,
+        "max": 0.8849999904632568
+      },
+      "sceneCpuMs": {
+        "mean": 0.1655416637659073,
+        "p95": 0.2200000286102295,
+        "max": 0.559999942779541
+      },
+      "frameIntervalMs": {
+        "mean": 16.665958333333332,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 2,
+      "state": "recording",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.03983333806196849,
+        "p95": 0.2950000762939453,
+        "max": 0.6299999952316284
+      },
+      "sceneCpuMs": {
+        "mean": 0.15737500190734863,
+        "p95": 0.24000000953674316,
+        "max": 0.2799999713897705
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 3,
+      "state": "baseline",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.001374998688697815,
+        "p95": 0.004999995231628418,
+        "max": 0.009999990463256836
+      },
+      "sceneCpuMs": {
+        "mean": 0.17020833988984427,
+        "p95": 0.24000000953674316,
+        "max": 0.3500000238418579
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 3,
+      "state": "collapsed",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.0212916632493337,
+        "p95": 0.11000001430511475,
+        "max": 0.19999992847442627
+      },
+      "sceneCpuMs": {
+        "mean": 0.17745833694934846,
+        "p95": 0.26499998569488525,
+        "max": 0.36500000953674316
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 3,
+      "state": "expanded",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.03020833432674408,
+        "p95": 0.19499993324279785,
+        "max": 0.5100001096725464
+      },
+      "sceneCpuMs": {
+        "mean": 0.14533333480358124,
+        "p95": 0.1950000524520874,
+        "max": 0.3500000238418579
+      },
+      "frameIntervalMs": {
+        "mean": 16.665958333333332,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    },
+    {
+      "repetition": 3,
+      "state": "recording",
+      "samples": 120,
+      "monitorAndTimerMs": {
+        "mean": 0.036666670441627504,
+        "p95": 0.36500000953674316,
+        "max": 0.4599999189376831
+      },
+      "sceneCpuMs": {
+        "mean": 0.19329166114330293,
+        "p95": 0.2999999523162842,
+        "max": 0.375
+      },
+      "frameIntervalMs": {
+        "mean": 16.666,
+        "p95": 16.670000000000073,
+        "max": 16.670000000000073
+      },
+      "isolatedClock": true
+    }
+  ]
+}

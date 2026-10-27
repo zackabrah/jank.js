@@ -1,0 +1,751 @@
+@import "./tokens.css";
+
+/* jank.js panel. Flat: hairlines, one mono face, no radius, shadow, gradient or motion.
+   Every property the panel needs is set under .jank so host styles cannot restyle it. */
+.jank,
+.jank * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--jank-radius);
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: none;
+  text-align: inherit;
+  text-transform: none;
+  text-decoration: none;
+  list-style: none;
+  box-shadow: none;
+}
+.jank {
+  position: fixed;
+  z-index: var(--jank-z-index, 30);
+  width: min(var(--jank-panel-w), calc(100vw - 2 * var(--jank-inset)));
+  color: var(--jank-text);
+  background: var(--jank-ink);
+  outline: 1px solid var(--jank-line-strong);
+  outline-offset: -1px;
+  color-scheme: dark;
+  font: 400 var(--jank-size-body) / 20px var(--jank-font);
+  font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
+  font-feature-settings:
+    "liga" 0,
+    "calt" 0,
+    "tnum" 1;
+  letter-spacing: 0;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+.jank[data-corner$="right"] {
+  right: var(--jank-inset);
+}
+.jank[data-corner$="left"] {
+  left: var(--jank-inset);
+}
+.jank[data-corner^="top"] {
+  top: var(--jank-inset);
+}
+.jank[data-corner^="bottom"] {
+  bottom: var(--jank-inset);
+}
+.jank[data-mode="mini"] {
+  width: min(var(--jank-mini-w), calc(100vw - 2 * var(--jank-inset)));
+}
+.jank [hidden],
+.jank [data-view] {
+  display: none !important;
+}
+.jank[data-mode="line"] .jank-line,
+.jank[data-mode="full"] .jank-full {
+  display: flex !important;
+}
+.jank[data-mode="mini"] .jank-mini {
+  display: block !important;
+}
+.jank button {
+  cursor: pointer;
+  white-space: nowrap;
+}
+.jank button:disabled {
+  cursor: default;
+}
+.jank :focus {
+  outline: none;
+}
+.jank :focus-visible {
+  outline: 1px dotted var(--jank-text);
+  outline-offset: -3px;
+}
+.jank .jank-dim {
+  color: var(--jank-dim);
+}
+.jank .jank-push {
+  margin-left: auto;
+}
+.jank .jank-word {
+  font-weight: 600;
+  letter-spacing: var(--jank-track-wordmark);
+}
+
+/* Over budget is orange and ▲, never colour alone. */
+.jank [data-tone="miss"],
+.jank .jank-read b[data-tone="miss"] {
+  color: var(--jank-miss);
+}
+.jank [data-tone="miss"]::before {
+  content: "▲ ";
+}
+.jank .jank-tile-v[data-tone="miss"]::before,
+.jank .jank-mini-read [data-tone="miss"]::before {
+  content: "▲";
+  margin-right: 4px;
+  font-size: var(--jank-size-label);
+  vertical-align: 0.3em;
+}
+
+/* Controls */
+.jank .jank-icon {
+  width: 22px;
+  height: 20px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--jank-muted);
+  background: var(--jank-ink);
+  border: 1px solid var(--jank-control);
+}
+.jank .jank-pause {
+  width: 7px;
+  height: 8px;
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+}
+.jank .jank-dash {
+  width: 8px;
+  height: 1px;
+  background: currentColor;
+}
+.jank .jank-btn {
+  height: 28px;
+  padding: 0 10px;
+  font-size: var(--jank-size-label);
+  letter-spacing: var(--jank-track-label);
+  color: var(--jank-text);
+  background: var(--jank-ink);
+  border: 1px solid var(--jank-control);
+}
+.jank .jank-btn.jank-small {
+  height: 20px;
+  padding: 0 6px;
+  letter-spacing: 0.1em;
+  color: var(--jank-muted);
+}
+.jank .jank-toggle {
+  height: 18px;
+  padding: 0 6px;
+  font-size: var(--jank-size-label);
+  letter-spacing: 0.08em;
+  color: var(--jank-muted);
+  background: var(--jank-ink);
+  border: 1px solid var(--jank-control);
+}
+.jank .jank-btn:disabled,
+.jank .jank-toggle:disabled {
+  color: var(--jank-faint);
+  background: var(--jank-ink);
+  border-color: var(--jank-line-strong);
+  font-weight: 400;
+}
+.jank button:not(:disabled):hover {
+  color: var(--jank-bright);
+}
+.jank input,
+.jank select {
+  height: 20px;
+  padding: 0 4px;
+  font-size: var(--jank-size-body);
+  color: var(--jank-text);
+  background: var(--jank-ink);
+  border: 1px solid var(--jank-line-strong);
+}
+.jank input {
+  width: 72px;
+  text-align: right;
+  appearance: textfield;
+}
+.jank input::-webkit-inner-spin-button,
+.jank input::-webkit-outer-spin-button {
+  appearance: none;
+}
+.jank [aria-invalid="true"] {
+  border-color: var(--jank-text);
+}
+.jank select {
+  font-size: var(--jank-size-label);
+}
+
+/* Inverted states: chips, active tab, primary, pressed and latched controls. */
+.jank .jank-chip,
+.jank .jank-tab[aria-selected="true"],
+.jank .jank-toggle[aria-pressed="true"],
+.jank .jank-btn[aria-pressed="true"],
+.jank .jank-primary,
+.jank .jank-icon[aria-pressed="true"],
+.jank .jank-seg button[aria-pressed="true"],
+.jank[data-recording="true"] [data-action="record"] {
+  color: var(--jank-ink);
+  background: var(--jank-text);
+  border-color: var(--jank-text);
+  font-weight: 600;
+}
+.jank .jank-chip[data-tone="off"] {
+  color: var(--jank-muted);
+  background: var(--jank-ink);
+  border: 1px solid var(--jank-control);
+  font-weight: 400;
+}
+.jank .jank-tab[aria-selected="true"]:focus-visible,
+.jank .jank-toggle[aria-pressed="true"]:focus-visible,
+.jank .jank-btn[aria-pressed="true"]:focus-visible,
+.jank .jank-primary:focus-visible,
+.jank .jank-icon[aria-pressed="true"]:focus-visible,
+.jank .jank-seg button[aria-pressed="true"]:focus-visible,
+.jank[data-recording="true"] [data-action="record"]:focus-visible {
+  outline-color: var(--jank-ink);
+}
+.jank .jank-tab[aria-selected="true"]:hover,
+.jank .jank-toggle[aria-pressed="true"]:not(:disabled):hover,
+.jank .jank-btn[aria-pressed="true"]:hover,
+.jank .jank-primary:not(:disabled):hover,
+.jank .jank-icon[aria-pressed="true"]:hover,
+.jank .jank-seg button[aria-pressed="true"]:hover,
+.jank[data-recording="true"] [data-action="record"]:hover {
+  color: var(--jank-ink);
+  background: var(--jank-bright);
+}
+.jank .jank-chip {
+  padding: 0 6px;
+  line-height: 18px;
+  letter-spacing: 0.08em;
+}
+
+/* Line: one row */
+.jank .jank-line {
+  height: var(--jank-line-h);
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.jank .jank-read {
+  color: var(--jank-dim);
+}
+.jank .jank-read b {
+  color: var(--jank-text);
+}
+.jank .jank-line .jank-chip {
+  font-size: var(--jank-size-label);
+  line-height: 16px;
+  padding: 0 5px;
+}
+.jank .jank-line .jank-icon {
+  width: 20px;
+}
+.jank .jank-line .jank-chip:not([hidden]) + .jank-icon {
+  margin-left: 0;
+}
+
+/* Mini: a corner HUD */
+.jank .jank-mini-head {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 3px 0 8px;
+  border-bottom: 1px solid var(--jank-line);
+}
+.jank .jank-mini .jank-word {
+  font-size: var(--jank-size-label);
+}
+.jank .jank-mini .jank-chip {
+  font-size: var(--jank-size-axis);
+  line-height: 14px;
+  padding: 0 4px;
+}
+.jank .jank-icons {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.jank .jank-mini .jank-icons {
+  gap: 2px;
+}
+.jank .jank-mini .jank-icon {
+  width: 18px;
+  height: 18px;
+}
+.jank .jank-mini-read {
+  height: 28px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 8px 0;
+  font-size: var(--jank-size-label);
+  color: var(--jank-dim);
+}
+.jank .jank-mini-read b {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--jank-text);
+}
+.jank .jank-mini-read b[data-tone="miss"] {
+  color: var(--jank-miss);
+}
+.jank .jank-mini-graph {
+  display: block;
+  width: calc(100% - 4px);
+  height: 36px;
+  margin: 2px 2px 0;
+}
+.jank .jank-mini-foot {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px;
+  border-top: 1px solid var(--jank-line);
+  font-size: var(--jank-size-label);
+  white-space: nowrap;
+}
+
+/* Full: header, tabs, the active tab and the overhead */
+.jank .jank-full {
+  flex-direction: column;
+  max-height: calc(100vh - 2 * var(--jank-inset));
+}
+.jank .jank-head {
+  height: var(--jank-header-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--jank-line);
+  white-space: nowrap;
+}
+.jank .jank-state {
+  color: var(--jank-muted);
+}
+.jank .jank-tabs {
+  height: var(--jank-tabs-h);
+  flex: none;
+  display: flex;
+  border-bottom: 1px solid var(--jank-line);
+  font-size: var(--jank-size-label);
+  letter-spacing: var(--jank-track-label);
+}
+.jank .jank-tab {
+  padding: 0 10px;
+  color: var(--jank-muted);
+}
+.jank .jank-budget {
+  margin-left: auto;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  color: var(--jank-dim);
+  white-space: nowrap;
+}
+.jank .jank-sr,
+.jank .jank-summary:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.jank .jank-summary:focus {
+  height: 24px;
+  margin: 6px 10px 0;
+  padding: 0 10px;
+  align-self: flex-start;
+  font-size: var(--jank-size-label);
+  letter-spacing: var(--jank-track-label);
+  border: 1px solid var(--jank-control);
+}
+.jank .jank-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--jank-control) var(--jank-ink);
+}
+
+/* Tiles: the stat values, and the graph's text alternative */
+.jank .jank-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.jank .jank-tile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border-right: 1px solid var(--jank-line);
+  border-bottom: 1px solid var(--jank-line);
+}
+.jank .jank-tile:nth-child(3n) {
+  border-right: 0;
+}
+.jank .jank-label {
+  font-size: var(--jank-size-label);
+  letter-spacing: var(--jank-track-label);
+  color: var(--jank-dim);
+}
+.jank .jank-tile-v {
+  font-size: var(--jank-size-tile);
+  line-height: 28px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.jank .jank-tiles-1 .jank-tile:nth-child(2) .jank-tile-v {
+  color: var(--jank-dim);
+}
+.jank .jank-graph-box {
+  padding: 10px 10px 0;
+}
+.jank .jank-graph {
+  display: block;
+  width: 100%;
+  height: 120px;
+}
+
+/* Sections are rules, never boxes */
+.jank .jank-sec {
+  border-top: 1px solid var(--jank-line);
+  padding-bottom: 4px;
+}
+.jank .jank-first {
+  border-top: 0;
+}
+.jank .jank-h {
+  height: 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px 2px;
+  font-size: var(--jank-size-label);
+  letter-spacing: var(--jank-track-label);
+  color: var(--jank-muted);
+  white-space: nowrap;
+}
+.jank .jank-h .jank-toggle {
+  margin-bottom: 1px;
+}
+.jank .jank-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  letter-spacing: 0;
+  color: var(--jank-dim);
+}
+.jank .jank-src {
+  padding: 0 4px;
+  line-height: 14px;
+  border: 1px solid var(--jank-control);
+}
+.jank .jank-note {
+  padding: 0 10px 4px;
+  font-size: var(--jank-size-label);
+  line-height: 16px;
+  color: var(--jank-dim);
+}
+.jank .jank-note.jank-pad {
+  padding: 4px 10px 6px;
+}
+.jank .jank-error {
+  padding: 0 10px 8px;
+  font-size: var(--jank-size-label);
+  line-height: 16px;
+}
+
+/* Rows: label, dotted leader, value */
+.jank .jank-row,
+.jank .jank-stage {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+}
+.jank .jank-k {
+  color: var(--jank-muted);
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+.jank .jank-v {
+  white-space: nowrap;
+}
+.jank .jank-lead {
+  position: relative;
+  flex: 1;
+  align-self: stretch;
+  background: radial-gradient(circle, var(--jank-graph) 0.8px, transparent 1px)
+    0 0 / 5px 20px;
+}
+.jank .jank-lead i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: radial-gradient(circle, var(--jank-soft) 0.9px, transparent 1.1px)
+    0 0 / 5px 20px;
+}
+.jank [data-tone="heavy"] .jank-k,
+.jank [data-tone="now"] .jank-k {
+  color: var(--jank-text);
+}
+.jank [data-tone="heavy"] .jank-v,
+.jank [data-tone="now"] .jank-v {
+  font-weight: 600;
+}
+.jank [data-tone="heavy"] .jank-lead i,
+.jank [data-tone="now"] .jank-lead i {
+  background-image: radial-gradient(
+    circle,
+    var(--jank-bright) 1px,
+    transparent 1.2px
+  );
+}
+.jank [data-tone="now"] {
+  background: var(--jank-row);
+}
+.jank [data-tone="dim"] .jank-k {
+  color: var(--jank-dim);
+}
+.jank [data-tone="dim"] .jank-v,
+.jank [data-k="sessions"] .jank-row:not([data-tone="now"]) .jank-v {
+  color: var(--jank-muted);
+}
+.jank [data-tone="dim"] .jank-lead i,
+.jank [data-k="sessions"] .jank-row:not([data-tone="now"]) .jank-lead i {
+  background-image: radial-gradient(
+    circle,
+    var(--jank-faint) 0.9px,
+    transparent 1.1px
+  );
+}
+/* Dashed: periodic or delayed samples, never exact per frame */
+.jank .jank-dashed .jank-lead {
+  background: linear-gradient(90deg, var(--jank-line-strong) 3px, transparent 0)
+    0 50% / 5px 1px repeat-x;
+}
+.jank .jank-dashed .jank-lead i {
+  background: linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 50%
+    / 5px 1px repeat-x;
+}
+.jank .jank-kv {
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+.jank .jank-kv > :first-child {
+  color: var(--jank-muted);
+  overflow: hidden;
+}
+.jank .jank-kv .jank-lead {
+  display: none;
+}
+.jank .jank-kv i {
+  color: var(--jank-dim);
+}
+.jank .jank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+  padding: 0 10px 2px;
+}
+.jank .jank-overhead .jank-kv,
+.jank .jank-culling .jank-kv {
+  padding: 0 10px;
+}
+.jank .jank-switch {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  color: var(--jank-muted);
+  white-space: nowrap;
+}
+.jank .jank-switch i {
+  color: var(--jank-dim);
+}
+.jank .jank-switch .jank-chip {
+  font-size: var(--jank-size-label);
+  line-height: 18px;
+}
+.jank .jank-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--jank-line);
+}
+.jank .jank-actions .jank-btn {
+  padding: 0 8px;
+}
+
+/* LOADING: stages on one shared axis, the cold run as a ghost behind */
+.jank .jank-axis {
+  width: calc(100% - 120px);
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  letter-spacing: 0;
+  color: var(--jank-dim);
+}
+.jank .jank-stage {
+  gap: 0;
+}
+.jank .jank-stage .jank-k {
+  width: 120px;
+  flex: none;
+  overflow: hidden;
+}
+.jank .jank-track {
+  position: relative;
+  flex: 1;
+  align-self: stretch;
+  background: radial-gradient(circle, var(--jank-line) 0.8px, transparent 1px) 0
+    0 / 5px 20px;
+}
+.jank .jank-track i {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 0;
+  height: 8px;
+}
+.jank .jank-ghost {
+  background: var(--jank-graph);
+}
+.jank .jank-bar {
+  background: var(--jank-soft);
+}
+.jank .jank-stage[data-tone="heavy"] .jank-bar {
+  background: var(--jank-bright);
+}
+.jank .jank-stage[data-tone="overlap"] .jank-k {
+  color: var(--jank-dim);
+}
+.jank .jank-stage[data-tone="overlap"] .jank-bar {
+  top: 9px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--jank-muted) 3px, transparent 0) 0 0 /
+    5px 2px repeat-x;
+}
+
+/* CAPTURE */
+.jank .jank-seg-row {
+  display: flex;
+  align-items: center;
+  padding: 2px 10px 8px;
+}
+.jank .jank-seg {
+  display: flex;
+}
+.jank .jank-seg button {
+  height: 24px;
+  padding: 0 10px;
+  margin-left: -1px;
+  color: var(--jank-muted);
+  border: 1px solid var(--jank-line-strong);
+}
+.jank .jank-seg button:first-child {
+  margin-left: 0;
+}
+.jank .jank-seg input {
+  height: 24px;
+  width: 64px;
+  margin-left: -1px;
+}
+.jank .jank-seg-row .jank-meta {
+  margin-left: auto;
+  color: var(--jank-muted);
+}
+.jank .jank-edit {
+  color: var(--jank-text);
+  cursor: text;
+}
+.jank .jank-cap {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+}
+.jank .jank-thumb {
+  width: 60px;
+  height: 24px;
+  flex: none;
+  background: radial-gradient(circle, var(--jank-line) 0.8px, transparent 1px) 0
+    0 / 5px 8px;
+}
+.jank .jank-cap-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.jank .jank-n,
+.jank .jank-near {
+  color: var(--jank-dim);
+}
+.jank .jank-near {
+  overflow: hidden;
+  font-size: var(--jank-size-label);
+}
+.jank .jank-cap .jank-btn {
+  margin-left: auto;
+}
+
+/* OVERHEAD: the tool's own cost, pinned under every tab */
+.jank .jank-overhead {
+  flex: none;
+  padding-bottom: 0;
+}
+.jank .jank-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: 12px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--jank-line);
+  font-size: var(--jank-size-label);
+  line-height: 16px;
+  color: var(--jank-dim);
+}
+
+.jank-culling-bounds {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}

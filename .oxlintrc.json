@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "promise", "vitest"],
+  "jsPlugins": ["@stylistic/eslint-plugin"],
+  "rules": {
+    "@stylistic/padding-line-between-statements": [
+      "error",
+      { "blankLine": "always", "prev": "*", "next": "*" }
+    ]
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "reference/**",
+    "dist/**",
+    "dist-package/**",
+    "artifacts/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    "pnpm-lock.yaml",
+    "OPEN RECORDING VIEWER.html"
+  ]
+}

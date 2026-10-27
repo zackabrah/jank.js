@@ -1,0 +1,15 @@
+node_modules/
+.pnpm-store/
+dist/
+dist-package/
+artifacts/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+.env
+.env.*
+*.tgz
+
+# Generated offline viewer; build it from tool source.
+OPEN RECORDING VIEWER.html

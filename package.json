@@ -1,0 +1,84 @@
+{
+  "name": "jank.js",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5183 --strictPort --open /viewer/",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json --noEmit",
+    "lint": "oxlint --type-aware --deny-warnings --format=agent .",
+    "lint:fix": "oxlint --type-aware --fix .",
+    "format": "oxlint --allow all --deny @stylistic/padding-line-between-statements --fix . && oxfmt --write .",
+    "format:check": "oxlint --allow all --deny @stylistic/padding-line-between-statements . && oxfmt --check .",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "build": "pnpm typecheck && pnpm build:package",
+    "check": "pnpm verify:boundary && pnpm format:check && pnpm lint && pnpm test:run && pnpm build",
+    "build:package": "vite build --config vite.library.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",
+    "prepack": "pnpm build:package",
+    "test:package": "node scripts/package/verify.mjs",
+    "test:e2e": "playwright test",
+    "docs:images": "pnpm build && playwright test --project=chromium && node scripts/update-doc-images.mjs",
+    "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
+    "bench": "pnpm build:package && node scripts/benchmark.mjs",
+    "preview": "vite preview --outDir dist/viewer --host 127.0.0.1 --port 5183 --strictPort",
+    "verify:boundary": "node scripts/verify-boundary.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "@types/node": "22.20.3",
+    "@types/three": "0.186.0",
+    "@types/web": "0.0.356",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "three": "0.186.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@11.24.0",
+  "description": "An embeddable, dependency-free performance monitor for browser games and interactive graphics.",
+  "license": "MIT",
+  "author": "Isaac Johnson",
+  "keywords": [
+    "performance",
+    "profiler",
+    "fps",
+    "webgl",
+    "webgpu",
+    "game-development"
+  ],
+  "files": [
+    "dist-package",
+    "licenses",
+    "THIRD_PARTY_NOTICES.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "types": "./dist-package/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist-package/types/index.d.ts",
+      "import": "./dist-package/index.js"
+    },
+    "./adapters/three": {
+      "types": "./dist-package/types/adapters/three.d.ts",
+      "import": "./dist-package/adapters/three.js"
+    },
+    "./style.css": "./dist-package/style.css",
+    "./font.css": "./dist-package/font.css",
+    "./adapters/three-webgpu": {
+      "types": "./dist-package/types/adapters/three-webgpu.d.ts",
+      "import": "./dist-package/adapters/three-webgpu.js"
+    },
+    "./viewer.html": "./dist-package/viewer.html"
+  }
+}

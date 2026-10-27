@@ -1,0 +1,47 @@
+{
+  "measuredAt": "2026-10-26T10:35:19.875Z",
+  "renderer": "Three.js r186 WebGPURenderer",
+  "browser": "Playwright Chromium, headed",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+    "platform": "MacIntel",
+    "hardwareConcurrency": 14,
+    "crossOriginIsolated": false,
+    "viewport": {
+      "width": 1440,
+      "height": 1000,
+      "pixelRatio": 1
+    },
+    "cpuTimer": {
+      "source": "performance.now",
+      "estimatedResolutionMs": 0.10000002384185791,
+      "method": "minimum-observed-positive-delta",
+      "reads": 256
+    },
+    "gpuTimer": {
+      "source": "host",
+      "estimatedResolutionMs": null
+    }
+  },
+  "frames": 44,
+  "gpuSamples": 44,
+  "linkedSamples": 44,
+  "measurement": [
+    {
+      "label": "Three.js render passes (sum)",
+      "milliseconds": 2.031616
+    }
+  ],
+  "verified": [
+    "fresh asynchronous samples",
+    "explicit frame correlation",
+    "sum of render passes; no queue-span claim",
+    "disable control",
+    "validated recording export"
+  ],
+  "limitations": [
+    "One machine and pinned renderer revision only",
+    "Headless Chromium had no timestamp-query support",
+    "GPU timer resolution remains unknown"
+  ]
+}
