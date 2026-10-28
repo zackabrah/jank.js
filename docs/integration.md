@@ -156,6 +156,37 @@ Use `renderer.setAnimationLoop` so Three advances its native frame ID. The adapt
 
 The reported value is the **sum of render-pass durations** for one completed renderer frame. Queue span stays null. There are no individual named render-pass or compute timings in this adapter, and timestamps may be delayed or absent. For this intentionally small integration, [local hardware evidence](verification/webgpu.json) does not certify other devices. The current upstream [WebGPURenderer documentation](https://threejs.org/docs/pages/WebGPURenderer.html) describes the renderer; this adapter's pinned source contract remains authoritative for compatibility.
 
+## WebGL2 GPU timing
+
+`jank.js/adapters/webgl2` times named render passes with WebGL2 timer queries (`EXT_disjoint_timer_query_webgl2`) and has no renderer dependency. Chrome exposes the extension. Firefox disabled it as a high-precision timer, and support elsewhere varies, so where it's missing the source reports `unsupported` instead of estimating GPU time from CPU timing.
+
+```js
+import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
+const gpu = createWebGl2GpuSource(gl, {
+  onSample: (profile) => monitor.observeGpu(profile),
+});
+// Pass gpu to createPerformanceTray({ shell, monitor, gpu }).
+function frame(at) {
+  const id = monitor.beginFrame(at);
+  const start = performance.now();
+  gpu.beginPass("shadows");
+  drawShadows();
+  gpu.endPass();
+  gpu.beginPass("scene");
+  drawScene();
+  gpu.endPass();
+  monitor.endFrame(0, performance.now() - start);
+  gpu.captureFrame(id);
+  tray.refresh(at);
+  requestAnimationFrame(frame);
+}
+// At shutdown: gpu.dispose(), then the tray and monitor. The context stays yours.
+```
+
+Passes run one after another: WebGL2 allows one timer query at a time, so beginning a pass while another is open throws, as does capturing a frame with a pass still open. Results arrive a few frames late and are linked to the diagnostics frame that drew them. Results read during a disjoint event, such as a GPU power-state change, are dropped and counted. A lost context reports an error and recovers on the first frame after it is restored. Each frame times at most 32 passes, and at most 64 frames wait for results; anything beyond is counted as omitted or dropped. Disposal deletes only the adapter's queries.
+
+A timer query measures elapsed GPU time between its start and end, which can include other work the GPU interleaves, such as the page's compositor. Read pass times as an upper bound on the pass's own cost.
+
 ## Appearance and theming
 
 Import `jank.js/style.css` for the panel. It is self-contained: every rule is scoped under `.jank` and sets the properties it needs (font, colours, box sizing, line height), so the host's CSS does not restyle the panel and the panel does not leak into the host. The panel and offline viewer use system monospace fonts with no font downloads. Existing `jank.js/font.css` imports still resolve to an empty compatibility stylesheet and can be removed. Override `--jank-font` to use a host-provided font.

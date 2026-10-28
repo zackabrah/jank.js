@@ -6,6 +6,8 @@
 // compares them.
 import { createDiagnostics, createPerformanceTray } from "./index.js";
 
+import { createWebGl2GpuSource } from "./adapters/webgl2.js";
+
 import StatsGl from "./stats-gl/main.js";
 
 const canvas = document.querySelector("canvas");
@@ -130,14 +132,12 @@ const simulation = monitor.register("simulation", "simulation"),
   sorting = monitor.register("spike", "spike sort"),
   submitting = monitor.register("render", "render submit");
 
-// GPU layer: a full-screen WebGL2 shader whose per-pixel work a control sets, timed with GPU
-// timer queries and reported the way a host's GPU source reports it. Freshly generated
-// shaders, compiled on demand, cause real compile hitches.
+// GPU layer: a full-screen WebGL2 shader whose per-pixel work a control sets, timed by
+// jank.js/adapters/webgl2 exactly as a host would wire it. Freshly generated shaders,
+// compiled on demand, cause real compile hitches.
 const gpuCanvas = document.querySelector("#gpu-canvas");
 
 const gl = gpuCanvas.getContext("webgl2", { antialias: false });
-
-const timer = gl?.getExtension("EXT_disjoint_timer_query_webgl2") ?? null;
 
 const vertexSource = `#version 300 es
 in vec2 corner;
@@ -213,78 +213,28 @@ if (gl) {
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 }
 
-const gpuQueries = [],
-  gpuSamples = [];
+// Each sample goes to the monitor, which links it to its frame, and to the prototype verdict.
+const gpuSamples = [];
 
-let gpuEnabled = true,
-  gpuFrame = 0,
-  gpuSample = null;
+const gpu = gl
+  ? createWebGl2GpuSource(gl, {
+      onSample(profile) {
+        monitor.observeGpu(profile);
 
-/** The GPU profile jank.js expects from a host's GPU source. */
-function gpuProfile() {
-  let status = "ready";
+        gpuSamples.push(
+          profile.passes.reduce(
+            (sum, pass) => sum + (pass.milliseconds ?? 0),
+            0,
+          ),
+        );
 
-  if (!timer) status = "unsupported";
-  else if (!gpuEnabled || !gpuSample)
-    status = gpuEnabled ? "pending" : "disabled";
+        if (gpuSamples.length > 600) gpuSamples.shift();
+      },
+    })
+  : undefined;
 
-  return {
-    diagnosticFrame: gpuSample?.id ?? null,
-    available: timer !== null,
-    enabled: gpuEnabled,
-    status,
-    currentFrame: gpuFrame,
-    sampleFrame: gpuSample?.frame ?? null,
-    sampleAgeFrames: gpuSample ? gpuFrame - gpuSample.frame : null,
-    gpuMilliseconds: null,
-    passes: gpuSample
-      ? [{ label: "fullscreen shader", milliseconds: gpuSample.ms }]
-      : [],
-    droppedFrames: 0,
-    truncatedPasses: 0,
-    error: null,
-  };
-}
-
-const gpu = {
-  label: "WebGL2 timer queries",
-  read: gpuProfile,
-  setEnabled(enabled) {
-    gpuEnabled = enabled;
-  },
-};
-
-/** Reads finished timer queries, oldest first, and hands each sample to the monitor. */
-function collectGpu() {
-  const disjoint = gl.getParameter(timer.GPU_DISJOINT_EXT);
-
-  while (
-    gpuQueries.length &&
-    gl.getQueryParameter(gpuQueries[0].query, gl.QUERY_RESULT_AVAILABLE)
-  ) {
-    const { query, id, frame: issued, at } = gpuQueries.shift();
-
-    const nanoseconds = gl.getQueryParameter(query, gl.QUERY_RESULT);
-
-    gl.deleteQuery(query);
-
-    // A disjoint event, such as a power-state change, makes the result meaningless.
-    if (disjoint) continue;
-
-    gpuSample = { id, frame: issued, at, ms: nanoseconds / 1e6 };
-
-    gpuSamples.push(gpuSample);
-
-    if (gpuSamples.length > 600) gpuSamples.shift();
-
-    monitor.observeGpu(gpuProfile());
-  }
-}
-
-/** Draws the full-screen shader, timing it on the GPU when the browser allows. */
-function drawGpu(id, at) {
-  gpuFrame++;
-
+/** Draws the full-screen shader as one timed pass. */
+function drawGpu(at) {
   if (gpuCanvas.width !== innerWidth || gpuCanvas.height !== innerHeight) {
     gpuCanvas.width = innerWidth;
     gpuCanvas.height = innerHeight;
@@ -292,9 +242,7 @@ function drawGpu(id, at) {
     gl.viewport(0, 0, innerWidth, innerHeight);
   }
 
-  const query = timer && gpuEnabled ? gl.createQuery() : null;
-
-  if (query) gl.beginQuery(timer.TIME_ELAPSED_EXT, query);
+  gpu.beginPass("fullscreen shader");
 
   gl.useProgram(loadProgram);
   gl.uniform1i(
@@ -304,13 +252,7 @@ function drawGpu(id, at) {
   gl.uniform1f(gl.getUniformLocation(loadProgram, "time"), at / 1000);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-  if (query) {
-    gl.endQuery(timer.TIME_ELAPSED_EXT);
-
-    gpuQueries.push({ query, id, frame: gpuFrame, at });
-  }
-
-  if (timer) collectGpu();
+  gpu.endPass();
 }
 
 /**
@@ -492,7 +434,7 @@ function frame(at) {
   if (!step && gl && (stress.gpuIterations || stress.shaderEveryMs)) {
     token = submitting.begin();
 
-    if (stress.gpuIterations) drawGpu(id, at);
+    if (stress.gpuIterations) drawGpu(at);
 
     if (stress.shaderEveryMs && at >= nextShader) {
       nextShader = at + stress.shaderEveryMs;
@@ -503,6 +445,8 @@ function frame(at) {
     }
 
     submitting.end(token);
+
+    gpu.captureFrame(id);
   }
 
   gpuCanvas.hidden = !stress.gpuIterations;
@@ -660,14 +604,14 @@ function codeTime(samples) {
 
 /** The GPU's share of a frame, from recent timer-query samples, or why there's none. */
 function gpuLine(frameMs) {
-  if (!timer)
+  if (gpu?.read().available !== true)
     return "  gpu         no GPU timing in this browser; it may be the GPU";
 
   const recent = gpuSamples.slice(-30);
 
   if (!recent.length) return "  gpu         waiting for GPU samples";
 
-  const ms = recent.reduce((sum, sample) => sum + sample.ms, 0) / recent.length;
+  const ms = recent.reduce((sum, sample) => sum + sample, 0) / recent.length;
 
   const bound = ms > frameMs * 0.8 ? " · GPU-bound" : "";
 
@@ -771,6 +715,8 @@ function judge() {
       `  everything else ${(longMs - code.total / stutters.length).toFixed(0)} ms`,
       `  near ${near.size ? [...near].slice(0, 2).join(", ") : "no event"}`,
     );
+
+    if (stress.gpuIterations) lines.push(gpuLine(longMs));
   }
 
   verdictDetail.textContent = lines.join("\n");

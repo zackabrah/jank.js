@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add `jank.js/adapters/webgl2`, which times named WebGL2 render passes with `EXT_disjoint_timer_query_webgl2` and links each sample to the frame that drew it. Where the browser doesn't expose the extension it reports `unsupported` rather than estimating GPU time from CPU timing.
 - Use system monospace fonts in the panel and offline viewer, removing bundled font downloads. The `jank.js/font.css` export remains as an empty compatibility stylesheet.
 - Minify packaged panel CSS while retaining the `--jank-*` theming properties.
 

@@ -23,10 +23,10 @@ export default defineConfig({
       // Floors at the measured levels, so coverage can rise but never quietly fall. The
       // viewer and graph drawing are canvas and DOM code covered by the Playwright suite.
       thresholds: {
-        lines: 66,
-        statements: 64,
-        functions: 68,
-        branches: 60,
+        lines: 67,
+        statements: 65,
+        functions: 69,
+        branches: 61,
         "src/core/**": {
           lines: 91,
           statements: 88,

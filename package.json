@@ -111,6 +111,10 @@
       "types": "./dist-package/types/adapters/three-webgpu.d.ts",
       "import": "./dist-package/adapters/three-webgpu.js"
     },
+    "./adapters/webgl2": {
+      "types": "./dist-package/types/adapters/webgl2.d.ts",
+      "import": "./dist-package/adapters/webgl2.js"
+    },
     "./viewer.html": "./dist-package/viewer.html"
   }
 }
