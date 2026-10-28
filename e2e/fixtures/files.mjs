@@ -6,6 +6,8 @@ const named = new Map([
   ["game.js", "e2e/fixtures/game.js"],
   ["load.html", "e2e/fixtures/load.html"],
   ["load.js", "e2e/fixtures/load.js"],
+  ["extremes.html", "e2e/fixtures/extremes.html"],
+  ["extremes.js", "e2e/fixtures/extremes.js"],
   ["stats.min.js", "node_modules/stats.js/build/stats.min.js"],
 ]);
 

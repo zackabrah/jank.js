@@ -33,6 +33,26 @@ describe("exact frame capture", () => {
     ).toMatchObject({ id: first, interval: 20, update: 3, render: 5 });
   });
 
+  // What: when repeated timestamps add work into one frame, a total that would overflow to
+  // Infinity is not added, so the frame keeps finite work and the recording still loads.
+  // Why: fast-check found this. Two host-reported render times that are each finite (1.8e308
+  // and 1e292 ms) summed to Infinity, and the viewer then refused the whole recording.
+  it("keeps a frame's work finite when added work would overflow", () => {
+    const monitor = createDiagnostics(() => 0);
+
+    monitor.startRecording();
+    monitor.beginFrame(0);
+    monitor.endFrame(0, Number.MAX_VALUE);
+    monitor.beginFrame(0);
+    monitor.endFrame(0, 9.9792015476736e291);
+    monitor.beginFrame(16);
+
+    const frame = parseRecording(serializeRecording(monitor.export()))
+      .frames[0];
+
+    expect(frame).toMatchObject({ update: 0, render: Number.MAX_VALUE });
+  });
+
   it("unions nested and overlapping systems and does not invent CPU work in the remainder", () => {
     let now = 0;
 

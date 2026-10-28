@@ -597,7 +597,14 @@ export function createDiagnostics(
 
       const cost = costClock();
 
-      if (finiteDuration(update) && finiteDuration(render)) {
+      // Repeated coarse timestamps add work into one frame. Each value can be finite while
+      // the total overflows, and an Infinity would make the recording unloadable.
+      if (
+        finiteDuration(update) &&
+        finiteDuration(render) &&
+        finiteDuration(pending.update + update) &&
+        finiteDuration(pending.render + render)
+      ) {
         pending.update += update;
         pending.render += render;
       }
