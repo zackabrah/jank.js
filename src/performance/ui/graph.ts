@@ -141,7 +141,10 @@ export function plate(
 }
 
 export interface FrameGraph {
+  /** Visible width. The bars canvas is `margin` wider, with the extra hidden off its left. */
   width: number;
+  /** Bars drawn beyond the left edge, so the bars can glide between redraws without a gap. */
+  margin: number;
   /** Height of the bar area; event ticks and labels draw below it. */
   height: number;
   pitch: number;
@@ -151,9 +154,14 @@ export interface FrameGraph {
   budgetColor: string;
 }
 
-/** Newest frame at the right edge; orange beyond `limitMs`, the budget plus timer precision. */
+/**
+ * Newest frame at the right edge; orange beyond `limitMs`, the budget plus timer precision.
+ * Bars, the budget line and markers go on `context`, which can move; labels go on `text`,
+ * which never does. Without `text`, labels share the bars canvas.
+ */
 export function drawFrameGraph(
   context: CanvasRenderingContext2D,
+  text: CanvasRenderingContext2D | null,
   theme: GraphTheme,
   frames: readonly DiagnosticFrame[],
   budgetMs: number,
@@ -161,11 +169,16 @@ export function drawFrameGraph(
   graph: FrameGraph,
   events: readonly DiagnosticEvent[] = [],
 ) {
-  const { width, height, pitch, bar } = graph;
+  const { width, margin, height, pitch, bar } = graph;
 
-  const count = Math.min(frames.length, Math.floor(width / pitch));
+  const full = width + margin;
 
-  const first = frames.length - count;
+  const count = Math.min(frames.length, Math.floor(width / pitch)),
+    drawn = Math.min(frames.length, Math.floor(full / pitch));
+
+  // The worst frame is judged over what's visible; the hidden margin only feeds the glide.
+  const first = frames.length - count,
+    drawnFirst = frames.length - drawn;
 
   let worst = first;
 
@@ -178,23 +191,29 @@ export function drawFrameGraph(
 
   const peak = frames[worst]?.interval ?? 0;
 
+  let tallest = peak;
+
+  for (let i = drawnFirst; i < first; i++)
+    tallest = Math.max(tallest, frames[i]!.interval);
+
   if (graph.labels) {
     context.fillStyle = theme.line;
 
     for (let y = guideSpacing / 2; y < height; y += guideSpacing)
-      for (let dot = 0; dot < width; dot += dotSpacing)
+      for (let dot = 0; dot < full; dot += dotSpacing)
         context.fillRect(dot, y, 1, 1);
   }
 
-  // The tallest bar always fits below the worst label; nothing is clipped.
+  // The tallest drawn bar, margin included, fits below the labels; nothing is clipped as the
+  // bars glide.
   const scale =
     height /
-    Math.max(budgetMs * budgetHeadroom, (peak * height) / (height - top));
+    Math.max(budgetMs * budgetHeadroom, (tallest * height) / (height - top));
 
   /** Left edge of frame i's bar, right-aligned so the newest frame ends at the canvas edge. */
-  const x = (i: number) => width - (frames.length - i) * pitch + (pitch - bar);
+  const x = (i: number) => full - (frames.length - i) * pitch + (pitch - bar);
 
-  for (let i = first; i < frames.length; i++) {
+  for (let i = drawnFirst; i < frames.length; i++) {
     const frame = frames[i]!;
 
     if (frame.interval > limitMs) context.fillStyle = theme.miss;
@@ -210,19 +229,23 @@ export function drawFrameGraph(
 
   context.lineWidth = 1;
 
-  strokeBudgetLine(context, budgetY, 0, width, graph.budgetColor);
+  strokeBudgetLine(context, budgetY, 0, full, graph.budgetColor);
 
   if (!graph.labels || !count) return;
 
-  context.font = `10px ${theme.font}`;
+  // Labels are placed in the visible width; on the bars canvas that starts after the margin.
+  const label = text ?? context,
+    shift = text ? 0 : margin;
+
+  context.font = label.font = `10px ${theme.font}`;
 
   const budgetText = budgetMs.toFixed(1);
 
   plate(
-    context,
+    label,
     theme,
     budgetText,
-    width - context.measureText(budgetText).width - platePadding,
+    shift + width - label.measureText(budgetText).width - platePadding,
     budgetY - budgetLabelLift,
     theme.muted,
   );
@@ -240,22 +263,22 @@ export function drawFrameGraph(
   );
 
   const worstWidth = plate(
-    context,
+    label,
     theme,
     `worst ${peak.toFixed(1)}`,
-    platePadding,
+    shift + platePadding,
     0,
     worstColor,
   );
 
   // Each event's icon sits under the frame that contains it; where icons would overlap the
   // newer one wins. The newest event is named in a fixed place, opposite the worst frame.
-  const start = frames[first]!.at - frames[first]!.interval,
+  const start = frames[drawnFirst]!.at - frames[drawnFirst]!.interval,
     end = frames.at(-1)!.at;
 
   const marks: { label: string; at: number; tick: number }[] = [];
 
-  let frame = first;
+  let frame = drawnFirst;
 
   for (const event of events) {
     if (event.at < start || event.at > end) continue;
@@ -280,7 +303,7 @@ export function drawFrameGraph(
     const half = context.measureText(glyph).width / 2;
 
     // Kept inside the canvas, so an icon at either edge is never cut in half.
-    const left = Math.min(width - 2 * half, Math.max(0, mark.tick - half));
+    const left = Math.min(full - 2 * half, Math.max(0, mark.tick - half));
 
     if (left + 2 * half > free) continue;
 
@@ -290,7 +313,7 @@ export function drawFrameGraph(
     free = left - glyphGap;
   }
 
-  const { glyph, text } = eventGlyph(newest.label);
+  const { glyph, text: name } = eventGlyph(newest.label);
 
   const age = ` · ${((end - newest.at) / msPerSecond).toFixed(1)} s ago`;
 
@@ -302,13 +325,13 @@ export function drawFrameGraph(
     glyph.length -
     1;
 
-  const label = `${glyph} ${shorten(text.toLowerCase(), Math.max(0, room))}${age}`;
+  const caption = `${glyph} ${shorten(name.toLowerCase(), Math.max(0, room))}${age}`;
 
   plate(
-    context,
-    theme,
     label,
-    width - context.measureText(label).width - platePadding,
+    theme,
+    caption,
+    shift + width - label.measureText(caption).width - platePadding,
     0,
     theme.muted,
   );

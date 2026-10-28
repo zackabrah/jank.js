@@ -670,6 +670,70 @@ interface Row {
 const part = (from: HTMLElement, selector: string) =>
   findIn(from, selector, HTMLElement);
 
+/** Bars drawn beyond a graph's left edge, so a glide never reveals a gap. */
+const glideFrames = 40;
+
+let motionQuery: MediaQueryList | undefined;
+
+/** True when the user's system asks for less motion; graphs then jump between redraws. */
+function reducedMotion() {
+  motionQuery ??= globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
+
+  return motionQuery?.matches ?? false;
+}
+
+/**
+ * Slides a graph's bars from where they were back to rest after each redraw, so they glide
+ * instead of jumping. Only the motion is smoothed: every bar is a measured frame, drawn where
+ * it belongs once the glide ends. The compositor runs the animation, so it costs no script.
+ */
+function glider(canvas: HTMLCanvasElement) {
+  let newest = -1,
+    drawnAt = 0,
+    from = 0,
+    duration = 0,
+    animation: Animation | null = null;
+
+  return (frameId: number | undefined, redrawMs: number) => {
+    const now = performance.now();
+
+    const steps = newest < 0 || frameId === undefined ? 0 : frameId - newest;
+
+    // Distance still to travel from an unfinished glide, so motion carries on rather than jumping.
+    const elapsed = animation?.currentTime;
+
+    const carry =
+      animation && typeof elapsed === "number" && duration
+        ? from * Math.max(0, 1 - elapsed / duration)
+        : 0;
+
+    const gap = now - drawnAt;
+
+    newest = frameId ?? -1;
+
+    drawnAt = now;
+
+    animation?.cancel();
+
+    animation = null;
+
+    if (steps <= 0 || reducedMotion() || typeof canvas.animate !== "function")
+      return;
+
+    from = Math.min(glideFrames * graphPitch, steps * graphPitch + carry);
+
+    duration = Math.min(Math.max(gap, redrawMs), 2 * redrawMs);
+
+    animation = canvas.animate(
+      [{ transform: `translateX(${from}px)` }, { transform: "none" }],
+      { duration, easing: "linear" },
+    );
+    // Start on this frame's clock: a new animation otherwise waits a frame, and the bars
+    // would pause at every redraw.
+    animation.startTime = document.timeline.currentTime;
+  };
+}
+
 /** Unique ids when more than one panel mounts. */
 let trayCount = 0;
 
@@ -724,9 +788,15 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     panel: find(`[data-panel="${name}"]`, HTMLDivElement),
   }));
 
-  const graphCanvas = find('[data-k="graph"]', HTMLCanvasElement);
+  const graphView = find('[data-k="graph-view"]', HTMLElement),
+    graphCanvas = find('[data-k="graph"]', HTMLCanvasElement),
+    graphText = find('[data-k="graph-text"]', HTMLCanvasElement);
 
-  const miniCanvas = find('[data-k="mini-graph"]', HTMLCanvasElement);
+  const miniView = find('[data-k="mini-view"]', HTMLElement),
+    miniCanvas = find('[data-k="mini-graph"]', HTMLCanvasElement);
+
+  const glideGraph = glider(graphCanvas),
+    glideMini = glider(miniCanvas);
 
   const freezeButton = action("freeze"),
     freezeIcon = action("freeze-icon"),
@@ -1009,16 +1079,16 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       for (const entry of entries) {
         const next = Math.floor(entry.contentRect.width);
 
-        if (entry.target === graphCanvas && next) graphWidth = next;
+        if (entry.target === graphView && next) graphWidth = next;
 
-        if (entry.target === miniCanvas && next) miniWidth = next;
+        if (entry.target === miniView && next) miniWidth = next;
       }
 
       dirty = true;
     });
 
-    sizes.observe(graphCanvas);
-    sizes.observe(miniCanvas);
+    sizes.observe(graphView);
+    sizes.observe(miniView);
 
     abort.signal.addEventListener("abort", () => sizes.disconnect());
   }
@@ -1842,32 +1912,50 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     flag(label, "title", top ? `heaviest cpu scope: ${top.label}` : "");
 
-    draw(miniCanvas, miniWidth, miniHeight, frames, false);
+    draw(miniCanvas, null, miniWidth, miniHeight, frames, false);
+
+    glideMini(frames.at(-1)?.id, redrawMs());
   }
 
-  /** Draws the frame-time graph on a canvas, with axis labels when asked. */
+  /** The redraw period the panel is running at now, which a glide spans. */
+  const redrawMs = () =>
+    mode === trayMode.line || lowered ? slowRefreshMs : fastRefreshMs;
+
+  /**
+   * Draws the frame-time graph: bars on a canvas wider than its view, so they can glide, and
+   * labels, when asked, on a fixed canvas over them.
+   */
   function draw(
     canvas: HTMLCanvasElement,
+    text: HTMLCanvasElement | null,
     canvasWidth: number,
     height: number,
     frames: readonly DiagnosticFrame[],
     labels: boolean,
     events: readonly DiagnosticEvent[] = [],
   ) {
-    const context = prepareCanvas(canvas, canvasWidth, height);
+    const margin = glideFrames * graphPitch;
+
+    const context = prepareCanvas(canvas, canvasWidth + margin, height);
 
     if (!context) return;
+
+    const cssWidth = `${canvasWidth + margin}px`;
+
+    if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth;
 
     theme ??= graphTheme(root);
 
     drawFrameGraph(
       context,
+      text ? prepareCanvas(text, canvasWidth, height) : null,
       theme,
       frames,
       budgetMs,
       limit(),
       {
         width: canvasWidth,
+        margin,
         height: labels ? height - graphLabelHeight : height,
         pitch: graphPitch,
         bar: 2,
@@ -1914,7 +2002,17 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     const frames = snapshot.frames;
 
-    draw(graphCanvas, graphWidth, graphHeight, frames, true, snapshot.events);
+    draw(
+      graphCanvas,
+      graphText,
+      graphWidth,
+      graphHeight,
+      frames,
+      true,
+      snapshot.events,
+    );
+
+    glideGraph(frames.at(-1)?.id, redrawMs());
 
     const recent = snapshot.events.slice(-recentEventLimit).toReversed();
 

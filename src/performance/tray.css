@@ -331,11 +331,20 @@
 .jank .jank-mini-read b[data-tone="miss"] {
   color: var(--jank-miss);
 }
-.jank .jank-mini-graph {
-  display: block;
-  width: calc(100% - 4px);
+/* Graph views clip a bars canvas that is wider than the view and right-aligned in it, so the
+   bars can glide between redraws without a gap at the left edge. */
+.jank .jank-mini-view {
+  position: relative;
   height: 36px;
   margin: 2px 2px 0;
+  overflow: hidden;
+}
+.jank .jank-mini-graph,
+.jank .jank-graph {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
 }
 .jank .jank-mini-foot {
   height: 20px;
@@ -447,10 +456,18 @@
 .jank .jank-graph-box {
   padding: 10px 10px 0;
 }
-.jank .jank-graph {
-  display: block;
-  width: 100%;
+.jank .jank-graph-view {
+  position: relative;
   height: 120px;
+  overflow: hidden;
+}
+/* Labels sit on their own canvas over the bars and never move. */
+.jank .jank-graph-text {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 /* Sections are rules, never boxes */
