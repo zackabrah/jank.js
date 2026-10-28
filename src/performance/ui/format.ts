@@ -3,11 +3,24 @@ import type { RecordingEnvironment } from "../../core/recording-types.ts";
 /** Shared readout formatting for the panel and the viewer. Values are never smoothed. */
 const grouped = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
-const million = 1e6;
+/** Large counters scale to millions, billions and trillions; beyond, powers of ten. */
+const million = 1e6,
+  billion = 1e9,
+  trillion = 1e12;
+
+const counterScales = [
+  [trillion, "T"],
+  [billion, "B"],
+  [million, "M"],
+] as const;
+
+const exponentFrom = 1e15;
 
 const nsPerMs = 1e6;
 
 const usPerMs = 1000;
+
+const nsPerUs = nsPerMs / usPerMs;
 
 /** One microsecond, in milliseconds. */
 const microsecondMs = 0.001;
@@ -40,7 +53,13 @@ export function counter(value: number | string | boolean | null): string {
 
   if (typeof value === "string") return value;
 
-  if (Math.abs(value) >= million) return `${(value / million).toFixed(2)}M`;
+  const size = Math.abs(value);
+
+  // Scaled, so any number fits the value column: 1.92M, 3.40T, 1.8e+308.
+  if (size >= exponentFrom) return value.toExponential(1);
+
+  for (const [scale, unit] of counterScales)
+    if (size >= scale) return `${(value / scale).toFixed(2)}${unit}`;
 
   return Number.isInteger(value) ? count(value) : value.toFixed(2);
 }
@@ -54,10 +73,14 @@ export const words = (key: string) =>
 
 /** A time in ns, µs or ms, whichever keeps it readable. */
 export function duration(milliseconds: number): string {
-  if (milliseconds < microsecondMs)
-    return `${Math.round(milliseconds * nsPerMs)} ns`;
+  // Round first, then pick the unit, so 0.9996 ms reads 1.0 ms rather than 1000 µs.
+  const nanoseconds = Math.round(milliseconds * nsPerMs);
 
-  if (milliseconds < 1) return `${Math.round(milliseconds * usPerMs)} µs`;
+  if (nanoseconds < nsPerUs) return `${nanoseconds} ns`;
+
+  const microseconds = Math.round(milliseconds * usPerMs);
+
+  if (microseconds < usPerMs) return `${microseconds} µs`;
 
   return `${milliseconds.toFixed(1)} ms`;
 }

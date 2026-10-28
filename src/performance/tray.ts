@@ -1908,7 +1908,9 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     show(slot("mini-top-row"), !!top);
 
-    put(label, top ? `${top.label.split(" ")[0]} ${fixed(top.ms)}` : "");
+    put(label, top ? top.label.split(" ")[0]! : "");
+
+    put(slot("mini-top-ms"), top ? ` ${fixed(top.ms)}` : "");
 
     flag(label, "title", top ? `heaviest cpu scope: ${top.label}` : "");
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix readouts that random input broke. Large counters now scale through M, B and T, then powers of ten, so any value fits the value column. Durations round before choosing a unit, so 0.9996 ms reads 1.0 ms rather than 1000 µs. In the mini view the heaviest scope's name gives way before its time when space runs out.
 - Glide the panel's graphs between redraws instead of jumping. After each redraw the bars slide from where they were to where they belong, at the real scroll speed, on the compositor; a glide cut short by an early redraw carries into the next. Only motion is smoothed: no value is interpolated or predicted, and labels sit on a fixed layer. Graphs jump as before when the system asks for reduced motion.
 - Give events icons. The monitor's own events have fixed ones (● recording started, ■ stopped or complete, ▲ spike captured). Every other label gets a stable icon from its text (`◆ ◇ ○ □ △ ▽ ◊ ∗ × + ∆ ≡`), so it looks the same in the panel, recordings and the viewer. A label can choose its icon by starting with one and a space. The panel graph shows each event's icon under its frame, names the newest at the top right, and gives the worst-frame ▾ its own row; the event list, capture summaries and the viewer's timeline and inspector show the icons too.
 - Line up the CAPTURE tab's ON/OFF toggles and status chips: they share one box, so ON and OFF sit in a straight column.

@@ -186,7 +186,9 @@ test("line and mini sizes report the same frames and the size is remembered", as
 
   await expect(slot(page, "mini-worst")).toHaveAttribute("data-tone", "miss");
 
-  await expect(slot(page, "mini-top")).toHaveText(/^\S+ \d+\.\d$/);
+  await expect(slot(page, "mini-top")).toHaveText(/^\S+$/);
+
+  await expect(slot(page, "mini-top-ms")).toHaveText(/^ \d+\.\d$/);
 
   await page.waitForTimeout(600);
 

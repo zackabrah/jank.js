@@ -346,6 +346,19 @@
   right: 0;
   height: 100%;
 }
+/* The worst frame keeps its width; the heaviest scope's name gives way, never its time. */
+.jank .jank-mini-foot > :first-child {
+  flex: none;
+}
+.jank .jank-mini-top {
+  min-width: 0;
+  display: flex;
+}
+.jank .jank-mini-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .jank .jank-mini-foot {
   height: 20px;
   display: flex;
