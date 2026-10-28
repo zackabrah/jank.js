@@ -658,7 +658,7 @@ function judge() {
   verdictState.dataset.state = state;
 
   const lines = [
-    `${fps.toFixed(0)} fps (standard ${standard.fps}) · ${stutters.length} stutters`,
+    `${fps.toFixed(0)} fps (standard ${standard.fps}) · ${stutters.length} ${stutters.length === 1 ? "stutter" : "stutters"}`,
   ];
 
   const detailed = recent.some((sample) => sample.coverage !== "unavailable");
