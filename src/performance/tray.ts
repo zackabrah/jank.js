@@ -10,6 +10,7 @@ import {
 } from "../core/recording.ts";
 
 import {
+  iconLabel,
   intervalUnion,
   nearbyEventLabels,
   scopesBySystem,
@@ -1923,7 +1924,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       put(
         item.root,
         event
-          ? `${(event.at / msPerSecond).toFixed(1)} s ${event.label}${event.detail ? ` · ${event.detail}` : ""}`
+          ? `${(event.at / msPerSecond).toFixed(1)} s ${iconLabel(event.label)}${event.detail ? ` · ${event.detail}` : ""}`
           : "no events",
       );
     });

@@ -1,4 +1,4 @@
-import { msPerSecond, unavailableCoverage } from "./recording.ts";
+import { msPerSecond, toolEvent, unavailableCoverage } from "./recording.ts";
 
 import type {
   DiagnosticFrame,
@@ -13,12 +13,27 @@ const p95Rank = 0.95;
 const nearEventLimit = 3;
 
 /** The monitor's own lifecycle markers; never offered as the event near a capture. */
-const toolEvents = new Set([
-  "Spike captured",
-  "Recording started",
-  "Recording stopped",
-  "Recording complete",
+const toolEvents = new Set<string>(Object.values(toolEvent));
+
+// Fixed icons for the monitor's own events.
+const toolGlyphs = new Map<string, string>([
+  [toolEvent.recordingStarted, "●"],
+  [toolEvent.recordingStopped, "■"],
+  [toolEvent.recordingComplete, "■"],
+  [toolEvent.spikeCaptured, "▲"],
 ]);
+
+// Icons for host events: shapes and maths symbols that common monospace fonts carry and that
+// never render as colour emoji, none shared with the monitor's own events.
+const hostGlyphs = ["◆", "◇", "○", "□", "△", "▽", "◊", "∗", "×", "+", "∆", "≡"];
+
+const knownGlyphs = new Set([...toolGlyphs.values(), ...hostGlyphs]);
+
+const glyphSeparator = " ";
+
+// 32-bit FNV-1a, a small stable hash: the same label always gets the same icon.
+const fnvOffset = 0x81_1c_9d_c5,
+  fnvPrime = 0x01_00_01_93;
 
 const explanations: Record<DiagnosticFrame["coverage"], string> = {
   unavailable: "This frame has no exact scope capture.",
@@ -211,9 +226,39 @@ export function eventsNear(
 export function nearbyEventLabels(recording: PerformanceRecording, at: number) {
   const labels = eventsNear(recording, at)
     .filter((event) => !toolEvents.has(event.label))
-    .map((event) => event.label);
+    .map((event) => iconLabel(event.label));
 
   return labels.length
     ? labels.slice(0, nearEventLimit).join(" · ")
     : "no event nearby";
+}
+
+/**
+ * An event's icon and the text to show beside it. The monitor's own events have fixed icons.
+ * A label that starts with one of the icons and a space keeps that icon. Any other label gets
+ * one worked out from its text, so it looks the same in the panel, recordings and the viewer.
+ */
+export function eventGlyph(label: string) {
+  const fixed = toolGlyphs.get(label);
+
+  if (fixed) return { glyph: fixed, text: label };
+
+  const [first = ""] = label;
+
+  if (knownGlyphs.has(first) && label[first.length] === glyphSeparator)
+    return { glyph: first, text: label.slice(first.length + 1) };
+
+  let hash = fnvOffset;
+
+  for (const char of label)
+    hash = Math.imul(hash ^ char.codePointAt(0)!, fnvPrime) >>> 0;
+
+  return { glyph: hostGlyphs[hash % hostGlyphs.length]!, text: label };
+}
+
+/** An event label as shown to people: its icon, a space and its text. */
+export function iconLabel(label: string) {
+  const { glyph, text } = eventGlyph(label);
+
+  return `${glyph} ${text}`;
 }

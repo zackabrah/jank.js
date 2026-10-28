@@ -4,7 +4,7 @@ import { createRecordingViewModel } from "./model.ts";
 
 import { MAX_RECORDING_BYTES, serializeRecording } from "../core/recording.ts";
 
-import { eventsNear } from "../core/inspection.ts";
+import { eventsNear, iconLabel } from "../core/inspection.ts";
 
 import { compactMarkup, download, findIn } from "../performance/ui/dom.ts";
 
@@ -719,7 +719,7 @@ function drawTimeline(
     ticks.push({
       at: x(frame) + 1,
       here: frame === selected,
-      label: event.label,
+      label: iconLabel(event.label),
     });
   }
 
@@ -1078,7 +1078,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
             element(
               "span",
               event.offset ? "jank-viewer-muted" : "",
-              event.label,
+              iconLabel(event.label),
             ),
           );
 

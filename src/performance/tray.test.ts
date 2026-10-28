@@ -828,7 +828,9 @@ describe("budget and capture controls", () => {
     const rows = root.querySelector('[data-k="captures"]').children;
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.querySelector(".jank-near").textContent).toBe("spawn ×184");
+    expect(rows[0]!.querySelector(".jank-near").textContent).toBe(
+      "△ spawn ×184",
+    );
     expect(rows[0]!.querySelector(".jank-ms").textContent).toBe("40.0 ms");
     expect(rows[0]!.querySelector(".jank-ms").dataset["tone"]).toBe("miss");
 

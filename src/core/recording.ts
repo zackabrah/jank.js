@@ -40,6 +40,14 @@ export const unavailableCoverage = "unavailable";
 // The capture mode of a recording AUTO CAPTURE made.
 export const automaticCapture = "automatic";
 
+// The monitor's own lifecycle markers, logged as events beside the host's.
+export const toolEvent = {
+  spikeCaptured: "Spike captured",
+  recordingStarted: "Recording started",
+  recordingStopped: "Recording stopped",
+  recordingComplete: "Recording complete",
+} as const;
+
 /** Float slack for scope bounds and the stored frame budget. */
 const toleranceMs = 0.000001;
 

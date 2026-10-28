@@ -3,6 +3,8 @@ import type {
   DiagnosticFrame,
 } from "../../core/recording-types.ts";
 
+import { eventGlyph } from "../../core/inspection.ts";
+
 import { msPerSecond } from "../../core/recording.ts";
 
 import { shorten } from "./format.ts";
@@ -16,8 +18,11 @@ const plateHeight = 14;
 
 const plateBaseline = 11;
 
-/** Bar area top when labels draw above it. */
-const labelledTop = 16;
+/** Bar area top when labels draw above it: a row of labels, then a row for the ▾ marker. */
+const labelledTop = 24;
+
+/** The ▾ marker sits in its own row, below the labels, so no label ever covers it. */
+const markerBaseline = 23;
 
 /** Dotted guide rows and the dots along them. */
 const guideSpacing = 20;
@@ -37,13 +42,16 @@ const budgetDash = [dashLength, dashLength];
 /** Budget value plate, above the budget line. */
 const budgetLabelLift = 15;
 
-/** Event ticks below the bars, and the newest event's label under them. */
-const tickLength = 6;
+/** Event icons below the bars: their baseline, and the space kept between neighbours. */
+const glyphBaseline = 12;
+
+const glyphGap = 2;
+
+/** Space between the worst-frame label and the newest event's label above the bars. */
+const labelGap = 8;
 
 /** Approximate label character width, in px. */
 const labelCharWidth = 6;
-
-const labelBaseline = 15;
 
 const thumbnailPitch = 3;
 
@@ -228,10 +236,10 @@ export function drawFrameGraph(
   context.fillText(
     marker,
     x(worst) + (bar - context.measureText(marker).width) / 2,
-    plateBaseline,
+    markerBaseline,
   );
 
-  plate(
+  const worstWidth = plate(
     context,
     theme,
     `worst ${peak.toFixed(1)}`,
@@ -240,40 +248,69 @@ export function drawFrameGraph(
     worstColor,
   );
 
-  // Ticks at the frame that contains each event; the newest one is named, in a fixed place.
+  // Each event's icon sits under the frame that contains it; where icons would overlap the
+  // newer one wins. The newest event is named in a fixed place, opposite the worst frame.
   const start = frames[first]!.at - frames[first]!.interval,
     end = frames.at(-1)!.at;
 
-  let newest: { event: DiagnosticEvent; tick: number } | null = null,
-    frame = first;
+  const marks: { label: string; at: number; tick: number }[] = [];
+
+  let frame = first;
 
   for (const event of events) {
     if (event.at < start || event.at > end) continue;
 
     while (frame < frames.length - 1 && frames[frame]!.at < event.at) frame++;
 
-    const tick = x(frame) + (bar >> 1);
-
-    context.fillStyle = theme.faint;
-    context.fillRect(tick, height, 1, tickLength);
-
-    if (!newest || event.at >= newest.event.at) newest = { event, tick };
+    marks.push({ label: event.label, at: event.at, tick: x(frame) + bar / 2 });
   }
+
+  const newest = marks.at(-1);
 
   if (!newest) return;
 
-  context.fillStyle = theme.text;
-  context.fillRect(newest.tick, height, 1, tickLength);
+  // Left edge of the last icon drawn, scanning from the newest backwards.
+  let free = Infinity;
 
-  const age = ` · ${((end - newest.event.at) / msPerSecond).toFixed(1)} s ago`;
+  for (let i = marks.length - 1; i >= 0; i--) {
+    const mark = marks[i]!;
 
-  const room = Math.floor(width / labelCharWidth) - age.length;
+    const { glyph } = eventGlyph(mark.label);
 
-  context.fillStyle = theme.muted;
-  context.fillText(
-    shorten(newest.event.label.toLowerCase(), Math.max(0, room)) + age,
+    const half = context.measureText(glyph).width / 2;
+
+    // Kept inside the canvas, so an icon at either edge is never cut in half.
+    const left = Math.min(width - 2 * half, Math.max(0, mark.tick - half));
+
+    if (left + 2 * half > free) continue;
+
+    context.fillStyle = mark === newest ? theme.text : theme.muted;
+    context.fillText(glyph, left, height + glyphBaseline);
+
+    free = left - glyphGap;
+  }
+
+  const { glyph, text } = eventGlyph(newest.label);
+
+  const age = ` · ${((end - newest.at) / msPerSecond).toFixed(1)} s ago`;
+
+  const room =
+    Math.floor(
+      (width - worstWidth - 2 * platePadding - labelGap) / labelCharWidth,
+    ) -
+    age.length -
+    glyph.length -
+    1;
+
+  const label = `${glyph} ${shorten(text.toLowerCase(), Math.max(0, room))}${age}`;
+
+  plate(
+    context,
+    theme,
+    label,
+    width - context.measureText(label).width - platePadding,
     0,
-    height + labelBaseline,
+    theme.muted,
   );
 }
 

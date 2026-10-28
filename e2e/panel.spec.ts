@@ -317,8 +317,9 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
     { timeout: 10000 },
   );
 
+  // Each nearby event leads with its icon, the same one the viewer and recordings show.
   await expect(page.locator('[data-k="captures"] .jank-near')).toHaveText(
-    "wave 3 · spawn ×184",
+    "+ wave 3 · △ spawn ×184",
   );
 
   await expect(page.locator('[data-k="captures"] .jank-ms')).toHaveAttribute(

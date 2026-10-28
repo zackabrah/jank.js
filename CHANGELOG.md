@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Give events icons. The monitor's own events have fixed ones (● recording started, ■ stopped or complete, ▲ spike captured). Every other label gets a stable icon from its text (`◆ ◇ ○ □ △ ▽ ◊ ∗ × + ∆ ≡`), so it looks the same in the panel, recordings and the viewer. A label can choose its icon by starting with one and a space. The panel graph shows each event's icon under its frame, names the newest at the top right, and gives the worst-frame ▾ its own row; the event list, capture summaries and the viewer's timeline and inspector show the icons too.
 - Line up the CAPTURE tab's ON/OFF toggles and status chips: they share one box, so ON and OFF sit in a straight column.
 - Make the panel easier to read. The graph's text stays still: the worst frame's time sits in the top-left corner and the newest event's label, with its age, sits under the graph, while only the worst-frame marker and event ticks move with the bars. Over-budget ▲ markers are drawn as tall as the digits they mark and are named "over budget" for screen readers. The mini readout splits into three equal columns with each unit above its number, so readings keep their place as digits change.
 - Add `jank.js/adapters/webgl2`, which times named WebGL2 render passes with `EXT_disjoint_timer_query_webgl2` and links each sample to the frame that drew it. Where the browser doesn't expose the extension it reports `unsupported` rather than estimating GPU time from CPU timing.

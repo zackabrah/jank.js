@@ -20,6 +20,7 @@ import {
   msPerSecond,
   overheadFrames,
   recordingFrameCapacity,
+  toolEvent,
 } from "./recording.ts";
 
 import type { GpuProfile } from "../types/gpu-profile-types.ts";
@@ -408,7 +409,7 @@ export function createDiagnostics(
     capture.state = armed ? "cooldown" : "idle";
 
     event(
-      "Recording complete",
+      toolEvent.recordingComplete,
       capture.mode === automaticCapture
         ? "Spike window captured"
         : "6000-frame limit reached",
@@ -449,7 +450,7 @@ export function createDiagnostics(
         lastSample = -Infinity;
 
         event(
-          "Spike captured",
+          toolEvent.spikeCaptured,
           `Frame ${frame.id}: ${frame.interval.toFixed(2)} ms`,
         );
 
@@ -892,10 +893,10 @@ export function createDiagnostics(
 
       metadata = recordingMetadata(timer, application, trace.enabled);
 
-      event("Recording started");
+      event(toolEvent.recordingStarted);
     },
     stopRecording() {
-      if (recording) event("Recording stopped");
+      if (recording) event(toolEvent.recordingStopped);
 
       recording = false;
 

@@ -145,7 +145,7 @@ describe("viewer lanes", () => {
       [1, 40],
       [2, 36],
     ]);
-    expect(manual.marks[0]!.near).toBe("wave 3");
+    expect(manual.marks[0]!.near).toBe("+ wave 3");
 
     const automatic = session(true);
 
