@@ -136,7 +136,6 @@ test("full panel reads a running game, freezes the display and exports the recor
   );
 
   expect(recording.events.map((event) => event.label)).toContain("spawn ×184");
-
   expect(recording.frames.some((frame) => frame.scopes.length > 0)).toBe(true);
 
   await page.getByRole("button", { name: "RESUME", exact: true }).click();
@@ -332,6 +331,5 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
   expect(
     (await new AxeBuilder({ page }).include(".jank").analyze()).violations,
   ).toEqual([]);
-
   expect(seen).toEqual([]);
 });

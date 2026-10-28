@@ -25,7 +25,6 @@ function fixture() {
   });
 
   monitor.startRecording();
-
   monitor.beginFrame(0);
 
   const parent = monitor.register("parent", "Parent"),
@@ -131,7 +130,6 @@ test("single HTML viewer loads offline, inspects scopes, navigates and rejects b
   await expect(page.locator('[data-k="totals"]')).toContainText("2 frames");
 
   expect(requests).toEqual([]);
-
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   if (info.project.name === "chromium")
@@ -352,7 +350,6 @@ test("the panel hands its recording to the viewer, which inspects captures frame
   expect(
     kept.frames.some((frame) => frame.id === kept.capture.triggerFrame),
   ).toBe(true);
-
   expect((await new AxeBuilder({ page: viewer }).analyze()).violations).toEqual(
     [],
   );
@@ -375,6 +372,5 @@ test("the panel hands its recording to the viewer, which inspects captures frame
     .boundingBox();
 
   expect(inspector!.y).toBeGreaterThan(timeline!.y + timeline!.height);
-
   expect(seen).toEqual([]);
 });

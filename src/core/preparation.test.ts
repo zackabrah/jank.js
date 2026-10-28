@@ -34,7 +34,6 @@ describe("application-defined preparation stages", () => {
     profiler.measure("custom-shaders", () => {
       now = 20;
     });
-
     profiler.finish("ready");
 
     expect(profiler.snapshot()?.stages.map((s) => s.stage)).toEqual([
@@ -42,13 +41,11 @@ describe("application-defined preparation stages", () => {
       "sprites",
       "custom-shaders",
     ]);
-
     expect(profiler.snapshot()?.stages[0]).toMatchObject({
       totalMs: 20,
       busyMs: 15,
       count: 2,
     });
-
     expect(profiler.snapshot()?.elapsedMs).toBe(20);
   });
 
@@ -80,13 +77,11 @@ describe("application-defined preparation stages", () => {
     await pending;
 
     expect(profiler.snapshot()?.stages).toEqual([]);
-
     expect(profiler.history()[0]).toMatchObject({
       status: "cancelled",
       elapsedMs: 10,
       pending: 1,
     });
-
     expect(() => profiler.begin(" ")).toThrow("must have a name");
   });
 });

@@ -85,7 +85,6 @@ export function createDevToolsSink(
       disposed = true;
 
       timeline?.clearMarks(name);
-
       timeline?.clearMeasures(name);
     },
   };

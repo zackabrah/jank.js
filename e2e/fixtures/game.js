@@ -184,9 +184,7 @@ function draw(at) {
   const { width, height } = canvas;
 
   context.fillStyle = "#06070f";
-
   context.fillRect(0, 0, width, height);
-
   context.fillStyle = "#1b2c44";
 
   for (let i = 0; i < 160; i++) {
@@ -198,21 +196,17 @@ function draw(at) {
   }
 
   context.fillStyle = "#ffffff";
-
   context.font = "800 20px system-ui, sans-serif";
-
   context.fillText(`WAVE ${counters.objects > 1300 ? 4 : 3}`, 28, 44);
 
   for (let i = 0; i < 4; i++) {
     context.fillStyle = i < 3 ? "#ffffff" : "#ffffff4d";
-
     context.fillRect(28 + i * 22, 54, 18, 6);
   }
 }
 
 function resize() {
   canvas.width = innerWidth;
-
   canvas.height = innerHeight;
 }
 
@@ -265,7 +259,6 @@ window.fixture = {
   /** Real work: a heavy scene update on the next frame, with the events around it. */
   spike(ms = 40) {
     monitor.event("wave 3");
-
     monitor.event("spawn ×184");
 
     counters.objects += 184;

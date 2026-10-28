@@ -24,6 +24,12 @@ const types: Record<string, string> = {
   woff2: "font/woff2",
 };
 
+const fixtures = new Map([
+  ["", "e2e/fixtures/game.html"],
+  ["index.html", "e2e/fixtures/game.html"],
+  ["game.js", "e2e/fixtures/game.js"],
+]);
+
 /**
  * Serve the fixture game beside the built package, on the viewer server's origin so the
  * hosted viewer at /viewer/ is same-origin. Requires `pnpm build` (dist-package).
@@ -38,12 +44,7 @@ export async function openFixture(
 
     if (name.includes("..")) return route.fulfill({ status: 404 });
 
-    const file =
-      name === "" || name === "index.html"
-        ? "e2e/fixtures/game.html"
-        : name === "game.js"
-          ? "e2e/fixtures/game.js"
-          : `dist-package/${name}`;
+    const file = fixtures.get(name) ?? `dist-package/${name}`;
 
     try {
       await route.fulfill({

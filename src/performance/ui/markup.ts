@@ -8,23 +8,29 @@ export interface PanelSections {
   viewer: boolean;
 }
 
+/** A LIVE tile: a label over the value slot that refresh fills. */
 const tile = (label: string, key: string) =>
   `<div class="jank-tile"><span class="jank-label">${label}</span><span class="jank-tile-v" data-k="${key}">–</span></div>`;
 
+/** A section heading with optional trailing meta markup. */
 const heading = (label: string, meta = "") =>
   `<h2 class="jank-h"><span>${label}</span>${meta}</h2>`;
 
+/** An on/off switch button that starts OFF; pass " hidden" to hide it. */
 const toggle = (action: string, label: string, hidden = "") =>
   `<button type="button" class="jank-toggle" data-action="${action}" aria-label="${label}" aria-pressed="false"${hidden}>OFF</button>`;
 
+/** A CAPTURE setting row: its value button and the hidden number input that edits it. */
 const setting = (key: string, label: string, unit: string) =>
   `<div class="jank-row"><span class="jank-k">${label}</span><span class="jank-lead"></span><button type="button" class="jank-edit" data-edit="${key}" aria-label="${label}, edit"></button><input class="jank-edit-input" data-input="${key}" type="number" step="any" min="0" aria-label="${label} ${unit}" hidden></div>`;
 
+/** The panel's HTML for the line, mini and full views; `id` prefixes the tab and panel ids. */
 export function panelMarkup(id: string, has: PanelSections) {
   const viewerTitle = has.viewer
     ? ""
     : ' title="set viewerUrl in the panel options to open recordings in the viewer" disabled';
 
+  /** A tab wired to its panel by id; only the selected tab is in the tab order. */
   const tab = (name: string, label: string, selected: boolean) =>
     `<button type="button" role="tab" id="${id}-tab-${name}" class="jank-tab" data-tab="${name}" aria-controls="${id}-${name}" aria-selected="${selected}" tabindex="${selected ? 0 : -1}">${label}</button>`;
 

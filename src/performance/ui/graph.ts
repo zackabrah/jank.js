@@ -5,6 +5,50 @@ import type {
 
 import { shorten } from "./format.ts";
 
+const maxPixelRatio = 3;
+
+/** Label plates: padding either side of the text, height and text baseline. */
+const platePadding = 3;
+
+const plateHeight = 14;
+
+const plateBaseline = 11;
+
+/** Bar area top when labels draw above it. */
+const labelledTop = 16;
+
+/** Dotted guide rows and the dots along them. */
+const guideSpacing = 20;
+
+const dotSpacing = 10;
+
+/** The bar scale always fits at least this many budgets. */
+const budgetHeadroom = 3;
+
+/** Centres a 1 px line on a pixel row. */
+const pixelCentre = 0.5;
+
+const dashLength = 4;
+
+const budgetDash = [dashLength, dashLength];
+
+/** Budget value plate, above the budget line. */
+const budgetLabelLift = 15;
+
+/** Event ticks below the bars and labels beside them. */
+const tickLength = 6;
+
+const labelGap = 4;
+
+const labelSpacing = 8;
+
+/** Approximate label character width, in px. */
+const labelCharWidth = 6;
+
+const labelBaseline = 15;
+
+const thumbnailPitch = 3;
+
 export interface GraphTheme {
   ink: string;
   line: string;
@@ -23,6 +67,7 @@ export interface GraphTheme {
 export function graphTheme(element: Element): GraphTheme {
   const style = getComputedStyle(element);
 
+  /** A CSS custom property's value, or the fallback when it's unset. */
   const token = (name: string, fallback: string) =>
     style.getPropertyValue(name).trim() || fallback;
 
@@ -47,14 +92,16 @@ export function prepareCanvas(
   width: number,
   height: number,
 ) {
-  const ratio = Math.min(3, Math.max(1, globalThis.devicePixelRatio || 1));
+  const ratio = Math.min(
+    maxPixelRatio,
+    Math.max(1, globalThis.devicePixelRatio || 1),
+  );
 
   const pixelWidth = Math.round(width * ratio),
     pixelHeight = Math.round(height * ratio);
 
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
     canvas.width = pixelWidth;
-
     canvas.height = pixelHeight;
   }
 
@@ -63,7 +110,6 @@ export function prepareCanvas(
   if (!context) return null;
 
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
-
   context.clearRect(0, 0, width, height);
 
   return context;
@@ -81,12 +127,9 @@ export function plate(
   const width = context.measureText(text).width;
 
   context.fillStyle = theme.ink;
-
-  context.fillRect(x - 3, y, width + 6, 14);
-
+  context.fillRect(x - platePadding, y, width + 2 * platePadding, plateHeight);
   context.fillStyle = color;
-
-  context.fillText(text, x, y + 11);
+  context.fillText(text, x, y + plateBaseline);
 
   return width;
 }
@@ -123,56 +166,43 @@ export function drawFrameGraph(
   for (let i = first; i < frames.length; i++)
     if (frames[i]!.interval > frames[worst]!.interval) worst = i;
 
-  const top = graph.labels ? 16 : 2;
+  const top = graph.labels ? labelledTop : 2;
 
   const peak = frames[worst]?.interval ?? 0;
 
   if (graph.labels) {
-    // Dotted guide rows every 20 px.
     context.fillStyle = theme.line;
 
-    for (let y = 10; y < height; y += 20)
-      for (let dot = 0; dot < width; dot += 10) context.fillRect(dot, y, 1, 1);
+    for (let y = guideSpacing / 2; y < height; y += guideSpacing)
+      for (let dot = 0; dot < width; dot += dotSpacing)
+        context.fillRect(dot, y, 1, 1);
   }
 
   // The tallest bar always fits below the worst label; nothing is clipped.
   const scale =
-    height / Math.max(budgetMs * 3, (peak * height) / (height - top));
+    height /
+    Math.max(budgetMs * budgetHeadroom, (peak * height) / (height - top));
 
+  /** Left edge of frame i's bar, right-aligned so the newest frame ends at the canvas edge. */
   const x = (i: number) => width - (frames.length - i) * pitch + (pitch - bar);
 
   for (let i = first; i < frames.length; i++) {
     const frame = frames[i]!;
 
-    context.fillStyle =
-      frame.interval > limitMs
-        ? theme.miss
-        : i === frames.length - 1
-          ? theme.bright
-          : theme.graph;
+    if (frame.interval > limitMs) context.fillStyle = theme.miss;
+    else
+      context.fillStyle = i === frames.length - 1 ? theme.bright : theme.graph;
 
     const h = Math.max(1, Math.round(frame.interval * scale));
 
     context.fillRect(x(i), height - h, bar, h);
   }
 
-  const budgetY = Math.round(height - budgetMs * scale) + 0.5;
-
-  context.strokeStyle = graph.budgetColor;
+  const budgetY = Math.round(height - budgetMs * scale) + pixelCentre;
 
   context.lineWidth = 1;
 
-  context.setLineDash([4, 4]);
-
-  context.beginPath();
-
-  context.moveTo(0, budgetY);
-
-  context.lineTo(width, budgetY);
-
-  context.stroke();
-
-  context.setLineDash([]);
+  strokeBudgetLine(context, budgetY, 0, width, graph.budgetColor);
 
   if (!graph.labels || !count) return;
 
@@ -184,8 +214,8 @@ export function drawFrameGraph(
     context,
     theme,
     budgetText,
-    width - context.measureText(budgetText).width - 3,
-    budgetY - 15,
+    width - context.measureText(budgetText).width - platePadding,
+    budgetY - budgetLabelLift,
     theme.muted,
   );
 
@@ -198,8 +228,8 @@ export function drawFrameGraph(
     theme,
     worstText,
     Math.min(
-      width - worstWidth - 3,
-      Math.max(3, x(worst) + bar - worstWidth + 3),
+      width - worstWidth - platePadding,
+      Math.max(platePadding, x(worst) + bar - worstWidth + platePadding),
     ),
     0,
     peak > limitMs ? theme.miss : theme.muted,
@@ -219,20 +249,18 @@ export function drawFrameGraph(
     const tick = x(frame) + (bar >> 1);
 
     context.fillStyle = theme.muted;
+    context.fillRect(tick, height, 1, tickLength);
 
-    context.fillRect(tick, height, 1, 6);
-
-    const room = Math.floor((width - tick - 4) / 6);
+    const room = Math.floor((width - tick - labelGap) / labelCharWidth);
 
     const label = shorten(event.label.toLowerCase(), Math.max(0, room));
 
-    if (!label || tick + 4 < free) continue;
+    if (!label || tick + labelGap < free) continue;
 
     context.fillStyle = theme.dim;
+    context.fillText(label, tick + labelGap, height + labelBaseline);
 
-    context.fillText(label, tick + 4, height + 15);
-
-    free = tick + 4 + context.measureText(label).width + 8;
+    free = tick + labelGap + context.measureText(label).width + labelSpacing;
   }
 }
 
@@ -252,6 +280,28 @@ export function drawThumbnail(
 
     const h = Math.max(1, Math.round((value / peak) * height));
 
-    context.fillRect(width - (intervals.length - i) * 3 + 1, height - h, 2, h);
+    context.fillRect(
+      width - (intervals.length - i) * thumbnailPitch + 1,
+      height - h,
+      2,
+      h,
+    );
   });
+}
+
+/** Strokes the dashed budget line at `y` from `from` to `to`, then clears the dash. */
+export function strokeBudgetLine(
+  context: CanvasRenderingContext2D,
+  y: number,
+  from: number,
+  to: number,
+  color: string,
+) {
+  context.strokeStyle = color;
+  context.setLineDash(budgetDash);
+  context.beginPath();
+  context.moveTo(from, y);
+  context.lineTo(to, y);
+  context.stroke();
+  context.setLineDash([]);
 }

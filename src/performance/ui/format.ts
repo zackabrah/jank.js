@@ -3,8 +3,33 @@ import type { RecordingEnvironment } from "../../core/recording-types.ts";
 /** Shared readout formatting for the panel and the viewer. Values are never smoothed. */
 const grouped = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
+const million = 1e6;
+
+const nsPerMs = 1e6;
+
+const usPerMs = 1000;
+
+/** One microsecond, in milliseconds. */
+const microsecondMs = 0.001;
+
+const decade = 10;
+
+const halfDecade = decade / 2;
+
+const quarterDecade = halfDecade / 2;
+
+/** Axis steps are 1, 2, 2.5 or 5 times a power of ten. */
+const axisFactors = [1, 2, quarterDecade, halfDecade, decade];
+
+const maxAxisDivisions = 3;
+
+/** Keeps log10 finite for an empty axis. */
+const minAxisSpan = 1e-9;
+
+/** Rounds to a whole number with thousands separators, e.g. 12,345. */
 export const count = (value: number) => grouped.format(value);
 
+/** A number to `digits` decimal places, one by default. */
 export const fixed = (value: number, digits = 1) => value.toFixed(digits);
 
 /** Counter readouts: integers grouped, millions to three figures, fractions to two places. */
@@ -15,7 +40,7 @@ export function counter(value: number | string | boolean | null): string {
 
   if (typeof value === "string") return value;
 
-  if (Math.abs(value) >= 1e6) return `${(value / 1e6).toFixed(2)}M`;
+  if (Math.abs(value) >= million) return `${(value / million).toFixed(2)}M`;
 
   return Number.isInteger(value) ? count(value) : value.toFixed(2);
 }
@@ -27,22 +52,22 @@ export const words = (key: string) =>
     .replaceAll(/[-_]+/g, " ")
     .toLowerCase();
 
+/** A time in ns, µs or ms, whichever keeps it readable. */
 export function duration(milliseconds: number): string {
-  if (milliseconds < 0.001) return `${Math.round(milliseconds * 1e6)} ns`;
+  if (milliseconds < microsecondMs)
+    return `${Math.round(milliseconds * nsPerMs)} ns`;
 
-  if (milliseconds < 1) return `${Math.round(milliseconds * 1000)} µs`;
+  if (milliseconds < 1) return `${Math.round(milliseconds * usPerMs)} µs`;
 
   return `${milliseconds.toFixed(1)} ms`;
 }
 
 /** The recording's own statement of what it could and could not measure. */
 export function timerHonesty(environment: RecordingEnvironment) {
-  const isolation =
-    environment.crossOriginIsolated === null
-      ? "isolation unknown"
-      : environment.crossOriginIsolated
-        ? "isolated"
-        : "not isolated";
+  let isolation = "isolation unknown";
+
+  if (environment.crossOriginIsolated !== null)
+    isolation = environment.crossOriginIsolated ? "isolated" : "not isolated";
 
   const cpu = environment.cpuTimer.estimatedResolutionMs;
 
@@ -72,7 +97,7 @@ export function observedTick(sorted: ArrayLike<number>): number | null {
   for (let i = 1; i < sorted.length; i++) {
     const step = sorted[i]! - sorted[i - 1]!;
 
-    if (step >= 0.001 && step < tick) tick = step;
+    if (step >= microsecondMs && step < tick) tick = step;
   }
 
   return Number.isFinite(tick) ? Math.min(1, tick) : null;
@@ -80,12 +105,15 @@ export function observedTick(sorted: ArrayLike<number>): number | null {
 
 /** A readable axis step: 1, 2, 2.5 or 5 times a power of ten, at most three divisions. */
 export function axisStep(longest: number) {
-  const magnitude = 10 ** Math.floor(Math.log10(Math.max(longest, 1e-9) / 3));
+  const magnitude =
+    decade **
+    Math.floor(Math.log10(Math.max(longest, minAxisSpan) / maxAxisDivisions));
 
-  for (const factor of [1, 2, 2.5, 5, 10])
-    if (longest / (factor * magnitude) <= 3) return factor * magnitude;
+  for (const factor of axisFactors)
+    if (longest / (factor * magnitude) <= maxAxisDivisions)
+      return factor * magnitude;
 
-  return 10 * magnitude;
+  return decade * magnitude;
 }
 
 /** Shorten by rule, never mid-word: drop trailing words until the text fits. */
@@ -98,3 +126,14 @@ export function shorten(text: string, characters: number): string {
 
   return parts.join(" ").length <= characters ? parts.join(" ") : "";
 }
+
+/** The distinct sources of systems that report counters: each label's first word, lowercased. */
+export const counterSources = (
+  systems: readonly { label: string; values: object }[],
+) => [
+  ...new Set(
+    systems
+      .filter((system) => Object.keys(system.values).length)
+      .map((system) => system.label.split(" ")[0]!.toLowerCase()),
+  ),
+];

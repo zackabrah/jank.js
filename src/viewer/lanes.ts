@@ -1,9 +1,18 @@
-import { intervalUnion } from "../core/inspection.ts";
+import {
+  intervalUnion,
+  nearbyEventLabels,
+  scopesBySystem,
+} from "../core/inspection.ts";
+
+import {
+  automaticCapture,
+  msPerSecond,
+  unavailableCoverage,
+} from "../core/recording.ts";
 
 import { count, fixed, timerHonesty, words } from "../performance/ui/format.ts";
 
 import type {
-  DiagnosticScope,
   PerformanceRecording,
   RecordingMetadata,
 } from "../core/recording-types.ts";
@@ -42,6 +51,7 @@ export function buildLanes(recording: PerformanceRecording): Lanes {
 
   const index = new Map(frames.map((frame, i) => [frame.id, i]));
 
+  /** An empty lane: NaN for every frame until a value is recorded. */
   const lane = (id: string, label: string): Lane => ({
     id,
     label,
@@ -66,17 +76,9 @@ export function buildLanes(recording: PerformanceRecording): Lanes {
 
     overhead[i] = frame.overhead.collectionMs + frame.overhead.refreshMs;
 
-    if (frame.coverage === "unavailable") return;
+    if (frame.coverage === unavailableCoverage) return;
 
-    const groups = new Map<string, DiagnosticScope[]>();
-
-    for (const scope of frame.scopes) {
-      let group = groups.get(scope.system);
-
-      if (!group) groups.set(scope.system, (group = []));
-
-      group.push(scope);
-    }
+    const groups = scopesBySystem(frame.scopes);
 
     for (const entry of cpu.values()) entry.values[i] = 0;
 
@@ -87,7 +89,7 @@ export function buildLanes(recording: PerformanceRecording): Lanes {
         cpu.set(system, (entry = lane(system, group[0]!.label)));
 
         for (let j = 0; j <= i; j++)
-          if (frames[j]!.coverage !== "unavailable") entry.values[j] = 0;
+          if (frames[j]!.coverage !== unavailableCoverage) entry.values[j] = 0;
       }
 
       entry.values[i] = intervalUnion(group);
@@ -185,6 +187,9 @@ export function primaryCounters(lanes: Lanes): Lane[] {
   return (preferred.length ? preferred : lanes.counters).slice(0, 2);
 }
 
+/** Smaller rises over the median are timer noise, not a likely cause. */
+const likelyFloorMs = 0.05;
+
 /**
  * LIKELY, a heuristic: the scope furthest above its own median across the recording.
  * Null when no scope is above its median in this frame.
@@ -201,7 +206,7 @@ export function likelyScope(lanes: Lanes, at: number) {
 
     const delta = value - median;
 
-    if (delta > 0.05 && (!best || delta > best.delta))
+    if (delta > likelyFloorMs && (!best || delta > best.delta))
       best = { label: entry.label, id: entry.id, delta };
   }
 
@@ -216,36 +221,8 @@ export interface CaptureMark {
   near: string;
 }
 
-const toolEvents = new Set([
-  "Spike captured",
-  "Recording started",
-  "Recording stopped",
-  "Recording complete",
-]);
-
-/** Events inside the frames `at - reach` to `at + reach`, with signed frame offsets. */
-export function eventsNear(
-  recording: PerformanceRecording,
-  at: number,
-  reach = 10,
-) {
-  const frames = recording.frames;
-
-  const first = frames[Math.max(0, at - reach)]!,
-    last = frames[Math.min(frames.length - 1, at + reach)]!;
-
-  const from = first.at - first.interval;
-
-  let frame = Math.max(0, at - reach);
-
-  return recording.events
-    .filter((event) => event.at >= from && event.at <= last.at)
-    .map((event) => {
-      while (frame < frames.length - 1 && frames[frame]!.at < event.at) frame++;
-
-      return { offset: frame - at, label: event.label, detail: event.detail };
-    });
-}
+/** Over-threshold frames this close together are one spike. */
+const spikeFrames = 10;
 
 /**
  * Frames that crossed the capture threshold. In an automatic recording that is the
@@ -256,7 +233,7 @@ export function eventsNear(
 export function findCaptures(recording: PerformanceRecording, limit = 50) {
   const { capture, budget, frames } = recording;
 
-  const automatic = capture.mode === "automatic";
+  const automatic = capture.mode === automaticCapture;
 
   const threshold = capture.thresholdMs ?? budget.frameMs * 2;
 
@@ -275,7 +252,7 @@ export function findCaptures(recording: PerformanceRecording, limit = 50) {
       if (!trigger && frame.at < next) return;
 
       next = frame.at + capture.cooldownMs;
-    } else if (last && at - last.at <= 10) {
+    } else if (last && at - last.at <= spikeFrames) {
       if (frame.interval > last.ms)
         Object.assign(last, { at, id: frame.id, ms: frame.interval });
 
@@ -289,16 +266,12 @@ export function findCaptures(recording: PerformanceRecording, limit = 50) {
     .toSorted((a, b) => b.ms - a.ms)
     .slice(0, limit)
     .map((mark, i): CaptureMark => {
-      const near = eventsNear(recording, mark.at)
-        .filter((event) => !toolEvents.has(event.label))
-        .map((event) => event.label);
-
       return {
         at: mark.at,
         id: mark.id,
         ms: mark.ms,
         rank: i + 1,
-        near: near.length ? near.slice(0, 3).join(" · ") : "no event nearby",
+        near: nearbyEventLabels(recording, mark.at),
       };
     });
 
@@ -310,6 +283,10 @@ export function findCaptures(recording: PerformanceRecording, limit = 50) {
   };
 }
 
+const safariToken = "Safari",
+  edgeToken = "Edg";
+
+/** The browser and major version from a user agent, e.g. "Chrome 131". */
 function browserName(agent: string | null) {
   if (!agent) return "browser unknown";
 
@@ -319,9 +296,9 @@ function browserName(agent: string | null) {
 
   if (!match) return "browser unknown";
 
-  return match[2] === "Safari"
+  return match[2] === safariToken
     ? `Safari ${match[1]}`
-    : `${match[1] === "Edg" ? "Edge" : match[1]} ${match[2]}`;
+    : `${match[1] === edgeToken ? "Edge" : match[1]} ${match[2]}`;
 }
 
 /** The recording's metadata in one line, as the core exported it. */
@@ -357,17 +334,21 @@ export function environmentLine(recording: PerformanceRecording, lanes: Lanes) {
   ].join(" · ");
 }
 
+const secondsPerMinute = 60;
+
+/** The recording's wall-clock length, in seconds or minutes and seconds. */
 export function span(recording: PerformanceRecording) {
   const first = recording.frames[0],
     last = recording.frames.at(-1);
 
   if (!first || !last) return "0 s";
 
-  const seconds = (last.at - (first.at - first.interval)) / 1000;
+  const seconds = (last.at - (first.at - first.interval)) / msPerSecond;
 
-  return seconds >= 60
-    ? `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
+  return seconds >= secondsPerMinute
+    ? `${Math.floor(seconds / secondsPerMinute)}m ${Math.round(seconds % secondsPerMinute)}s`
     : `${seconds.toFixed(1)} s`;
 }
 
+/** A frame count with thousands separators, e.g. "1,200 frames". */
 export const frames = (value: number) => `${count(value)} frames`;

@@ -1,6 +1,6 @@
 import type { GpuProfile } from "../types/gpu-profile-types.ts";
 
-import { unknownEnvironment } from "./environment.ts";
+import { maxTimerReads, unknownEnvironment } from "./environment.ts";
 
 import type {
   CaptureStatus,
@@ -12,16 +12,72 @@ import type {
   RecordingMetadata,
 } from "./recording-types.ts";
 
-export const MAX_RECORDING_BYTES = 32 * 1024 * 1024;
+const bytesPerKibibyte = 1024;
+
+const maxRecordingMebibytes = 32;
+
+export const MAX_RECORDING_BYTES =
+  maxRecordingMebibytes * bytesPerKibibyte * bytesPerKibibyte;
+
+const recordingFormat = "jank.js-recording";
+
+/** The legacy engine export, read as version 1. */
+const legacyFormat = "world-performance-recording";
+
+const milliseconds = "milliseconds";
+
+export const msPerSecond = 1000;
+
+export const defaultTargetFps = 60;
+
+export const maxTargetFps = 1000;
+
+// Frame coverage values the panel and viewer test for.
+export const completeCoverage = "complete";
+
+export const unavailableCoverage = "unavailable";
+
+// The capture mode of a recording AUTO CAPTURE made.
+export const automaticCapture = "automatic";
+
+/** Float slack for scope bounds and the stored frame budget. */
+const toleranceMs = 0.000001;
+
+// Format limits shared with the diagnostics writer, which never exceeds them.
+export const maxLabelLength = 240;
+
+export const maxDetailLength = 2000;
+
+export const maxSystems = 64;
+
+export const maxSystemValues = 64;
+
+export const maxScopesPerFrame = 1024;
+
+export const recordingFrameCapacity = 6000;
+
+export const overheadFrames = 600;
+
+export const maxBeforeFrames = 599;
+
+export const maxAfterFrames = 5400;
+
+export const maxSamples = 1200;
+
+export const maxEvents = 200;
+
+const maxGpuPasses = 256;
 
 export class RecordingFormatError extends Error {
   override name = "RecordingFormatError";
 }
 
+/** Rejects an imported recording, naming the field that failed validation. */
 const fail = (path: string): never => {
   throw new RecordingFormatError(`Invalid recording: ${path}`);
 };
 
+/** Validates a plain object and copies its own entries. */
 function object(value: unknown, path: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     return fail(path);
@@ -29,6 +85,7 @@ function object(value: unknown, path: string): Record<string, unknown> {
   return Object.fromEntries(Object.entries(value));
 }
 
+/** Validates an array no longer than the limit. */
 function array(value: unknown, path: string, limit: number): unknown[] {
   if (!Array.isArray(value) || value.length > limit)
     return fail(`${path} (maximum ${limit} entries)`);
@@ -36,6 +93,7 @@ function array(value: unknown, path: string, limit: number): unknown[] {
   return value;
 }
 
+/** Validates a finite number within the range. */
 function number(
   value: unknown,
   path: string,
@@ -53,6 +111,7 @@ function number(
   return value;
 }
 
+/** Validates a whole number within the range. */
 function integer(
   value: unknown,
   path: string,
@@ -66,18 +125,21 @@ function integer(
   return result;
 }
 
-function string(value: unknown, path: string, limit = 240): string {
+/** Validates a string no longer than the limit. */
+function string(value: unknown, path: string, limit = maxLabelLength): string {
   if (typeof value !== "string" || value.length > limit) return fail(path);
 
   return value;
 }
 
+/** Validates a boolean. */
 function bool(value: unknown, path: string): boolean {
   if (typeof value !== "boolean") return fail(path);
 
   return value;
 }
 
+/** Validates a value as one of the allowed strings. */
 function choice<T extends string>(
   value: unknown,
   allowed: readonly T[],
@@ -88,20 +150,23 @@ function choice<T extends string>(
   return fail(path);
 }
 
+/** Validates a number or null. */
 function nullableNumber(value: unknown, path: string) {
   return value === null ? null : number(value, path);
 }
 
+/** Validates a detail-length string or null. */
 function nullableString(value: unknown, path: string) {
-  return value === null ? null : string(value, path, 2000);
+  return value === null ? null : string(value, path, maxDetailLength);
 }
 
+/** Validates the instrumented systems and their counter values. */
 function systems(value: unknown): DiagnosticSystem[] {
-  return array(value, "systems", 64).map((entry) => {
+  return array(value, "systems", maxSystems).map((entry) => {
     const row = object(entry, "system"),
       counters = object(row["values"], "system.values");
 
-    if (Object.keys(counters).length > 64) fail("system.values");
+    if (Object.keys(counters).length > maxSystemValues) fail("system.values");
 
     const values: DiagnosticValues = Object.fromEntries(
       Object.entries(counters).map(([key, item]) => {
@@ -112,7 +177,7 @@ function systems(value: unknown): DiagnosticSystem[] {
         if (typeof item === "number")
           return [key, number(item, key, -Number.MAX_VALUE)];
 
-        return [key, string(item, key, 2000)];
+        return [key, string(item, key, maxDetailLength)];
       }),
     );
 
@@ -126,9 +191,11 @@ function systems(value: unknown): DiagnosticSystem[] {
   });
 }
 
+/** Validates the monitor's own collection and refresh costs. */
 function overhead(value: unknown): DiagnosticOverhead {
   const data = object(value, "overhead");
 
+  /** Validates one cost's last, mean and peak. */
   const cost = (key: string) => {
     const item = object(data[key], `overhead.${key}`);
 
@@ -142,12 +209,13 @@ function overhead(value: unknown): DiagnosticOverhead {
   return {
     collection: cost("collection"),
     refresh: cost("refresh"),
-    frames: integer(data["frames"], "overhead.frames", 0, 600),
+    frames: integer(data["frames"], "overhead.frames", 0, overheadFrames),
     measurement:
       "Synchronous instrumentation and UI refresh; excludes deferred browser layout, paint and GPU work",
   };
 }
 
+/** Validates the environment and application metadata. */
 function metadata(value: unknown): RecordingMetadata {
   const data = object(value, "metadata"),
     env = object(data["environment"], "environment"),
@@ -212,7 +280,7 @@ function metadata(value: unknown): RecordingMetadata {
           ["minimum-observed-positive-delta", "unavailable"],
           "cpuTimer.method",
         ),
-        reads: integer(cpu["reads"], "cpuTimer.reads", 0, 4096),
+        reads: integer(cpu["reads"], "cpuTimer.reads", 0, maxTimerReads),
       },
       gpuTimer: {
         source: choice(gpu["source"], ["host", "unknown"], "gpuTimer.source"),
@@ -225,6 +293,7 @@ function metadata(value: unknown): RecordingMetadata {
   };
 }
 
+/** Validates the capture mode, window and progress. */
 function capture(value: unknown): CaptureStatus {
   const data = object(value, "capture");
 
@@ -244,21 +313,28 @@ function capture(value: unknown): CaptureStatus {
         ? null
         : integer(data["triggerFrame"], "triggerFrame"),
     thresholdMs: nullableNumber(data["thresholdMs"], "thresholdMs"),
-    beforeFrames: integer(data["beforeFrames"], "beforeFrames", 0, 599),
-    afterFrames: integer(data["afterFrames"], "afterFrames", 0, 5400),
+    beforeFrames: integer(
+      data["beforeFrames"],
+      "beforeFrames",
+      0,
+      maxBeforeFrames,
+    ),
+    afterFrames: integer(data["afterFrames"], "afterFrames", 0, maxAfterFrames),
     cooldownMs: number(data["cooldownMs"], "cooldownMs"),
     remainingFrames: integer(
       data["remainingFrames"],
       "remainingFrames",
       0,
-      5400,
+      maxAfterFrames,
     ),
   };
 }
 
+/** Validates the GPU profile and its passes. */
 function gpuProfile(value: unknown): GpuProfile {
   const data = object(value, "gpu profile");
 
+  /** Validates a frame id that may be null. */
   const nullableFrame = (key: string) =>
     data[key] === null ? null : integer(data[key], `gpu.${key}`);
 
@@ -274,7 +350,7 @@ function gpuProfile(value: unknown): GpuProfile {
     sampleFrame: nullableFrame("sampleFrame"),
     sampleAgeFrames: nullableFrame("sampleAgeFrames"),
     gpuMilliseconds: nullableNumber(data["gpuMilliseconds"], "gpuMilliseconds"),
-    passes: array(data["passes"], "gpu.passes", 256).map((item) => {
+    passes: array(data["passes"], "gpu.passes", maxGpuPasses).map((item) => {
       const pass = object(item, "gpu pass");
 
       return {
@@ -309,55 +385,56 @@ export function parseRecording(text: string): PerformanceRecording {
 
   const data = object(parsed, "root");
 
-  if (
-    data["format"] !== "jank.js-recording" &&
-    data["format"] !== "world-performance-recording"
-  )
+  if (data["format"] !== recordingFormat && data["format"] !== legacyFormat)
     fail("format");
 
   const version = integer(data["version"], "version", 1, 2);
 
   // Version 1 is the legacy engine export; jank.js writes only version 2.
-  if ((version === 2) !== (data["format"] === "jank.js-recording"))
+  if ((version === 2) !== (data["format"] === recordingFormat))
     fail("format/version");
 
-  if (data["units"] !== "milliseconds") fail("units");
+  if (data["units"] !== milliseconds) fail("units");
 
   let previousAt = -Infinity;
 
   const ids = new Set<number>();
 
-  const frames: DiagnosticFrame[] = array(data["frames"], "frames", 6000).map(
-    (item, index) => {
-      const frame = object(item, "frame"),
-        at = number(frame["at"], "frame.at", -Number.MAX_VALUE),
-        interval = number(
-          frame["interval"],
-          "frame.interval",
-          Number.MIN_VALUE,
-        );
+  const frames: DiagnosticFrame[] = array(
+    data["frames"],
+    "frames",
+    recordingFrameCapacity,
+  ).map((item, index) => {
+    const frame = object(item, "frame"),
+      at = number(frame["at"], "frame.at", -Number.MAX_VALUE),
+      interval = number(frame["interval"], "frame.interval", Number.MIN_VALUE);
 
-      const id =
-        version === 1 ? index + 1 : integer(frame["id"], "frame.id", 1);
+    const id = version === 1 ? index + 1 : integer(frame["id"], "frame.id", 1);
 
-      if (ids.has(id) || at < previousAt) fail("frame ordering/IDs");
+    if (ids.has(id) || at < previousAt) fail("frame ordering/IDs");
 
-      ids.add(id);
+    ids.add(id);
 
-      previousAt = at;
+    previousAt = at;
 
-      const scopes =
-        version === 1
-          ? []
-          : array(frame["scopes"], "frame.scopes", 1024).map((entry) => {
+    const scopes =
+      version === 1
+        ? []
+        : array(frame["scopes"], "frame.scopes", maxScopesPerFrame).map(
+            (entry) => {
               const scope = object(entry, "scope"),
                 start = number(
                   scope["start"],
                   "scope.start",
-                  at - interval - 0.000001,
-                  at + 0.000001,
+                  at - interval - toleranceMs,
+                  at + toleranceMs,
                 ),
-                end = number(scope["end"], "scope.end", start, at + 0.000001);
+                end = number(
+                  scope["end"],
+                  "scope.end",
+                  start,
+                  at + toleranceMs,
+                );
 
               return {
                 system: string(scope["system"], "scope.system"),
@@ -365,45 +442,46 @@ export function parseRecording(text: string): PerformanceRecording {
                 start,
                 end,
               };
-            });
+            },
+          );
 
-      const cost =
-        version === 1 ? null : object(frame["overhead"], "frame.overhead");
+    const cost =
+      version === 1 ? null : object(frame["overhead"], "frame.overhead");
 
-      return {
-        id,
-        at,
-        interval,
-        update: number(frame["update"], "frame.update"),
-        render: number(frame["render"], "frame.render"),
-        scopes,
-        coverage:
-          version === 1
-            ? "unavailable"
-            : choice(
-                frame["coverage"],
-                ["complete", "truncated", "unavailable"],
-                "frame.coverage",
-              ),
-        droppedScopes:
-          version === 1 ? 0 : integer(frame["droppedScopes"], "droppedScopes"),
-        overhead: {
-          collectionMs: cost ? number(cost["collectionMs"], "collectionMs") : 0,
-          refreshMs: cost ? number(cost["refreshMs"], "refreshMs") : 0,
-        },
-      };
-    },
-  );
+    return {
+      id,
+      at,
+      interval,
+      update: number(frame["update"], "frame.update"),
+      render: number(frame["render"], "frame.render"),
+      scopes,
+      coverage:
+        version === 1
+          ? "unavailable"
+          : choice(
+              frame["coverage"],
+              ["complete", "truncated", "unavailable"],
+              "frame.coverage",
+            ),
+      droppedScopes:
+        version === 1 ? 0 : integer(frame["droppedScopes"], "droppedScopes"),
+      overhead: {
+        collectionMs: cost ? number(cost["collectionMs"], "collectionMs") : 0,
+        refreshMs: cost ? number(cost["refreshMs"], "refreshMs") : 0,
+      },
+    };
+  });
 
   const budget = version === 1 ? null : object(data["budget"], "budget");
 
   const targetFps = budget
-    ? number(budget["targetFps"], "targetFps", 1, 1000)
-    : 60;
+    ? number(budget["targetFps"], "targetFps", 1, maxTargetFps)
+    : defaultTargetFps;
 
   if (
     budget &&
-    Math.abs(number(budget["frameMs"], "frameMs") - 1000 / targetFps) > 0.000001
+    Math.abs(number(budget["frameMs"], "frameMs") - msPerSecond / targetFps) >
+      toleranceMs
   )
     fail("inconsistent frame budget");
 
@@ -411,7 +489,12 @@ export function parseRecording(text: string): PerformanceRecording {
     format: "jank.js-recording",
     version: 2,
     units: "milliseconds",
-    frameCapacity: integer(data["frameCapacity"], "frameCapacity", 1, 6000),
+    frameCapacity: integer(
+      data["frameCapacity"],
+      "frameCapacity",
+      1,
+      recordingFrameCapacity,
+    ),
     frames,
     metadata:
       version === 1
@@ -424,7 +507,7 @@ export function parseRecording(text: string): PerformanceRecording {
             importedFromVersion: 1,
           }
         : metadata(data["metadata"]),
-    budget: { targetFps, frameMs: 1000 / targetFps },
+    budget: { targetFps, frameMs: msPerSecond / targetFps },
     capture:
       version === 1
         ? {
@@ -449,7 +532,7 @@ export function parseRecording(text: string): PerformanceRecording {
           }
         : overhead(data["overhead"]),
     systems: systems(data["systems"]),
-    samples: array(data["samples"], "samples", 1200)
+    samples: array(data["samples"], "samples", maxSamples)
       .map((item) => {
         const sample = object(item, "sample");
 
@@ -459,13 +542,13 @@ export function parseRecording(text: string): PerformanceRecording {
         };
       })
       .toSorted((a, b) => a.at - b.at),
-    events: array(data["events"], "events", 200).map((item) => {
+    events: array(data["events"], "events", maxEvents).map((item) => {
       const event = object(item, "event");
 
       return {
         at: number(event["at"], "event.at", -Number.MAX_VALUE),
         label: string(event["label"], "event.label"),
-        detail: string(event["detail"], "event.detail", 2000),
+        detail: string(event["detail"], "event.detail", maxDetailLength),
       };
     }),
   };
@@ -473,19 +556,26 @@ export function parseRecording(text: string): PerformanceRecording {
   if (data["gpu"] !== undefined) {
     const gpu = object(data["gpu"], "gpu");
 
-    if (gpu["units"] !== "milliseconds") fail("gpu.units");
+    if (gpu["units"] !== milliseconds) fail("gpu.units");
 
     result.gpu = {
       units: "milliseconds",
-      measurement: string(gpu["measurement"], "gpu.measurement", 2000),
+      measurement: string(
+        gpu["measurement"],
+        "gpu.measurement",
+        maxDetailLength,
+      ),
       latest: gpu["latest"] === null ? null : gpuProfile(gpu["latest"]),
-      samples: array(gpu["samples"], "gpu.samples", 6000).map(gpuProfile),
+      samples: array(gpu["samples"], "gpu.samples", recordingFrameCapacity).map(
+        gpuProfile,
+      ),
     };
   }
 
   return result;
 }
 
+/** Serializes a recording, validating it with the import parser first so exports always re-import. */
 export function serializeRecording(recording: PerformanceRecording): string {
   const text = JSON.stringify(recording);
 

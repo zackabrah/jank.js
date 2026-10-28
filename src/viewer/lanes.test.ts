@@ -6,10 +6,11 @@ import { createDiagnostics } from "../core/diagnostics.ts";
 
 import { parseRecording, serializeRecording } from "../core/recording.ts";
 
+import { eventsNear } from "../core/inspection.ts";
+
 import {
   buildLanes,
   environmentLine,
-  eventsNear,
   findCaptures,
   likelyScope,
   primaryCounters,
@@ -53,7 +54,6 @@ function session(automatic = false) {
     now += work / 2;
 
     physics.end(inner);
-
     physics.end(outer);
 
     now += interval - work;
@@ -61,13 +61,16 @@ function session(automatic = false) {
     return id;
   };
 
+  const spikes = new Map([
+    [20, 40],
+    [24, 40],
+    [60, 36],
+  ]);
+
   for (let i = 0; i < 80; i++) {
     if (i === 20) monitor.event("wave 3");
 
-    const id = frame(
-      i === 20 || i === 24 ? 40 : i === 60 ? 36 : 16,
-      i === 20 ? 30 : 2,
-    );
+    const id = frame(spikes.get(i) ?? 16, i === 20 ? 30 : 2);
 
     if (i % 10 === 0)
       monitor.observeGpu({
@@ -104,9 +107,7 @@ describe("viewer lanes", () => {
 
     // Nested physics scopes count once: 30 ms of work in a 40 ms frame.
     expect(lanes.cpu[0]!.values[at]).toBeCloseTo(30);
-
     expect(lanes.unattributed[at]).toBeCloseTo(10);
-
     expect(lanes.medians.get("physics")).toBeCloseTo(2);
 
     const gpuAt = lanes.gpu[0]!.values.findIndex(
@@ -114,13 +115,10 @@ describe("viewer lanes", () => {
     );
 
     expect(lanes.gpu[0]!.label).toBe("opaque");
-
     expect(lanes.gpuAge[gpuAt]).toBe(4);
-
     expect(
       lanes.gpu[0]!.values.filter((value) => !Number.isNaN(value)).length,
     ).toBe(8);
-
     expect(primaryCounters(lanes).map((lane) => lane.label)).toEqual([
       "draw calls",
       "objects",
@@ -132,11 +130,8 @@ describe("viewer lanes", () => {
     );
 
     expect(sampled.length).toBe(recording.samples.length);
-
     expect(likelyScope(lanes, at)).toMatchObject({ label: "Physics" });
-
     expect(likelyScope(lanes, at)?.delta).toBeCloseTo(28);
-
     expect(likelyScope(lanes, 5)).toBeNull();
   });
 
@@ -150,7 +145,6 @@ describe("viewer lanes", () => {
       [1, 40],
       [2, 36],
     ]);
-
     expect(manual.marks[0]!.near).toBe("wave 3");
 
     const automatic = session(true);
@@ -158,7 +152,6 @@ describe("viewer lanes", () => {
     const captured = findCaptures(automatic);
 
     expect(captured.rule).toBe("auto · threshold 30.0 ms · 3 before, 3 after");
-
     expect(captured.marks[0]!.id).toBe(automatic.capture.triggerFrame);
   });
 
@@ -170,13 +163,9 @@ describe("viewer lanes", () => {
     const line = environmentLine(recording, lanes);
 
     expect(line).toContain(`jank.js ${buildInfo.version}`);
-
     expect(line).toContain("lane fixture 1.0");
-
     expect(line).toContain("isolation unknown · cpu timer unknown");
-
     expect(line).toContain("instrumented: cpu, gpu, counters");
-
     expect(span(recording)).toMatch(/^\d+\.\d s$/);
 
     const events = eventsNear(recording, 20);

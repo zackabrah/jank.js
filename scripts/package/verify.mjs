@@ -12,19 +12,22 @@ const root = process.cwd();
 
 const temp = await mkdtemp(join(tmpdir(), "jank-consumer-"));
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const win32 = "win32";
 
+const windows = process.platform === win32;
+
+const npm = windows ? "npm.cmd" : "npm";
+
+/** Path to a locally installed CLI, with the .cmd shim on Windows. */
 const executable = (name) =>
-  resolve(
-    "node_modules/.bin",
-    name + (process.platform === "win32" ? ".cmd" : ""),
-  );
+  resolve("node_modules/.bin", name + (windows ? ".cmd" : ""));
 
+/** Runs a command synchronously and captures its output; Windows needs a shell for .cmd shims. */
 const run = (command, args, cwd) =>
   execFileSync(command, args, {
     cwd,
     stdio: "pipe",
-    ...(process.platform === "win32" ? { shell: true } : {}),
+    ...(windows ? { shell: true } : {}),
   });
 
 try {
@@ -95,11 +98,8 @@ try {
   );
 
   assert.ok(viewer.includes("jank.js recording viewer"));
-
   assert.ok(viewer.includes("Recording file"));
-
   assert.ok(!viewer.includes("@font-face"), "The viewer must use system fonts");
-
   assert.ok(
     !packageFiles.some((file) => /\.(woff2?|otf|ttf)$/i.test(file)),
     "The package must not ship font binaries",
@@ -111,9 +111,7 @@ try {
     !/@font-face|url\(|@import/i.test(font),
     "The legacy font.css entry must not load fonts",
   );
-
   assert.equal(manifest.exports["./viewer.html"], "./dist-package/viewer.html");
-
   assert.ok(!manifest.devDependencies.gsap);
 
   const style = await readFile(

@@ -5,12 +5,14 @@ import type {
   RecordingMetadata,
 } from "./recording-types.ts";
 
+export const maxTimerReads = 4096;
+
 /** Bounded observation, not a promise of the browser's true timer precision. */
 export function estimateTimerResolution(
   now: () => number,
   reads = 256,
 ): RecordingEnvironment["cpuTimer"] {
-  const count = Math.min(4096, Math.max(2, Math.floor(reads)));
+  const count = Math.min(maxTimerReads, Math.max(2, Math.floor(reads)));
 
   let previous = now(),
     minimum = Infinity;
@@ -34,6 +36,7 @@ export function estimateTimerResolution(
   };
 }
 
+/** An environment with every field null, for hosts and imports that report nothing. */
 export function unknownEnvironment(): RecordingEnvironment {
   return {
     userAgent: null,
@@ -51,6 +54,7 @@ export function unknownEnvironment(): RecordingEnvironment {
   };
 }
 
+/** Captures the version, browser, timer and application details stored with a recording. */
 export function recordingMetadata(
   timer: RecordingEnvironment["cpuTimer"],
   application: RecordingMetadata["application"],

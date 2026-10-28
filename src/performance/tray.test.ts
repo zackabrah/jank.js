@@ -76,21 +76,16 @@ describe("optional GPU performance view", () => {
     const profile = sample(2);
 
     expect(gpuTimingStatus(undefined)).toContain("waiting for the renderer");
-
     expect(gpuTimingStatus({ ...profile, status: "unsupported" })).toContain(
       "unsupported ·",
     );
-
     expect(gpuTimingStatus({ ...profile, status: "disabled" })).toContain(
       "off ·",
     );
-
     expect(gpuTimingStatus({ ...profile, status: "pending" })).toContain(
       "pending ·",
     );
-
     expect(gpuTimingStatus(profile)).toContain("ready ·");
-
     expect(
       gpuTimingStatus({
         ...profile,
@@ -104,11 +99,8 @@ describe("optional GPU performance view", () => {
     const history = new GpuProfileHistory(2, 3);
 
     history.observe(sample(1), false);
-
     history.observe(sample(1), false);
-
     history.observe(sample(2), false);
-
     history.observe(sample(3), false);
 
     expect(history.export(sample(3))).toMatchObject({
@@ -126,7 +118,6 @@ describe("optional GPU performance view", () => {
 
     for (let frame = 1; frame <= 5; frame++) {
       history.observe(sample(frame), true);
-
       history.observe(sample(frame), true);
     }
 
@@ -149,9 +140,7 @@ describe("optional GPU performance view", () => {
 
     // Sample 10 is two frames old, so renderer frames through 12 precede Record.
     history.start({ ...sample(10), currentFrame: null });
-
     history.observe(sample(11), true);
-
     history.observe(sample(12), true);
 
     expect(history.export(sample(12)).samples).toEqual([]);
@@ -163,7 +152,6 @@ describe("optional GPU performance view", () => {
     ).toEqual([13]);
 
     history.start(sample(13));
-
     history.observe(sample(16), true);
 
     expect(
@@ -175,7 +163,6 @@ describe("optional GPU performance view", () => {
     const history = new GpuProfileHistory();
 
     history.start({ ...disabled(15), enabled: true, status: "pending" });
-
     history.observe(
       { ...sample(10), currentFrame: 16, sampleAgeFrames: 6 },
       true,
@@ -197,12 +184,10 @@ describe("optional GPU performance view", () => {
     const history = new GpuProfileHistory();
 
     history.start(disabled(15));
-
     history.observe(
       { ...disabled(17), enabled: true, status: "pending" },
       true,
     );
-
     history.observe(
       { ...sample(14), currentFrame: 18, sampleAgeFrames: 4 },
       true,
@@ -231,7 +216,6 @@ describe("optional GPU performance view", () => {
       const history = new GpuProfileHistory();
 
       history.start(initial);
-
       history.observe(unavailable, true);
 
       // The first known current frame is 16; its sample from frame 10 is older.
@@ -239,7 +223,6 @@ describe("optional GPU performance view", () => {
         { ...sample(10), currentFrame: 16, sampleAgeFrames: 6 },
         true,
       );
-
       history.observe(sample(16), true);
 
       expect(history.export(undefined).samples).toEqual([]);
@@ -258,11 +241,9 @@ describe("optional GPU performance view", () => {
     const zero = sample(1, 0);
 
     history.start(disabled(0));
-
     history.observe(zero, true);
 
     zero.gpuMilliseconds = 200;
-
     zero.passes = [{ label: "Changed", milliseconds: 200 }];
 
     const unavailable = {
@@ -280,7 +261,6 @@ describe("optional GPU performance view", () => {
       gpuMilliseconds: 0,
       passes: [{ label: "Water", milliseconds: 0 }],
     });
-
     expect(exported.samples[1]).toMatchObject({
       gpuMilliseconds: null,
       passes: [{ label: "Water", milliseconds: null }],
@@ -295,15 +275,10 @@ describe("optional GPU performance view", () => {
     const history = new GpuProfileHistory();
 
     history.start(disabled(0));
-
     history.observe({ ...sample(1), status: "pending" }, true);
-
     history.observe({ ...sample(1), status: "error" }, true);
-
     history.observe(sample(2), true);
-
     history.clear(sample(2));
-
     history.observe(sample(2), false);
 
     expect(history.export(sample(2)).samples).toEqual([]);
@@ -331,9 +306,7 @@ describe("optional visibility performance view", () => {
     };
 
     expect(visibilityCullingStatus(undefined)).toBe("waiting for the renderer");
-
     expect(visibilityCullingStatus(profile)).toContain("on ·");
-
     expect(visibilityCullingStatus({ ...profile, enabled: false })).toContain(
       "off ·",
     );
@@ -361,17 +334,11 @@ describe("optional visibility performance view", () => {
     const copy = copyCullingDiagnostics(profile);
 
     profile.main.culled = 3;
-
     profile.shadow.tested = 8;
-
     profile.reflection.visible = 7;
-
     profile.bounds[0]!.label = "Changed";
-
     profile.bounds[0]!.min[0] = 10;
-
     profile.bounds[0]!.max[2] = 99;
-
     profile.viewProjection[0] = 22;
 
     expect(copy).toMatchObject({
@@ -381,9 +348,7 @@ describe("optional visibility performance view", () => {
       bounds: [{ label: "Reed batch", min: [1, 2, 3], max: [4, 5, 6] }],
       boundsOmitted: 2,
     });
-
     expect(copy.viewProjection?.[0]).toBe(1);
-
     expect(
       copyCullingDiagnostics({ ...profile, viewProjection: null })
         .viewProjection,
@@ -420,7 +385,6 @@ class TrayElement {
   }
   append(value: TrayElement) {
     this.child = value;
-
     this.children.push(value);
   }
   querySelector(selector: string) {
@@ -552,7 +516,9 @@ describe("readout rules", () => {
     let at = 0;
 
     const frames = Array.from({ length: 70 }, (_, i) => {
-      const interval = i === 40 ? 40 : i % 2 ? 16.7 : 16.8;
+      const steady = i % 2 ? 16.7 : 16.8;
+
+      const interval = i === 40 ? 40 : steady;
 
       at += interval;
 
@@ -562,18 +528,14 @@ describe("readout rules", () => {
     const stats = frameStats(frames, 1000 / 60, 0.1)!;
 
     expect(stats).toMatchObject({ worst: 40, worstFrame: 41, missed: 1 });
-
     expect(stats.limitMs).toBeCloseTo(1000 / 60 + 0.2);
-
     expect(stats.fps).toBe(
       frames.filter((entry) => entry.at > at - 1000).length,
     );
-
     expect(stats.p95).toBe(16.8);
 
     // Under a second of history, the panel says nothing about frames per second.
     expect(frameStats(frames.slice(0, 20), 1000 / 60, 0.1)?.fps).toBeNull();
-
     expect(frameStats([], 1000 / 60, 0.1)).toBeNull();
 
     // With no core estimate the tick is the smallest step between distinct intervals.
@@ -596,14 +558,11 @@ describe("readout rules", () => {
     ]);
 
     expect(averages.measured).toBe(1);
-
     expect(averages.systems.get("physics")?.ms).toBe(4);
-
     expect(averages.systems.get("render")).toEqual({
       label: "render submit",
       ms: 2,
     });
-
     expect(averages.unattributed).toBe(4);
 
     // A cache keyed by frame ID gives the same answer and drops frames that left the view.
@@ -616,43 +575,26 @@ describe("readout rules", () => {
     );
 
     expect(scopeAverages(frames, cache).systems.get("physics")?.ms).toBe(3);
-
     expect(cache.size).toBe(6);
-
     expect(scopeAverages(frames.slice(4), cache).unattributed).toBe(7);
-
     expect([...cache.keys()]).toEqual([5, 6]);
   });
 
   it("formats readouts without rounding values away or splitting words", () => {
     expect(count(2388)).toBe("2,388");
-
     expect(counter(1_920_000)).toBe("1.92M");
-
     expect(counter(null)).toBe("unknown");
-
     expect(counter(0.125)).toBe("0.13");
-
     expect(words("drawCalls")).toBe("draw calls");
-
     expect(words("cache_hits")).toBe("cache hits");
-
     expect(duration(0.1)).toBe("100 µs");
-
     expect(shorten("load chunk 14", 10)).toBe("load chunk");
-
     expect(shorten("checkpoint", 4)).toBe("");
-
     expect(observedTick([16.6, 16.600000001, 16.7, 16.8])).toBeCloseTo(0.1);
-
     expect(observedTick([16, 40])).toBe(1);
-
     expect(observedTick([16])).toBeNull();
-
     expect(axisStep(6.1)).toBe(2.5);
-
     expect(axisStep(609)).toBe(250);
-
     expect(
       timerHonesty({
         ...unknownEnvironment(),
@@ -684,21 +626,17 @@ describe("panel sizes", () => {
     const root = shell.child!;
 
     expect(root.dataset["mode"]).toBe("mini");
-
     expect(root.dataset["corner"]).toBe("top-right");
-
     expect(stored.size).toBe(0);
 
     root.querySelector('[data-action="mini-shrink"]').click();
 
     expect(root.dataset["mode"]).toBe("line");
-
     expect(expanded).toHaveBeenLastCalledWith(false);
 
     root.querySelector('[data-action="line-grow"]').click();
 
     expect(root.dataset["mode"]).toBe("full");
-
     expect(expanded).toHaveBeenLastCalledWith(true);
 
     root.querySelector('[data-action="full-shrink"]').click();
@@ -715,7 +653,6 @@ describe("panel sizes", () => {
     });
 
     expect(shell.child!.dataset["mode"]).toBe("mini");
-
     expect(shell.child!.dataset["corner"]).toBe("bottom-left");
 
     tray.dispose();
@@ -743,9 +680,7 @@ describe("panel sizes", () => {
     root.querySelector('[data-action="summary"]').click();
 
     expect(text(root, "summary")).toContain("63 fps, 16.0 ms average");
-
     expect(text(root, "fps")).toBe("63");
-
     expect(text(root, "honest-cpu")).toBe(
       "isolation unknown · cpu timer unknown",
     );
@@ -769,7 +704,6 @@ describe("budget and capture controls", () => {
     root.querySelector('[data-fps="30"]').click();
 
     expect(monitor.snapshot().budget.targetFps).toBe(30);
-
     expect(text(root, "budget")).toBe("33.3");
 
     const input = root.querySelector('input[aria-label="Target FPS"]');
@@ -779,19 +713,15 @@ describe("budget and capture controls", () => {
     expect(input.value).toBe("30");
 
     input.value = "2000";
-
     input.trigger("keydown", { key: "Enter" });
 
     expect(input.getAttribute("aria-invalid")).toBe("true");
-
     expect(monitor.snapshot().budget.targetFps).toBe(30);
 
     input.value = "45";
-
     input.trigger("keydown", { key: "Enter" });
 
     expect(monitor.snapshot().budget.targetFps).toBe(45);
-
     expect(input.hidden).toBe(true);
 
     tray.dispose();
@@ -826,7 +756,6 @@ describe("budget and capture controls", () => {
     expect(threshold.value).toBe("33.33");
 
     threshold.value = "50";
-
     threshold.trigger("keydown", { key: "Enter" });
 
     expect(monitor.snapshot().capture.thresholdMs).toBe(50);
@@ -836,7 +765,6 @@ describe("budget and capture controls", () => {
     root.querySelector('[data-edit="before"]').click();
 
     before.value = "700";
-
     before.trigger("keydown", { key: "Enter" });
 
     expect(before.getAttribute("aria-invalid")).toBe("true");
@@ -844,7 +772,6 @@ describe("budget and capture controls", () => {
     before.trigger("keydown", { key: "Escape" });
 
     expect(before.hidden).toBe(true);
-
     expect(monitor.snapshot().capture.beforeFrames).toBe(2);
 
     root.querySelector('[data-action="auto"]').click();
@@ -878,7 +805,6 @@ describe("budget and capture controls", () => {
     const root = shell.child!;
 
     root.querySelector('[data-tab="capture"]').click();
-
     root.querySelector('[data-action="auto"]').click();
 
     const step = (ms: number) => {
@@ -902,11 +828,8 @@ describe("budget and capture controls", () => {
     const rows = root.querySelector('[data-k="captures"]').children;
 
     expect(rows).toHaveLength(1);
-
     expect(rows[0]!.querySelector(".jank-near").textContent).toBe("spawn ×184");
-
     expect(rows[0]!.querySelector(".jank-ms").textContent).toBe("40.0 ms");
-
     expect(rows[0]!.querySelector(".jank-ms").dataset["tone"]).toBe("miss");
 
     tray.dispose();
@@ -927,14 +850,12 @@ describe("budget and capture controls", () => {
 
     for (let i = 0; i < 10; i++) {
       monitor.beginFrame((time += 16));
-
       monitor.recordOverhead("refresh", 1);
     }
 
     tray.refresh(1000);
 
     expect(text(root, "oh-refresh")).toBe("1.00");
-
     expect(text(root, "oh-note")).toContain("redraw lowered to 4 per s");
 
     tray.dispose();
@@ -948,9 +869,7 @@ describe("optional temporal performance view", () => {
     const profile = temporalProfile();
 
     expect(temporalHistoryStatus(undefined)).toContain("waiting");
-
     expect(temporalHistoryStatus(profile)).toContain("previous transforms");
-
     expect(
       temporalHistoryStatus({ ...profile, objectMotion: false }),
     ).toContain("camera motion only");
@@ -989,25 +908,19 @@ describe("optional temporal performance view", () => {
     tray.refresh(0);
 
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
-
     expect(debug.value).toBe("none");
-
     expect(root.innerHTML).toContain('value="motion">motion vectors');
-
     expect(root.innerHTML).toContain('value="history">history validity');
 
     toggle.click();
 
     debug.value = "motion";
-
     debug.trigger("change");
 
     expect(source.setEnabled).toHaveBeenCalledExactlyOnceWith(false);
-
     expect(source.setDebugView).toHaveBeenCalledExactlyOnceWith("motion");
 
     debug.value = "invalid";
-
     debug.trigger("change");
 
     expect(source.setDebugView).toHaveBeenCalledTimes(1);
@@ -1019,7 +932,6 @@ describe("optional temporal performance view", () => {
     tray.refresh(1000);
 
     expect(debug.value).toBe("motion");
-
     expect(text(root, "temporal-status")).toContain("waiting");
 
     tray.dispose();
@@ -1027,13 +939,10 @@ describe("optional temporal performance view", () => {
     toggle.click();
 
     debug.value = "history";
-
     debug.trigger("change");
 
     expect(source.setEnabled).toHaveBeenCalledTimes(1);
-
     expect(source.setDebugView).toHaveBeenCalledTimes(1);
-
     expect(root.removed).toBe(true);
   });
 
@@ -1074,15 +983,12 @@ describe("optional temporal performance view", () => {
     tray.refresh(1000);
 
     expect(text(root, "temporal-counts")).toContain("rigid history 5");
-
     expect(text(root, "state")).toBe("FROZEN");
-
     expect(
       root
         .querySelector('[data-action="temporal"]')
         .getAttribute("aria-pressed"),
     ).toBe("false");
-
     expect(
       root.querySelector('select[aria-label="Temporal debug view"]').value,
     ).toBe("history");
@@ -1097,7 +1003,6 @@ describe("optional temporal performance view", () => {
 
       return "blob:temporal-test";
     });
-
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
     root.querySelector('[data-action="export"]').click();
@@ -1163,15 +1068,12 @@ describe("loading preparation view", () => {
     const root = shell.child!;
 
     root.querySelector('[data-action="line-grow"]').click();
-
     root.querySelector('[data-tab="loading"]').click();
 
     tray.refresh(0);
 
     expect(text(root, "total")).toBe("20.0");
-
     expect(text(root, "unit")).toBe("MS");
-
     expect(text(root, "loading-status")).toContain("Island startup");
 
     root.querySelector('[data-action="freeze"]').click();
@@ -1191,7 +1093,6 @@ describe("loading preparation view", () => {
     tray.refresh(2000);
 
     expect(text(root, "total")).toBe("5.0");
-
     expect(text(root, "cold")).toBe("20.0");
 
     const sessions = root.querySelector('[data-k="sessions"]').children;
@@ -1199,7 +1100,6 @@ describe("loading preparation view", () => {
     expect(
       sessions.map((row) => row.querySelector(".jank-k").textContent),
     ).toEqual(["#1 cold", "#2 now"]);
-
     expect(text(root, "loading-status")).toContain("stages overlap");
 
     tray.dispose();
@@ -1228,19 +1128,15 @@ it("rejects duplicate mounts and makes disposal and late refresh harmless", () =
   const calls = read.mock.calls.length;
 
   tray.dispose();
-
   tray.dispose();
-
   tray.refresh(1000);
 
   expect(read).toHaveBeenCalledTimes(calls);
-
   expect(shell.child!.removed).toBe(true);
 
   const replacement = createPerformanceTray({ shell: host, monitor });
 
   replacement.refresh(2000);
-
   replacement.dispose();
 
   monitor.dispose();

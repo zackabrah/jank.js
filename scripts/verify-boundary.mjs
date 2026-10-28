@@ -51,7 +51,6 @@ await Promise.all(
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 
 assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);
-
 assert.equal(Object.keys(manifest.peerDependencies ?? {}).length, 0);
 
 // npm links the package page and the README's relative links through these.

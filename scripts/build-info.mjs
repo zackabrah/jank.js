@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { execFileSync } from "node:child_process";
 
+/** Package version plus the Git commit and whether tracked files are modified; commit is null outside Git. */
 export function readBuildInfo() {
   const { version } = JSON.parse(readFileSync("package.json", "utf8"));
 

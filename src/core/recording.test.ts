@@ -37,15 +37,12 @@ it("rejects malformed, future, oversized and out-of-frame recordings", () => {
   const recording = monitor.export();
 
   expect(() => parseRecording("not json")).toThrow("not valid JSON");
-
   expect(() => parseRecording(" ".repeat(MAX_RECORDING_BYTES + 1))).toThrow(
     "32 MiB",
   );
-
   expect(() =>
     parseRecording(JSON.stringify({ ...recording, version: 999 })),
   ).toThrow("version");
-
   expect(() =>
     parseRecording(
       JSON.stringify({
@@ -54,7 +51,6 @@ it("rejects malformed, future, oversized and out-of-frame recordings", () => {
       }),
     ),
   ).toThrow("interval");
-
   expect(() =>
     parseRecording(
       JSON.stringify({
@@ -68,7 +64,6 @@ it("rejects malformed, future, oversized and out-of-frame recordings", () => {
       }),
     ),
   ).toThrow("scope.end");
-
   expect(() =>
     parseRecording(
       JSON.stringify({
@@ -96,17 +91,12 @@ it("imports v1 without inventing environment, exact attribution or overhead evid
   expect(() =>
     parseRecording(JSON.stringify({ ...legacy, format: "jank.js-recording" })),
   ).toThrow("format/version");
-
   expect(recording.format).toBe("jank.js-recording");
-
   expect(recording.metadata.importedFromVersion).toBe(1);
-
   expect(
     recording.metadata.environment.cpuTimer.estimatedResolutionMs,
   ).toBeNull();
-
   expect(recording.frames[0]?.coverage).toBe("unavailable");
-
   expect(recording.overhead.frames).toBe(0);
 });
 
@@ -125,9 +115,7 @@ it("emits only opt-in scopes/markers and clears only its own timing entries", ()
   expect(timeline.measure).not.toHaveBeenCalled();
 
   sink.setEnabled(true);
-
   sink.scope("a", "A", 1, 2);
-
   sink.marker("Loaded", "Ready", 3);
 
   expect(timeline.measure.mock.calls[0]?.[1]).toMatchObject({
@@ -135,13 +123,11 @@ it("emits only opt-in scopes/markers and clears only its own timing entries", ()
     end: 2,
     detail: { devtools: { track: "A", trackGroup: "jank.js" } },
   });
-
   expect(timeline.clearMeasures).toHaveBeenCalledWith(
     timeline.measure.mock.calls[0]?.[0],
   );
 
   sink.dispose();
-
   sink.marker("Ignored", "", 4);
 
   expect(timeline.mark).toHaveBeenCalledTimes(1);
