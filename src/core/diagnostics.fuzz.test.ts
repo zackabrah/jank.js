@@ -91,6 +91,9 @@ function thrown(call: () => void): unknown {
   }
 }
 
+/** The longest real step between frames; larger values are hostile timestamps. */
+const maxStepMs = 1000;
+
 /** True for a recorded time or cost: finite and not negative. */
 const valid = (value: number) => Number.isFinite(value) && value >= 0;
 
@@ -124,10 +127,13 @@ describe("monitor under random use", () => {
 
         for (const next of commands) {
           if (next.kind === "frame") {
-            if (Number.isFinite(next.step) && next.step >= 0) now += next.step;
+            // A real step moves the host's clock; anything else is passed as a hostile
+            // timestamp, so the clock itself never overflows.
+            const real = next.step >= 0 && next.step <= maxStepMs;
 
-            const at =
-              Number.isFinite(next.step) && next.step >= 0 ? now : next.step;
+            if (real) now += next.step;
+
+            const at = real ? now : next.step;
 
             undocumented.push(thrown(() => monitor.beginFrame(at)));
 
@@ -151,13 +157,14 @@ describe("monitor under random use", () => {
           else monitor.setExpanded(next.kind === "expand");
         }
 
+        // A hostile timestamp ahead of the clock legitimately leaves later frames refused.
+        undocumented.push(thrown(() => monitor.beginFrame(now + 16)));
+
         expect(
           undocumented.filter(
             (error) => error !== null && !(error instanceof RangeError),
           ),
         ).toEqual([]);
-
-        monitor.beginFrame(now + 16);
 
         const snapshot = monitor.snapshot();
 
