@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Line up the CAPTURE tab's ON/OFF toggles and status chips: they share one box, so ON and OFF sit in a straight column.
 - Make the panel easier to read. The graph's text stays still: the worst frame's time sits in the top-left corner and the newest event's label, with its age, sits under the graph, while only the worst-frame marker and event ticks move with the bars. Over-budget ▲ markers are drawn as tall as the digits they mark and are named "over budget" for screen readers. The mini readout splits into three equal columns with each unit above its number, so readings keep their place as digits change.
 - Add `jank.js/adapters/webgl2`, which times named WebGL2 render passes with `EXT_disjoint_timer_query_webgl2` and links each sample to the frame that drew it. Where the browser doesn't expose the extension it reports `unsupported` rather than estimating GPU time from CPU timing.
 - Use system monospace fonts in the panel and offline viewer, removing bundled font downloads. The `jank.js/font.css` export remains as an empty compatibility stylesheet.

@@ -235,6 +235,20 @@
   line-height: 18px;
   letter-spacing: 0.08em;
 }
+/* Toggles and the status chips beside them share one box, wide enough for OFF, so ON and
+   OFF line up down a column. :where keeps the chip rule below the OFF chip's border. */
+.jank .jank-toggle,
+.jank :where(.jank-switch) .jank-chip {
+  min-width: calc(3ch + 3 * 0.08em + 14px);
+  height: 18px;
+  font-size: var(--jank-size-label);
+  text-align: center;
+}
+.jank :where(.jank-switch) .jank-chip {
+  display: inline-block;
+  line-height: 16px;
+  border: 1px solid transparent;
+}
 
 /* Line: one row */
 .jank .jank-line {
@@ -597,7 +611,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   padding: 0 10px;
   color: var(--jank-muted);
   white-space: nowrap;
@@ -605,9 +619,11 @@
 .jank .jank-switch i {
   color: var(--jank-dim);
 }
-.jank .jank-switch .jank-chip {
-  font-size: var(--jank-size-label);
-  line-height: 18px;
+/* A long label gives way, so the chip or toggle keeps its place at the column's edge. */
+.jank .jank-switch > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .jank .jank-actions {
   display: flex;
