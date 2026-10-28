@@ -114,7 +114,7 @@ See it catch something in [Junktro](https://junktro.junklab.au/), a deliberately
 pnpm check          # format, lint, unit tests, types and builds
 pnpm test:e2e       # the packaged panel and viewer in Chromium, Firefox and WebKit
 pnpm bench          # overhead on your machine
-pnpm docs:captures  # retake the README images (needs ffmpeg)
+pnpm docs:captures  # retake the README images and social card (needs ffmpeg)
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

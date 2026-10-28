@@ -29,7 +29,11 @@ const settleMs = 400;
 /** The fixture spikes, as the browser suite injects them. */
 const spikeMs = 40;
 
-const captureSpikeMs = 45;
+/**
+ * Chrome can stamp 45 ms of work as two 33.3 ms frames, which don't pass the default 33.3 ms
+ * capture threshold. 60 ms spans enough vsyncs to read 50 ms every time.
+ */
+const captureSpikeMs = 60;
 
 /** The annotated view: callout column width, the gap its leaders cross, line height and spacing. */
 const annotation = { column: 250, gap: 44, line: 16, spacing: 12, arrow: 5 };
@@ -58,6 +62,9 @@ const callouts = [
   ],
   ['[data-k="honest-cpu"]', "timer precision here, and the jank.js build"],
 ];
+
+/** GitHub's social preview size. */
+const card = { width: 1280, height: 640 };
 
 /** The running GIF: frames per second, time before the spike and after the event. */
 const gif = { fps: 20, leadMs: 600, tailMs: 2400 };
@@ -112,21 +119,23 @@ async function open(query = "") {
 /** Waits for some frames to flow. */
 const settle = () => page.waitForTimeout(settleMs);
 
+/** The panel's size and its distance from the window's edges. */
+const measure = () =>
+  page.locator(".jank").evaluate((panel) => {
+    const box = panel.getBoundingClientRect();
+
+    return {
+      width: box.width,
+      height: box.height,
+      inset: parseFloat(
+        getComputedStyle(panel).getPropertyValue("--jank-inset"),
+      ),
+    };
+  });
+
 /** Shrinks the window to the panel plus its inset on every side, and room on the left. */
 async function frame(left = 0) {
-  const { width, height, inset } = await page
-    .locator(".jank")
-    .evaluate((panel) => {
-      const box = panel.getBoundingClientRect();
-
-      return {
-        width: box.width,
-        height: box.height,
-        inset: parseFloat(
-          getComputedStyle(panel).getPropertyValue("--jank-inset"),
-        ),
-      };
-    });
+  const { width, height, inset } = await measure();
 
   await page.setViewportSize({
     width: Math.ceil(left + width + 2 * inset),
@@ -161,7 +170,7 @@ async function annotate(name) {
       const layer = document.createElement("div");
 
       layer.className = "jank-viewer";
-      layer.dataset["annotations"] = "";
+      layer.dataset["overlay"] = "";
       layer.style.cssText = `position: fixed; inset: 0; z-index: 31; pointer-events: none; color: var(--jank-muted); font: 400 var(--jank-size-body) / ${line}px var(--jank-font);`;
 
       const svg = document.createElementNS(svgns, "svg");
@@ -224,9 +233,7 @@ async function annotate(name) {
 
   await page.screenshot({ path: `${out}/${name}.png` });
 
-  await page.evaluate(() =>
-    document.querySelector("[data-annotations]").remove(),
-  );
+  await page.evaluate(() => document.querySelector("[data-overlay]").remove());
 
   await page.setViewportSize(roomy);
 
@@ -296,6 +303,80 @@ async function film(name, steps) {
   console.log(`${out}/${name}.gif (${shots.length} frames)`);
 }
 
+/** The social card: the wordmark and what jank.js is, beside the live panel at its inset. */
+async function social(name) {
+  // The card is shorter than the panel: scale all of it to fit, keeping its inset on screen.
+  const { height, inset } = await measure();
+
+  const zoom = (card.height - 2 * inset) / height;
+
+  await page.addStyleTag({
+    content: `.jank { zoom: ${zoom}; --jank-inset: ${inset / zoom}px; } .jank .jank-full { max-height: none; }`,
+  });
+
+  await page.setViewportSize(card);
+
+  await settle();
+
+  // The art, without the tagline under it.
+  const [art] = (await readFile(`${out}/wordmark.txt`, "utf8")).split("\n\n");
+
+  // Each line of the left column and its style, top to bottom.
+  const pitch = [
+    [
+      "JUNKLAB PRESENTS",
+      "font-size: var(--jank-size-label); letter-spacing: var(--jank-track-label); color: var(--jank-dim);",
+    ],
+    [
+      art,
+      "white-space: pre; font-size: 15px; line-height: 17px; color: var(--jank-text);",
+    ],
+    [
+      "A performance monitor that runs inside your browser game.",
+      "font-size: 20px; line-height: 28px; color: var(--jank-text);",
+    ],
+    [
+      "Frame pacing, the systems you name, and the slow frame with the frames around it, in a recording you can open offline.",
+      "max-width: 600px; font-size: 15px; line-height: 22px;",
+    ],
+    [
+      "zero runtime dependencies · ~4.3 KB core · ~23 KB with the panel · MIT",
+      "font-size: var(--jank-size-label); color: var(--jank-dim);",
+    ],
+  ];
+
+  await page.evaluate((lines) => {
+    const panel = document.querySelector(".jank").getBoundingClientRect();
+
+    // The tool's own tokens, in the space left of the panel.
+    const layer = document.createElement("div");
+
+    layer.className = "jank-viewer";
+    layer.dataset["overlay"] = "";
+    layer.style.cssText = `position: fixed; inset: 0 ${innerWidth - panel.left}px 0 0; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding: 0 64px; color: var(--jank-muted); font-family: var(--jank-font);`;
+
+    for (const [text, style] of lines) {
+      const line = document.createElement("p");
+
+      line.textContent = text;
+      line.style.cssText = `margin: 0; ${style}`;
+
+      layer.append(line);
+    }
+
+    document.body.append(layer);
+  }, pitch);
+
+  // GitHub's own size, drawn from the sharp 2x render.
+  await page.screenshot({ path: `${out}/${name}.png`, scale: "css" });
+
+  await page.evaluate(() => document.querySelector("[data-overlay]").remove());
+
+  await page.setViewportSize(roomy);
+
+  console.log(`${out}/${name}.png`);
+}
+
 // LIVE while recording, annotated: two spikes and two events, so the graph shows what it marks.
 await open("?mode=full");
 
@@ -316,6 +397,11 @@ await settle();
 await page.evaluate((ms) => window.fixture.spike(ms), spikeMs);
 
 await annotate("panel-annotated");
+
+// A fresh spike for the social card; the others have scrolled on.
+await page.evaluate((ms) => window.fixture.spike(ms), spikeMs);
+
+await social("social-preview-dark");
 
 // One line, then the mini view, over the same spike.
 await open();
