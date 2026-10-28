@@ -14,7 +14,7 @@ pnpm bench
 pnpm pack --pack-destination artifacts
 ```
 
-`pnpm verify:boundary` checks the source boundary. `pnpm test:package` installs the tarball in an isolated consumer and checks exports, types, styles, fonts, the offline viewer and the package version written into recordings. Inspect the archive and open `OPEN RECORDING VIEWER.html` before release. The package must have zero runtime dependencies. The viewer at `dist/viewer/viewer/index.html` can be served by any static host. When the panel or viewer has changed, run `pnpm docs:images` and review the screenshot diff.
+`pnpm verify:boundary` checks the source boundary. `pnpm test:package` installs the tarball in an isolated consumer and checks exports, types, styles, fonts, the offline viewer and the package version written into recordings. Inspect the archive and open `OPEN RECORDING VIEWER.html` before release. The package must have zero runtime dependencies. The viewer at `dist/viewer/viewer/index.html` can be served by any static host. When the panel or viewer has changed, run `pnpm docs:images` and `pnpm docs:captures`, then review the screenshot diff.
 
 Retain LICENSE, THIRD_PARTY_NOTICES.md and the licenses directory. The viewer embeds these notices. Review code provenance before publication. WebGPU timing support remains limited to the documented adapter contract; fallback tests do not validate hardware timing.
 

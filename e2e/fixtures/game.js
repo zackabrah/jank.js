@@ -183,7 +183,7 @@ function frame(at) {
 function draw(at) {
   const { width, height } = canvas;
 
-  context.fillStyle = "#06070f";
+  context.fillStyle = "#141414";
   context.fillRect(0, 0, width, height);
   context.fillStyle = "#1b2c44";
 

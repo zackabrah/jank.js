@@ -17,6 +17,7 @@
     "prepack": "pnpm build:package",
     "test:package": "node scripts/package/verify.mjs",
     "test:e2e": "playwright test",
+    "docs:captures": "pnpm build:package && node scripts/capture.mjs",
     "docs:images": "pnpm build && playwright test --project=chromium && node scripts/update-doc-images.mjs",
     "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
     "release:prepare": "pnpm check:full && pnpm pack --pack-destination artifacts/npm",
