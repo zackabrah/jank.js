@@ -3,6 +3,8 @@ import type {
   DiagnosticFrame,
 } from "../../core/recording-types.ts";
 
+import { msPerSecond } from "../../core/recording.ts";
+
 import { shorten } from "./format.ts";
 
 const maxPixelRatio = 3;
@@ -35,12 +37,8 @@ const budgetDash = [dashLength, dashLength];
 /** Budget value plate, above the budget line. */
 const budgetLabelLift = 15;
 
-/** Event ticks below the bars and labels beside them. */
+/** Event ticks below the bars, and the newest event's label under them. */
 const tickLength = 6;
-
-const labelGap = 4;
-
-const labelSpacing = 8;
 
 /** Approximate label character width, in px. */
 const labelCharWidth = 6;
@@ -163,8 +161,10 @@ export function drawFrameGraph(
 
   let worst = first;
 
+  // Ties go to the newest frame: it's the one worth pointing at, and it sits clear of the
+  // fixed label in the top-left corner.
   for (let i = first; i < frames.length; i++)
-    if (frames[i]!.interval > frames[worst]!.interval) worst = i;
+    if (frames[i]!.interval >= frames[worst]!.interval) worst = i;
 
   const top = graph.labels ? labelledTop : 2;
 
@@ -219,49 +219,62 @@ export function drawFrameGraph(
     theme.muted,
   );
 
-  const worstText = `${peak.toFixed(1)} ▾`;
+  // Text stays put while the bars scroll; only the markers move with their frames.
+  const worstColor = peak > limitMs ? theme.miss : theme.muted;
 
-  const worstWidth = context.measureText(worstText).width;
+  const marker = "▾";
+
+  context.fillStyle = worstColor;
+  context.fillText(
+    marker,
+    x(worst) + (bar - context.measureText(marker).width) / 2,
+    plateBaseline,
+  );
 
   plate(
     context,
     theme,
-    worstText,
-    Math.min(
-      width - worstWidth - platePadding,
-      Math.max(platePadding, x(worst) + bar - worstWidth + platePadding),
-    ),
+    `worst ${peak.toFixed(1)}`,
+    platePadding,
     0,
-    peak > limitMs ? theme.miss : theme.muted,
+    worstColor,
   );
 
-  // Ticks at the frame that contains each event; labels never overlap or split a word.
-  const start = frames[first]!.at - frames[first]!.interval;
+  // Ticks at the frame that contains each event; the newest one is named, in a fixed place.
+  const start = frames[first]!.at - frames[first]!.interval,
+    end = frames.at(-1)!.at;
 
-  let free = 0,
+  let newest: { event: DiagnosticEvent; tick: number } | null = null,
     frame = first;
 
   for (const event of events) {
-    if (event.at < start || event.at > frames.at(-1)!.at) continue;
+    if (event.at < start || event.at > end) continue;
 
     while (frame < frames.length - 1 && frames[frame]!.at < event.at) frame++;
 
     const tick = x(frame) + (bar >> 1);
 
-    context.fillStyle = theme.muted;
+    context.fillStyle = theme.faint;
     context.fillRect(tick, height, 1, tickLength);
 
-    const room = Math.floor((width - tick - labelGap) / labelCharWidth);
-
-    const label = shorten(event.label.toLowerCase(), Math.max(0, room));
-
-    if (!label || tick + labelGap < free) continue;
-
-    context.fillStyle = theme.dim;
-    context.fillText(label, tick + labelGap, height + labelBaseline);
-
-    free = tick + labelGap + context.measureText(label).width + labelSpacing;
+    if (!newest || event.at >= newest.event.at) newest = { event, tick };
   }
+
+  if (!newest) return;
+
+  context.fillStyle = theme.text;
+  context.fillRect(newest.tick, height, 1, tickLength);
+
+  const age = ` · ${((end - newest.event.at) / msPerSecond).toFixed(1)} s ago`;
+
+  const room = Math.floor(width / labelCharWidth) - age.length;
+
+  context.fillStyle = theme.muted;
+  context.fillText(
+    shorten(newest.event.label.toLowerCase(), Math.max(0, room)) + age,
+    0,
+    height + labelBaseline,
+  );
 }
 
 /** Fixed thumbnail for one capture: the trigger and its neighbours. */

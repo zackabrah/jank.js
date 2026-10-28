@@ -96,15 +96,17 @@
 .jank .jank-read b[data-tone="miss"] {
   color: var(--jank-miss);
 }
+/* The triangle is drawn one cap height tall, so it stands exactly as high as the digits it
+   marks at any size. The second content value names it for screen readers. */
 .jank [data-tone="miss"]::before {
-  content: "▲ ";
-}
-.jank .jank-tile-v[data-tone="miss"]::before,
-.jank .jank-mini-read [data-tone="miss"]::before {
-  content: "▲";
-  margin-right: 4px;
-  font-size: var(--jank-size-label);
-  vertical-align: 0.3em;
+  content: "";
+  content: "" / "over budget";
+  display: inline-block;
+  width: 1cap;
+  height: 1cap;
+  margin-right: 0.3em;
+  background: currentColor;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 /* Controls */
@@ -291,13 +293,21 @@
   height: 18px;
 }
 .jank .jank-mini-read {
-  height: 28px;
-  display: flex;
-  align-items: baseline;
+  height: 40px;
+  /* Three equal columns, so each reading keeps its place as its digits change. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   padding: 4px 8px 0;
   font-size: var(--jank-size-label);
+  line-height: 16px;
   color: var(--jank-dim);
+}
+/* Each unit sits above its number, like the full panel's tiles, so a third holds any value. */
+.jank .jank-mini-read > span {
+  display: flex;
+  flex-direction: column-reverse;
+  white-space: nowrap;
 }
 .jank .jank-mini-read b {
   font-size: 16px;
