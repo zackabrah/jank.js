@@ -347,6 +347,8 @@ export class GpuProfileHistory {
 export interface FrameStats {
   /** Frames that ended within the last second; null until a full second is held. */
   fps: number | null;
+  /** The slowest and fastest of those one-second rates across the history; null like fps. */
+  fpsRange: { low: number; high: number } | null;
   avg: number;
   p95: number;
   worst: number;
@@ -394,10 +396,27 @@ export function frameStats(
   for (let i = intervals.length - 1; i >= 0 && intervals[i]! > limitMs; i--)
     missed++;
 
-  const held = last.at - (frames[0]!.at - frames[0]!.interval);
+  const start = frames[0]!.at - frames[0]!.interval;
+
+  // The rate the tile would have shown at each frame with a full second behind it.
+  let low = Infinity,
+    high = -Infinity;
+
+  for (let i = 0, from = 0; i < frames.length; i++) {
+    const end = frames[i]!.at;
+
+    if (end - msPerSecond < start) continue;
+
+    while (frames[from]!.at <= end - msPerSecond) from++;
+
+    low = Math.min(low, i - from + 1);
+
+    high = Math.max(high, i - from + 1);
+  }
 
   return {
-    fps: held >= msPerSecond ? shown : null,
+    fps: last.at - start >= msPerSecond ? shown : null,
+    fpsRange: high >= low ? { low, high } : null,
     avg: sum / frames.length,
     p95: sortedP95(intervals),
     worst: worst.interval,
@@ -1968,6 +1987,35 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     );
   }
 
+  /** The FPS tile's range: the slowest and fastest one-second rates, with the current one marked. */
+  function renderFpsRange() {
+    const current = stats,
+      range = slot("fps-range");
+
+    const shown = current?.fps != null && current.fpsRange !== null;
+
+    show(range, shown);
+
+    if (!shown) return;
+
+    const { low, high } = current.fpsRange!;
+
+    put(slot("fps-high"), String(high));
+
+    put(slot("fps-low"), String(low));
+
+    flag(range, "aria-label", `frame rate ranged from ${low} to ${high} fps`);
+
+    // The top of the line is the fastest rate, the bottom the slowest; an even range sits mid-way.
+    const fraction = high > low ? (high - current.fps!) / (high - low) : 1 / 2;
+
+    const top = `${(fraction * percent).toFixed(1)}%`;
+
+    const mark = slot("fps-mark");
+
+    if (changed(mark, "top", top)) mark.style.top = top;
+  }
+
   /** Fills the LIVE tab: tiles, graph, events, CPU scopes, GPU, counters, culling and temporal. */
   function renderLive(
     snapshot: DiagnosticSnapshot,
@@ -1995,6 +2043,8 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
       tone(element, miss ? "miss" : "");
     }
+
+    renderFpsRange();
 
     flag(
       slot("missed"),

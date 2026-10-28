@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show the frame rate's range beside the FPS tile: the fastest one-second rate in the panel's recent history on top, the slowest below, a line between them and a tick at the current rate. Each rate is counted the way the tile counts it, frames in the last second, so the range only holds values the tile could show. Screen readers hear "frame rate ranged from 55 to 61 fps".
+- Centre the panel's button labels. Capitals sat 1 px high in their box, and letter spacing left extra space after the last letter.
 - Balance the panel's spacing: in every section the space from its rule to the heading's capitals matches the space from its last line, or the edge of its last control, to the next rule. The footer and the GPU source tag are balanced the same way, and the mini view's heaviest scope shows its name and time spaced apart again.
 - Keep a frame's work finite when repeated timestamps add host-reported values that would overflow to Infinity. Such a recording previously failed to load in the viewer.
 - Fix readouts that random input broke. Large counters now scale through M, B and T, then powers of ten, so any value fits the value column. Durations round before choosing a unit, so 0.9996 ms reads 1.0 ms rather than 1000 µs. In the mini view the heaviest scope's name gives way before its time when space runs out.

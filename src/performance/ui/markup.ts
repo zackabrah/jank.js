@@ -9,8 +9,11 @@ export interface PanelSections {
 }
 
 /** A LIVE tile: a label over the value slot that refresh fills. */
-const tile = (label: string, key: string) =>
-  `<div class="jank-tile"><span class="jank-label">${label}</span><span class="jank-tile-v" data-k="${key}">–</span></div>`;
+const tile = (label: string, key: string, extra = "") =>
+  `<div class="jank-tile"><span class="jank-label">${label}</span><span class="jank-tile-v" data-k="${key}">–</span>${extra}</div>`;
+
+/** The FPS tile's range: fastest rate on top, slowest below, the current one marked between. */
+const fpsRange = `<span class="jank-range" data-k="fps-range" role="img" hidden><span data-k="fps-high" aria-hidden="true"></span><span class="jank-range-line" aria-hidden="true"><i data-k="fps-mark"></i></span><span data-k="fps-low" aria-hidden="true"></span></span>`;
 
 /** A section heading with optional trailing meta markup. */
 const heading = (label: string, meta = "") =>
@@ -40,7 +43,7 @@ export function panelMarkup(id: string, has: PanelSections) {
 <div class="jank-tabs" role="tablist" aria-label="jank.js views">${tab("live", "LIVE", true)}${tab("loading", "LOADING", false)}${tab("capture", "CAPTURE", false)}<span class="jank-budget">BUDGET <span data-k="budget">16.7</span></span></div>
 <button type="button" class="jank-summary" data-action="summary">READ SUMMARY</button><p class="jank-sr" aria-live="polite" data-k="summary"></p>
 <div class="jank-scroll">
-<div role="tabpanel" class="jank-panel" id="${id}-live" aria-labelledby="${id}-tab-live" data-panel="live"><div class="jank-tiles" aria-live="off">${tile("FPS", "fps")}${tile("AVG MS", "avg")}${tile("P95 MS", "p95")}${tile("WORST MS", "worst")}${tile("AT FRAME", "worst-at")}${tile("MISSED", "missed")}</div>
+<div role="tabpanel" class="jank-panel" id="${id}-live" aria-labelledby="${id}-tab-live" data-panel="live"><div class="jank-tiles" aria-live="off">${tile("FPS", "fps", fpsRange)}${tile("AVG MS", "avg")}${tile("P95 MS", "p95")}${tile("WORST MS", "worst")}${tile("AT FRAME", "worst-at")}${tile("MISSED", "missed")}</div>
 <div class="jank-graph-box"><div class="jank-graph-view" data-k="graph-view"><canvas class="jank-graph" data-k="graph" role="img" aria-label="Frame time graph. The tiles above give its values."></canvas><canvas class="jank-graph-text" data-k="graph-text" aria-hidden="true"></canvas></div></div><ul class="jank-sr" data-k="events" aria-label="Recent events"></ul>
 <section class="jank-sec">${heading("CPU", '<span class="jank-meta">ms avg</span>')}<div data-k="cpu"></div><p class="jank-note" data-k="cpu-note" hidden></p></section>
 <section class="jank-sec" data-k="gpu-sec"${has.gpu ? "" : " hidden"}>${heading("GPU", '<span class="jank-meta"><span class="jank-src" data-k="gpu-src">renderer</span><span data-k="gpu-frame"></span></span>')}<div data-k="gpu"></div><p class="jank-note" data-k="gpu-status"></p></section>

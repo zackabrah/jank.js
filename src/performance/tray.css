@@ -134,7 +134,10 @@
 }
 .jank .jank-btn {
   height: 28px;
-  padding: 0 10px;
+  /* Centred by eye: capitals sit 1 px high in a plain box, and letter-spacing adds space after
+     the last letter, so the label moves down 1 px and right by half a letter-space. */
+  padding: 2px calc(10px - var(--jank-track-label) / 2) 0
+    calc(10px + var(--jank-track-label) / 2);
   font-size: var(--jank-size-label);
   letter-spacing: var(--jank-track-label);
   color: var(--jank-text);
@@ -452,6 +455,38 @@
   border-right: 1px solid var(--jank-line);
   border-bottom: 1px solid var(--jank-line);
 }
+/* FPS range: the fastest one-second rate on top, the slowest below, joined by a hairline with a
+   tick where the current rate sits. */
+.jank .jank-tile {
+  position: relative;
+}
+.jank .jank-range {
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  bottom: 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--jank-size-axis);
+  line-height: 10px;
+  color: var(--jank-dim);
+}
+.jank .jank-range-line {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: var(--jank-line-strong);
+}
+.jank .jank-range-line i {
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  width: 5px;
+  height: 1px;
+  background: var(--jank-text);
+}
 .jank .jank-tile:nth-child(3n) {
   border-right: 0;
 }
@@ -676,7 +711,8 @@
   border-top: 1px solid var(--jank-line);
 }
 .jank .jank-actions .jank-btn {
-  padding: 0 8px;
+  padding: 2px calc(8px - var(--jank-track-label) / 2) 0
+    calc(8px + var(--jank-track-label) / 2);
 }
 
 /* LOADING: stages on one shared axis, the cold run as a ghost behind */

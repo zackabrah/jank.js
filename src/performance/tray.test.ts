@@ -512,6 +512,28 @@ const temporalProfile = (): TemporalDiagnostics => ({
 afterEach(() => vi.unstubAllGlobals());
 
 describe("readout rules", () => {
+  // What: the FPS range is the slowest and fastest "frames in the last second" the tile would
+  // have shown at any frame with a full second behind it.
+  // Why: the range sits beside the FPS tile, so it must use the tile's own rule; a different
+  // definition would show a range the tile's number could never reach.
+  it("ranges FPS over the history by the tile's own one-second rule", () => {
+    let at = 0;
+
+    // Two seconds at 100 fps, then five 100 ms stutters.
+    const frames = Array.from({ length: 205 }, (_, i) => {
+      const interval = i < 200 ? 10 : 100;
+
+      at += interval;
+
+      return diagnosticFrame(i + 1, at, interval);
+    });
+
+    const stats = frameStats(frames, 1000 / 60, 0.1)!;
+
+    expect(stats.fpsRange).toEqual({ low: 55, high: 100 });
+    expect(stats.fps).toBe(55);
+  });
+
   it("reads the tiles from the history with the core's p95 and a timer-aware budget", () => {
     let at = 0;
 
@@ -535,6 +557,9 @@ describe("readout rules", () => {
     expect(stats.p95).toBe(16.8);
 
     // Under a second of history, the panel says nothing about frames per second.
+    expect(
+      frameStats(frames.slice(0, 20), 1000 / 60, 0.1)?.fpsRange,
+    ).toBeNull();
     expect(frameStats(frames.slice(0, 20), 1000 / 60, 0.1)?.fps).toBeNull();
     expect(frameStats([], 1000 / 60, 0.1)).toBeNull();
 
