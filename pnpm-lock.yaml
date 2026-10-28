@@ -44,6 +44,12 @@ importers:
       oxlint-tsgolint:
         specifier: 7.0.2001
         version: 7.0.2001
+      stats-gl:
+        specifier: 4.2.3
+        version: 4.2.3(three@0.186.0)
+      stats.js:
+        specifier: 0.17.0
+        version: 0.17.0
       three:
         specifier: 0.186.0
         version: 0.186.0
@@ -1609,6 +1615,17 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
+  stats-gl@4.2.3:
+    resolution: {integrity: sha512-XxDFKl4kpB9siOTQ5szzT095uvJjj6Q3KLd7AbaceH8lJzRTnFARhBt4AnqKOpdY37iJGK+2H8W9bntMIUghYw==}
+    peerDependencies:
+      three: '*'
+    peerDependenciesMeta:
+      three:
+        optional: true
+
+  stats.js@0.17.0:
+    resolution: {integrity: sha512-hNKz8phvYLPEcRkeG1rsGmV5ChMjKDAWU7/OJJdDErPBNChQXxCo3WZurGpnWc6gZhAzEPFad1aVgyOANH1sMw==}
+
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
 
@@ -3152,6 +3169,12 @@ snapshots:
   source-map-js@1.2.2: {}
 
   stackback@0.0.2: {}
+
+  stats-gl@4.2.3(three@0.186.0):
+    optionalDependencies:
+      three: 0.186.0
+
+  stats.js@0.17.0: {}
 
   std-env@4.3.0: {}
 

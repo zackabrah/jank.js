@@ -21,6 +21,7 @@
     "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
     "release:prepare": "pnpm check:full && pnpm pack --pack-destination artifacts/npm",
     "bench": "pnpm build:package && node scripts/benchmark.mjs",
+    "stress": "pnpm build:package && node scripts/stress.mjs",
     "preview": "vite preview --outDir dist/viewer --host 127.0.0.1 --port 5183 --strictPort",
     "verify:boundary": "node scripts/verify-boundary.mjs",
     "commit": "cz"
@@ -38,6 +39,8 @@
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
     "oxlint-tsgolint": "7.0.2001",
+    "stats-gl": "4.2.3",
+    "stats.js": "0.17.0",
     "three": "0.186.0",
     "typescript": "7.0.2",
     "vite": "8.3.0",

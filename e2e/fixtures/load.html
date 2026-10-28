@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>jank.js accuracy scene</title>
+    <link rel="stylesheet" href="./style.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #06070f;
+      }
+      canvas {
+        display: block;
+      }
+      #gpu-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      #gpu-canvas[hidden] {
+        display: none;
+      }
+      .stress {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        display: grid;
+        grid-template-columns: auto 160px 4em;
+        gap: 6px 10px;
+        align-items: center;
+        padding: 12px;
+        width: max-content;
+        color: #e5e5e5;
+        background: rgb(10 10 10 / 0.9);
+        font:
+          12px/1.4 ui-monospace,
+          monospace;
+      }
+      .verdict {
+        grid-column: 1 / -1;
+        margin-bottom: 8px;
+      }
+      .verdict p,
+      .verdict pre {
+        margin: 0;
+        font: inherit;
+        white-space: pre;
+      }
+      #verdict-state {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      #verdict-state[data-state="SMOOTH"] {
+        color: #86efac;
+      }
+      #verdict-state[data-state="NEEDS WORK"] {
+        color: #fbbf24;
+      }
+      #verdict-state[data-state="TOO SLOW"] {
+        color: #f87171;
+      }
+      .note {
+        color: #a3a3a3;
+      }
+      #layout-box {
+        grid-column: 1 / -1;
+        width: 200px;
+        display: flex;
+        flex-wrap: wrap;
+        height: 1px;
+        overflow: hidden;
+      }
+      #layout-box span {
+        width: 7px;
+        height: 7px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 style="position: absolute; left: -9999px">jank.js accuracy scene</h1>
+      <canvas aria-label="Accuracy scene particles"></canvas>
+      <canvas id="gpu-canvas" aria-hidden="true" hidden></canvas>
+    </main>
+    <aside class="stress" aria-label="Stress controls">
+      <section class="verdict" aria-label="Prototype verdict">
+        <p id="verdict-state" aria-live="polite">SMOOTH</p>
+        <pre id="verdict-detail"></pre>
+        <p class="note">standard: 60 fps · judged over the last 10 s</p>
+      </section>
+      <label for="code-ms">Your code (ms per frame)</label>
+      <input
+        id="code-ms"
+        data-stress="codeMs"
+        type="range"
+        min="0"
+        max="40"
+        step="1"
+        value="4"
+      />
+      <output for="code-ms">4</output>
+      <label for="spikes">Spikes</label>
+      <select id="spikes" data-stress="spikeEveryMs">
+        <option value="0">Off</option>
+        <option value="5000">Every 5 seconds</option>
+        <option value="1000">Every second</option>
+      </select>
+      <span></span>
+      <label for="garbage">Garbage (objects per frame)</label>
+      <input
+        id="garbage"
+        data-stress="garbage"
+        type="range"
+        min="0"
+        max="500000"
+        step="25000"
+        value="0"
+      />
+      <output for="garbage">0</output>
+      <label for="layouts">Forced layouts per frame</label>
+      <input
+        id="layouts"
+        data-stress="layouts"
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        value="0"
+      />
+      <output for="layouts">0</output>
+      <label for="gpu-iterations">GPU shader work (loop per pixel)</label>
+      <input
+        id="gpu-iterations"
+        data-stress="gpuIterations"
+        type="range"
+        min="0"
+        max="4000"
+        step="100"
+        value="0"
+      />
+      <output for="gpu-iterations">0</output>
+      <label for="shaders">New shader</label>
+      <select id="shaders" data-stress="shaderEveryMs">
+        <option value="0">Off</option>
+        <option value="5000">Every 5 seconds</option>
+        <option value="1000">Every second</option>
+      </select>
+      <span></span>
+      <div id="layout-box" aria-hidden="true"></div>
+    </aside>
+    <script src="./stats.min.js"></script>
+    <script type="module" src="./load.js"></script>
+  </body>
+</html>
