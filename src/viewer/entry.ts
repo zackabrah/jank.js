@@ -6,7 +6,9 @@ import { MAX_RECORDING_BYTES, serializeRecording } from "../core/recording.ts";
 
 import { eventsNear } from "../core/inspection.ts";
 
-import { download, findIn } from "../performance/ui/dom.ts";
+import { compactMarkup, download, findIn } from "../performance/ui/dom.ts";
+
+import markup from "./markup.html?raw";
 
 import {
   buildLanes,
@@ -49,22 +51,7 @@ document.documentElement.classList.add("jank-viewer");
 
 const app = document.querySelector<HTMLElement>("#app")!;
 
-app.innerHTML = `<header class="jank-viewer-top"><h1 class="jank-viewer-brand"><span class="jank-viewer-word">JANK.JS</span><span class="jank-viewer-dim jank-viewer-tracked">VIEWER</span></h1><span class="jank-viewer-dim">/</span><span class="jank-viewer-file" data-k="file">no recording</span><span class="jank-viewer-chip" title="nothing is fetched or uploaded">OFFLINE</span><span class="jank-viewer-push"><label class="jank-viewer-btn" for="recording-file">OPEN</label><input id="recording-file" class="jank-viewer-picker" type="file" accept=".json,application/json" aria-label="Recording file"><button type="button" class="jank-viewer-btn" data-action="export" disabled>EXPORT</button></span></header>
-<p class="jank-viewer-env"><span data-k="env">open a recording exported by the panel</span><span data-k="totals"></span></p>
-<div class="jank-viewer-empty" data-k="empty"><p>drop a recording here, or OPEN one.</p><p class="jank-viewer-dim">nothing leaves this machine.</p></div>
-<section class="jank-viewer-session" aria-label="Session overview" data-k="session-box" hidden><div class="jank-viewer-side"><span class="jank-viewer-tracked jank-viewer-muted">SESSION</span><span class="jank-viewer-dim" data-k="bucket"></span></div><canvas data-k="session" aria-hidden="true" title="Click to jump; drag to pan the visible range"></canvas></section>
-<div class="jank-viewer-main" data-k="main" hidden><div class="jank-viewer-left"><div class="jank-viewer-timeline" tabindex="0" role="slider" aria-label="Playhead" data-k="slider"><canvas data-k="timeline" aria-hidden="true"></canvas></div>
-<section class="jank-viewer-captures" aria-label="Captures"><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">CAPTURES</span><span class="jank-viewer-dim" data-k="rule"></span></h2><div role="table" aria-label="Captures" data-k="capture-table"><div role="rowgroup"><div role="row" class="jank-viewer-sr"><span role="columnheader">rank</span><span role="columnheader">frame</span><span role="columnheader">frame time</span><span role="columnheader">nearest event</span><span role="columnheader">open</span></div></div><div data-k="capture-rows" role="rowgroup"></div></div><p class="jank-viewer-dim jank-viewer-pad" data-k="capture-empty" hidden>no frame crossed the threshold in this recording.</p></section></div>
-<aside class="jank-viewer-inspector" aria-label="Frame inspector"><div class="jank-viewer-ihead"><span class="jank-viewer-chip jank-viewer-on" data-k="i-frame"></span><span class="jank-viewer-push jank-viewer-dim"><span data-k="i-capture"></span><button type="button" class="jank-viewer-icon" data-action="prev-capture" aria-label="Previous capture">◂</button><button type="button" class="jank-viewer-icon" data-action="next-capture" aria-label="Next capture">▸</button></span></div>
-<p class="jank-viewer-headline"><span><b data-k="i-ms"></b><span class="jank-viewer-muted"> ms</span></span><span class="jank-viewer-muted" data-k="i-ratio"></span></p><p class="jank-viewer-dim" data-k="i-over"></p>
-<p class="jank-viewer-likely" data-k="i-likely-row"><span class="jank-viewer-tag" title="a heuristic: the scope furthest above its own median across this recording">LIKELY</span><b data-k="i-likely"></b><span class="jank-viewer-muted" data-k="i-likely-delta"></span></p>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">CPU</span><span class="jank-viewer-dim jank-viewer-legend"><i class="jank-viewer-solid"></i>exact</span></h2><div data-k="i-cpu"></div></section>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">GPU</span><span class="jank-viewer-dim jank-viewer-legend"><i class="jank-viewer-dashed"></i><span data-k="i-gpu-meta"></span></span></h2><div data-k="i-gpu"></div></section>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">COUNTERS</span><span class="jank-viewer-dim" data-k="i-counter-meta"></span></h2><div class="jank-viewer-grid" data-k="i-counters"></div></section>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">EVENTS</span><span class="jank-viewer-dim">within 10 frames</span></h2><div data-k="i-events"></div></section>
-<p class="jank-viewer-legend-text">solid: measured in this frame<br>dashed: periodic or delayed sample<br>unattributed frame interval: browser work, scheduling, waiting or idle, not only uninstrumented code</p>
-<div class="jank-viewer-actions"><button type="button" class="jank-viewer-btn jank-viewer-primary" data-action="export-capture">EXPORT CAPTURE</button><button type="button" class="jank-viewer-btn" data-action="copy-frame">COPY FRAME</button></div></aside></div>
-<footer class="jank-viewer-status"><span class="jank-viewer-dim" data-k="build-info" aria-label="jank.js viewer build">${buildLabel}</span><span><i class="jank-viewer-mark"></i><b data-k="s-frame">FRAME –</b><span class="jank-viewer-muted" data-k="s-range"></span></span><span class="jank-viewer-push"><span role="alert" data-k="error"></span><span class="jank-viewer-dim" role="status" data-k="s-format">no recording open</span></span></footer>`;
+app.innerHTML = compactMarkup(markup);
 
 /** The element bound to a data-k key in the viewer markup. */
 const slot = (key: string) => findIn(app, `[data-k="${key}"]`, HTMLElement);
@@ -76,6 +63,8 @@ const surface = (key: string) =>
 /** The button bound to a data-action name. */
 const action = (name: string) =>
   findIn(app, `[data-action="${name}"]`, HTMLButtonElement);
+
+slot("build-info").textContent = buildLabel;
 
 /** Creates an element with an optional class and text. */
 const element = (tag: string, className = "", text = "") => {

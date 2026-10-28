@@ -26,3 +26,13 @@ export function findIn<T extends Element>(
 
   return value;
 }
+
+/**
+ * Markup from a formatted .html file as it would be written by hand: line breaks next to a
+ * tag are indentation and go; ones inside text or between attributes become one space.
+ */
+export const compactMarkup = (html: string) =>
+  html
+    .replaceAll(/(?<=>)\s*\n\s*|\s*\n\s*(?=<)/g, "")
+    .replaceAll(/\s*\n\s*/g, " ")
+    .trim();

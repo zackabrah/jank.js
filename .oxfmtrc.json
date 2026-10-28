@@ -12,5 +12,13 @@
     "test-results/**",
     "pnpm-lock.yaml",
     "OPEN RECORDING VIEWER.html"
+  ],
+  "overrides": [
+    {
+      "files": ["src/viewer/markup.html"],
+      "options": {
+        "htmlWhitespaceSensitivity": "ignore"
+      }
+    }
   ]
 }
