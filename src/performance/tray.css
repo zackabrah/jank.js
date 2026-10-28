@@ -307,20 +307,21 @@
   height: 18px;
 }
 .jank .jank-mini-read {
-  height: 40px;
+  height: 28px;
   /* Three equal columns, so each reading keeps its place as its digits change. */
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: baseline;
   gap: 12px;
   padding: 4px 8px 0;
   font-size: var(--jank-size-label);
-  line-height: 16px;
   color: var(--jank-dim);
 }
-/* Each unit sits above its number, like the full panel's tiles, so a third holds any value. */
+/* An extreme value keeps its digits; its unit is the part that gives way. */
 .jank .jank-mini-read > span {
-  display: flex;
-  flex-direction: column-reverse;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .jank .jank-mini-read b {
@@ -353,6 +354,8 @@
 .jank .jank-mini-top {
   min-width: 0;
   display: flex;
+  /* A flex item drops a leading space, so the name and time are spaced here. */
+  column-gap: 1ch;
 }
 .jank .jank-mini-name {
   min-width: 0;
@@ -484,15 +487,25 @@
 }
 
 /* Sections are rules, never boxes */
+/* Sections balance their space: the rule to the heading's capitals matches the last line's
+   baseline to the next rule. A trailing note brings its own space, so the section adds none. */
 .jank .jank-sec {
   border-top: 1px solid var(--jank-line);
-  padding-bottom: 4px;
+  padding-bottom: 2px;
+}
+.jank .jank-sec:has(> .jank-note:last-child:not([hidden])),
+.jank .jank-sec:has(> :last-child:empty) {
+  padding-bottom: 0;
+}
+/* A closing toggle's box is the edge the eye balances, so it gets the same space as text. */
+.jank .jank-sec:has(> .jank-switch:last-child) {
+  padding-bottom: 6px;
 }
 .jank .jank-first {
   border-top: 0;
 }
 .jank .jank-h {
-  height: 24px;
+  height: 25px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -516,18 +529,19 @@
   color: var(--jank-dim);
 }
 .jank .jank-src {
-  padding: 0 4px;
+  /* One pixel less on the right: a final lowercase letter leaves part of its cell empty. */
+  padding: 0 3px 0 4px;
   line-height: 14px;
   border: 1px solid var(--jank-control);
 }
 .jank .jank-note {
-  padding: 0 10px 4px;
+  padding: 0 10px 3px;
   font-size: var(--jank-size-label);
   line-height: 16px;
   color: var(--jank-dim);
 }
 .jank .jank-note.jank-pad {
-  padding: 4px 10px 6px;
+  padding: 4px 10px 2px;
 }
 .jank .jank-error {
   padding: 0 10px 8px;
@@ -719,7 +733,7 @@
 .jank .jank-seg-row {
   display: flex;
   align-items: center;
-  padding: 2px 10px 8px;
+  padding: 2px 10px 6px;
 }
 .jank .jank-seg {
   display: flex;
@@ -790,11 +804,15 @@
   flex-wrap: wrap;
   justify-content: space-between;
   column-gap: 12px;
-  padding: 4px 10px;
+  padding: 6px 10px 4px;
   border-top: 1px solid var(--jank-line);
   font-size: var(--jank-size-label);
   line-height: 16px;
   color: var(--jank-dim);
+}
+/* The build line closes the footer with the same space the sections keep. */
+.jank .jank-foot + .jank-note {
+  padding-bottom: 4px;
 }
 
 .jank-culling-bounds {

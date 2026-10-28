@@ -1910,7 +1910,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     put(label, top ? top.label.split(" ")[0]! : "");
 
-    put(slot("mini-top-ms"), top ? ` ${fixed(top.ms)}` : "");
+    put(slot("mini-top-ms"), top ? fixed(top.ms) : "");
 
     flag(label, "title", top ? `heaviest cpu scope: ${top.label}` : "");
 
