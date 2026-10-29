@@ -2,4 +2,4 @@
 set -eu
 
 pnpm check
-pnpm build:types
+pnpm test:package

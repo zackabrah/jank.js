@@ -1,4 +1,5 @@
 export type { FrameSummary, InspectFrame } from "./analysis/summary.ts";
+export type { Channel, ScopeToken } from "./core/channels.ts";
 export type {
   ChannelDescription,
   CounterSample,
@@ -19,12 +20,10 @@ export type {
 } from "./loading/loading.ts";
 export type { CreatePanel, Panel, PanelMode, PanelOptions } from "./panel/panel.ts";
 export type {
-  Channel,
   ChannelOptions,
   CreateProfiler,
   Profiler,
   ProfilerOptions,
-  ScopeToken,
   TraceSink,
 } from "./profiler.ts";
 export type { CaptureController, CaptureOptions, CaptureState } from "./recordings/capture.ts";

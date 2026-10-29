@@ -18,6 +18,16 @@ claim that one universal "industry standard" specifies every detail.
 | Contract examples and negative cases   | Intended integrations type-check; invalid states, mutation and fake scope tokens are rejected                                                                                  |
 | Tooling-policy tests                   | Real Biome invocations reject representative violations and allow ordinary readable code                                                                                       |
 
+The collector now also has deterministic Vitest tests, seeded fast-check properties, a real
+host-loop test in Chromium/Firefox/WebKit, and isolated declaration-package consumer checks.
+Coverage floors are 90% per implemented core file for statements, branches, functions and
+lines. These floors support behavioral tests; they do not replace reviewing their assertions.
+`pnpm bench` records synchronous collection overhead and the limits of its workload.
+
+Implementation follows test-driven development: first reproduce behavior with a failing test,
+then implement it, then simplify while retaining the passing tests. Browser-discovered failures
+receive deterministic regressions when possible.
+
 The two promise rules are individually enabled nursery rules in the pinned version. They are
 not a replacement for TypeScript or lifecycle tests. Re-evaluate them when upgrading Biome.
 
@@ -65,8 +75,7 @@ A suppression belongs beside the exceptional code with a concrete reason. Do not
 workspace policy for one awkward call. Conversely, reconsider a rule if it repeatedly demands
 less readable code. Review both the rule and the code rather than accumulating suppressions.
 
-With implementation, add Vitest and fast-check invariants; package export and declaration
-consumer tests; Playwright in Chromium, Firefox and WebKit; axe and focused keyboard tests;
+With later implementation, extend runtime package-consumer tests and browser cases; add axe and focused keyboard tests;
 visual comparisons at the existing panel sizes; offline/network checks; and measured overhead
 comparisons. Coverage floors start from the implemented slices and protect meaningful branch
 coverage, not from fabricated tests or the old source tree's percentages.

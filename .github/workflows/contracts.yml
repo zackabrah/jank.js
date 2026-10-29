@@ -1,4 +1,4 @@
-name: Architecture contracts
+name: Rewrite checks
 
 on:
   pull_request:
@@ -20,4 +20,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm build:types
+      - run: pnpm test:coverage
+      - run: pnpm test:package
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm test:browser

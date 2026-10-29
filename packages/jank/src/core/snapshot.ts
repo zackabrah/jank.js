@@ -8,15 +8,18 @@ export interface CostSummary {
 }
 
 /** Detached data. Reading does not reset measurements or consume a recording. */
-export interface ProfilerSnapshot {
+export interface FrameSnapshot {
   readonly targetFps: number;
   readonly frames: readonly FrameSample[];
   readonly channels: readonly ChannelDescription[];
-  readonly counters: readonly CounterSample[];
-  readonly events: readonly EventSample[];
-  readonly gpu: GpuState | null;
   readonly overhead: {
     readonly collection: CostSummary;
     readonly refresh: CostSummary;
   };
+}
+
+export interface ProfilerSnapshot extends FrameSnapshot {
+  readonly counters: readonly CounterSample[];
+  readonly events: readonly EventSample[];
+  readonly gpu: GpuState | null;
 }

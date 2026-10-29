@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frame collection host fixture</title>
+  </head>
+  <body>
+    <h1>Frame collection host fixture</h1>
+    <p>This test host owns its animation loop. The collector only observes its work.</p>
+    <p>Host frames: <output aria-label="Host frames" id="host-frames">0</output></p>
+    <p>Sealed frames: <output aria-label="Sealed frames" id="sealed-frames">0</output></p>
+    <p>Latest frame ID: <output aria-label="Latest frame ID" id="frame-id">0</output></p>
+    <p>Scope intervals: <output aria-label="Scope intervals" id="scopes">0</output></p>
+    <p>Host result: <output aria-label="Host result" id="result">0</output></p>
+    <button id="clear" type="button">Clear history</button>
+    <button id="dispose" type="button">Dispose collector</button>
+    <script type="module" src="./host.ts"></script>
+  </body>
+</html>

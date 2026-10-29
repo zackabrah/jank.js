@@ -1,18 +1,8 @@
+import type { Channel } from "./core/channels.ts";
 import type { CounterValue, ScopeSample } from "./core/frames.ts";
 import type { GpuState } from "./core/gpu.ts";
 import type { ProfilerSnapshot } from "./core/snapshot.ts";
 import type { CaptureController } from "./recordings/capture.ts";
-
-declare const scopeToken: unique symbol;
-
-/** An opaque numeric handle, not a timestamp. Only Channel.begin creates it. */
-export type ScopeToken = number & { readonly [scopeToken]: true };
-
-export interface Channel {
-  begin(): ScopeToken;
-  end(token: ScopeToken): void;
-  dispose(): void;
-}
 
 export interface ChannelOptions {
   readonly id: string;
@@ -37,7 +27,7 @@ export interface ProfilerOptions {
 
 export interface Profiler {
   readonly capture: CaptureController;
-  /** Seals the previous frame, opens this frame, and returns its stable ID. */
+  /** Seals the previous frame and opens this one. -1 skips a pre-creation boundary or disposed profiler. */
   beginFrame(atMs: number): number;
   /** Optional host CPU totals; this does not manufacture a frame's ending boundary. */
   endFrame(cpu: { readonly updateMs: number; readonly renderMs: number }): void;
@@ -46,7 +36,7 @@ export interface Profiler {
   observeGpu(state: GpuState): void;
   setTargetFps(targetFps: number): void;
   setTraceEnabled(enabled: boolean): void;
-  /** Independent demand for CPU scopes. Release only this caller's demand. */
+  /** Independent scope demand, effective next frame. Release only this caller's demand. */
   requestScopes(): () => void;
   measureRefresh<T>(render: () => T): T;
   snapshot(): ProfilerSnapshot;

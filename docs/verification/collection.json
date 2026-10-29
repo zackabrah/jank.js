@@ -1,0 +1,94 @@
+{
+  "measuredAt": "2026-10-29T22:34:08.820Z",
+  "environment": {
+    "node": "v26.12.1",
+    "os": "darwin 25.5.0",
+    "cpu": "Apple M3 Max"
+  },
+  "sampleCount": 15,
+  "framesPerSample": 5000,
+  "units": "microseconds per host frame",
+  "limitations": "Local Node microbenchmark with synthetic frame time and real cost clock. Includes synchronous collection, copying and GC noise; excludes browser layout, paint, GPU, capture, adapters and UI. Baseline is the same host loop without collection, not the previous implementation. Min/max describe batch means, not frame-tail latency.",
+  "results": [
+    {
+      "name": "frames only",
+      "scopesPerFrame": 0,
+      "snapshotEvery": 0,
+      "baseline": {
+        "medianUs": 0.0018168000000002849,
+        "minUs": 0.0013667999999995573,
+        "maxUs": 0.0023249999999990223
+      },
+      "observed": {
+        "medianUs": 0.11964159999999993,
+        "minUs": 0.09449999999999932,
+        "maxUs": 0.2758083999999997
+      },
+      "added": {
+        "medianUs": 0.1177332000000007,
+        "minUs": 0.09311679999999854,
+        "maxUs": 0.2739583999999994
+      }
+    },
+    {
+      "name": "8 scopes per frame",
+      "scopesPerFrame": 8,
+      "snapshotEvery": 0,
+      "baseline": {
+        "medianUs": 0.032850000000001954,
+        "minUs": 0.0292665999999997,
+        "maxUs": 0.1292833999999999
+      },
+      "observed": {
+        "medianUs": 1.323758399999997,
+        "minUs": 1.2626749999999958,
+        "maxUs": 1.8111999999999997
+      },
+      "added": {
+        "medianUs": 1.2909083999999948,
+        "minUs": 1.2313083999999945,
+        "maxUs": 1.6819165999999999
+      }
+    },
+    {
+      "name": "128 scopes per frame",
+      "scopesPerFrame": 128,
+      "snapshotEvery": 0,
+      "baseline": {
+        "medianUs": 0.46512500000001183,
+        "minUs": 0.430399999999986,
+        "maxUs": 0.6513833999999861
+      },
+      "observed": {
+        "medianUs": 22.388750000000005,
+        "minUs": 21.984441799999967,
+        "maxUs": 26.79761659999999
+      },
+      "added": {
+        "medianUs": 21.853583200000003,
+        "minUs": 21.385358399999994,
+        "maxUs": 26.367216600000006
+      }
+    },
+    {
+      "name": "8 scopes and snapshot every 6 frames",
+      "scopesPerFrame": 8,
+      "snapshotEvery": 6,
+      "baseline": {
+        "medianUs": 0.03181660000000193,
+        "minUs": 0.029733200000009674,
+        "maxUs": 0.03630000000002838
+      },
+      "observed": {
+        "medianUs": 13.937858400000003,
+        "minUs": 13.817724999999975,
+        "maxUs": 14.524883200000023
+      },
+      "added": {
+        "medianUs": 13.907150199999977,
+        "minUs": 13.784791599999973,
+        "maxUs": 14.494266400000015
+      }
+    }
+  ]
+}

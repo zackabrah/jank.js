@@ -1,6 +1,8 @@
 # Architecture proposal
 
-Status: architecture and contract stage, before runtime implementation.
+Status: architecture and contracts established; the internal collection slice is implemented.
+See [collection behavior](collection.md) for verified semantics. Public composition and the
+remaining runtime features are pending.
 
 ## Decisions already made
 
@@ -161,6 +163,12 @@ and opens the next. `endFrame` optionally supplies host CPU totals but does not 
 ending boundary. The last open frame is excluded until the next boundary. Every supplied
 timestamp shares the profiler's monotonic clock. Exported times use milliseconds from the
 profiler's origin, including captures taken later in the session.
+
+Validate frame boundaries and scope-clock readings as separate monotonic sequences: browser
+timer rounding can put a scope clock slightly behind the animation timestamp. Clip intervals
+at sealing instead of treating that difference as clock regression. Equal frame timestamps
+accumulate CPU totals into the same pending frame. Initial boundaries predating creation are
+skipped. Scope-demand changes take effect at the next distinct frame boundary.
 
 ```text
 host boundary → seal previous frame → update bounded history → advance capture state

@@ -1,6 +1,6 @@
 # Readability rewrite
 
-This worktree starts from development tooling and new contracts. The original checkout is a
+This worktree starts from development tooling, new contracts and a new collector. The original checkout is a
 read-only behavioral and visual reference. Do not copy its implementation wholesale.
 
 Keep `jank.js` as the profiler package name. `junkui` is an independent UI and theme package.
@@ -21,8 +21,11 @@ Biome's recommended rules plus the documented additions are the automated baseli
 enable every rule or weaken a rule merely to get a green check. Any local suppression must
 explain a concrete invariant and be reviewed. A short file alone is not a design improvement.
 
-For this contracts stage run `pnpm check` and `pnpm build:types`. Runtime, package-consumer,
-browser, accessibility, visual, fuzz and benchmark gates are added with their first real
+Use test-driven development for implementation: write a behavioral test, observe its failure,
+implement the behavior, then refactor with the tests passing. Add regressions before fixes.
+Run changed-file Biome fixes, then `pnpm check` and `pnpm test:package`. For collection/lifecycle
+changes also run `pnpm test:coverage`, focused `pnpm test:browser` cases and `pnpm bench`.
+Report measurement limits. UI accessibility/visual and release gates arrive with their real
 implementation slices. Do not add empty tests, placeholder implementations, or no-op gates.
 
 Commit each completed, verified slice before starting another. Preserve unrelated work.

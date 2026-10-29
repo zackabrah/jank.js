@@ -28,12 +28,14 @@ Preserving visible features does not mean silently interpreting old files as the
 Each slice ends in a focused verified commit before the next starts. Keep the old checkout
 available until the complete parity matrix and release checks pass.
 
-1. **This stage: foundations.** Clean workspace, packages, tooling policy, architecture and
+1. **Complete: foundations.** Clean workspace, packages, tooling policy, architecture and
    type contracts. Validate the policy with real tool invocations and compile consumer examples.
    No runtime completeness is claimed.
-2. **One measurement path.** Host frame boundary → channel scope → bounded history → snapshot.
+2. **Complete: one internal measurement path.** Host frame boundary → channel scope → bounded history → snapshot.
    Implement the model with deterministic tests, clear/dispose behavior and measured collection
    overhead. Resolve API friction using a tiny real host fixture before adding optional sources.
+   Implemented and verified using TDD; see [collection evidence](collection.md). The public
+   profiler composition is deliberately deferred until its capture controller is implemented.
 3. **Capture and files.** Implement the state machine, detached archive, schema validator and
    serializer. Add property tests and isolated file-consumer checks. Keep defaults in the owner
    of the policy, not in the parser.

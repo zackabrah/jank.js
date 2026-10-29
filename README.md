@@ -1,12 +1,14 @@
 # jank.js readability rewrite
 
-This branch contains the development stack, proposed architecture, and type contracts.
-There is no profiler, panel, viewer, or UI runtime implementation yet. The packages are private
-and export types only; they are not replacements for the existing package.
+This branch contains the development stack, proposed architecture, type contracts, and the
+first internal measurement implementation. The collector handles frames, scopes, bounded
+history, snapshots and overhead. The public profiler, capture controller, panel, viewer and
+UI runtime are still pending. Packages remain private and export types only.
 
 - [Architecture and ownership](docs/architecture.md)
 - [Code quality and enforcement](docs/quality.md)
 - [Feature and verification plan](docs/rewrite-plan.md)
+- [Implemented collection behavior and verification](docs/collection.md)
 - [jank.js public type contracts](packages/jank/src/index.ts)
 - [junkui public type contracts](packages/junkui/src/index.ts)
 
@@ -23,16 +25,24 @@ The UI package does not know that a profiler exists.
 ```sh
 pnpm install --frozen-lockfile
 pnpm check
-pnpm build:types
+pnpm test:coverage
+pnpm test:package
+pnpm test:browser
+pnpm bench
 ```
 
-`check` validates formatting, lint rules, types, browser-free core contracts, consumer type
-examples, and executable tooling-policy tests. `build:types` builds each package's declarations
-independently. Runtime tests and a development app will arrive with implementation; none is
-represented by a placeholder passing command.
+`check` validates formatting, lint rules, types, browser-free core contracts, consumer examples,
+tooling policy and unit/property tests. `test:package` builds both declaration packages and
+compiles an isolated consumer against those artifacts. `test:browser` exercises the host loop
+in Chromium, Firefox and WebKit. Install those Playwright browsers if they are not available.
 
-The pre-commit hook runs these same gates. `pnpm install` configures the repository to use
-`.githooks`; it does not stage generated artifacts or unrelated work.
+The pre-commit hook runs `check` and `test:package`. CI also runs coverage and browser tests.
+`pnpm install` configures `.githooks`; it does not stage generated artifacts or unrelated work.
 
-The pinned Vite, Vitest, Playwright, axe, fast-check, Knip and benchmark dependencies are retained
-for those later slices. No old runtime code, UI CSS, screenshots or demo assets were copied.
+Run `pnpm dev:fixture` and open `http://127.0.0.1:4186/tests/fixtures/collection/` to exercise
+collection, clearing and disposal in a small host-owned animation loop. This is a test fixture,
+not the redesigned live panel.
+
+The pinned development stack is retained. No old runtime code, UI CSS, screenshots or demo
+assets were copied. UI/accessibility, packaged runtime exports and release gates arrive with
+their implementation slices.
