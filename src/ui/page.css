@@ -1,0 +1,81 @@
+/* Layout for the junkui demo pages only; not part of the library. */
+body.jl {
+  min-height: 100vh;
+  padding: 32px 20px 48px;
+}
+.jl .page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.jl .page > header {
+  padding-bottom: 20px;
+}
+.jl .page h1 {
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+.jl .page section {
+  padding: 16px 0 20px;
+  border-top: 1px solid var(--jl-line-strong);
+}
+.jl .page h2 {
+  padding-bottom: 12px;
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-dim);
+}
+.jl .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.jl .row + .row {
+  margin-top: 12px;
+}
+.jl .stack {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+.jl .stack > .jl-pre,
+.jl .stack > .jl-box,
+.jl .stack > .jl-notice,
+.jl .stack > .jl-details {
+  justify-self: stretch;
+}
+.jl [role="tabpanel"] {
+  padding-top: 10px;
+}
+.jl .swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.jl .swatch i {
+  display: block;
+  height: 36px;
+  margin-bottom: 6px;
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .note {
+  margin-top: 12px;
+  font-size: var(--jl-size-label);
+}
+.jl .jl-skip:focus {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.jl .page nav {
+  padding-top: 12px;
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-dim);
+}
+.jl .page nav a:hover {
+  color: var(--jl-bright);
+}
+.jl .page nav a[aria-current="page"] {
+  color: var(--jl-text);
+}

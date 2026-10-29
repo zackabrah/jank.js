@@ -1,0 +1,469 @@
+/* junkui's other standard controls: text, fields, choices, navigation, data and feedback. It
+   builds on junkui.css and loads after it. jank.js bundles only junkui.css, the controls its
+   panel and viewer use, so nothing here ships in the jank.js package. */
+
+/* Text */
+.jl .jl-title {
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+.jl .jl-label {
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-muted);
+}
+.jl .jl-link {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.jl .jl-link:hover {
+  color: var(--jl-bright);
+  text-decoration-style: solid;
+}
+.jl .jl-code,
+.jl .jl-kbd {
+  padding: 0 4px;
+}
+.jl .jl-code {
+  color: var(--jl-bright);
+  background: var(--jl-line-strong);
+}
+.jl .jl-kbd {
+  font-size: var(--jl-size-label);
+  border: 1px solid var(--jl-control);
+}
+.jl .jl-pre {
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre;
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .jl-quote {
+  padding-left: 12px;
+  color: var(--jl-muted);
+  border-left: 1px solid var(--jl-control);
+}
+.jl .jl-rule {
+  border-top: 1px solid var(--jl-line-strong);
+}
+
+/* Lists draw their own markers, hung outside the text. The reset removes list styles, which
+   makes Safari stop announcing a list, so give the <ul> or <ol> role="list" too. */
+.jl .jl-list > li {
+  padding-left: 2ch;
+  text-indent: -2ch;
+}
+.jl ul.jl-list > li::before {
+  content: "– ";
+  content: "– " / "";
+  color: var(--jl-dim);
+}
+.jl ol.jl-list {
+  counter-reset: jl-item;
+}
+.jl ol.jl-list > li {
+  padding-left: 3ch;
+  text-indent: -3ch;
+  counter-increment: jl-item;
+}
+.jl ol.jl-list > li::before {
+  content: counter(jl-item, decimal-leading-zero) " ";
+  content: counter(jl-item, decimal-leading-zero) " " / "";
+  color: var(--jl-dim);
+}
+/* Name and value rows with the jank.js panel's dotted leaders between them. */
+.jl .jl-kv > div {
+  display: flex;
+  gap: 8px;
+}
+.jl .jl-kv dt {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  color: var(--jl-muted);
+}
+.jl .jl-kv dt::after {
+  content: "";
+  flex: 1;
+  background: radial-gradient(circle, var(--jl-faint) 0.8px, transparent 1px) 0
+    0 / 5px 20px;
+}
+.jl .jl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.jl .jl-table th,
+.jl .jl-table td {
+  height: 20px;
+  padding: 0 12px 0 0;
+  text-align: left;
+  border-bottom: 1px solid var(--jl-line-strong);
+}
+.jl .jl-table th {
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-dim);
+}
+.jl .jl-table .jl-num {
+  text-align: right;
+}
+
+/* Fields: a label over its control, then help or error text. An error says so in words and a
+   × as well as the border, since junkui has no error colour. */
+.jl .jl-field {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+.jl .jl-field > label,
+.jl .jl-fieldset > legend {
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-muted);
+}
+.jl .jl-help,
+.jl .jl-error {
+  font-size: var(--jl-size-label);
+  color: var(--jl-dim);
+}
+.jl .jl-error {
+  color: var(--jl-text);
+}
+.jl .jl-error::before {
+  content: "× ";
+  content: "× " / "";
+}
+/* Text fields are left-aligned and wider than junkui's number inputs. */
+.jl .jl-input {
+  width: 24ch;
+  max-width: 100%;
+  text-align: left;
+}
+.jl .jl-textarea {
+  width: 40ch;
+  max-width: 100%;
+  min-height: 60px;
+  padding: 2px 4px;
+  line-height: 16px;
+  resize: vertical;
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .jl-input::placeholder,
+.jl .jl-textarea::placeholder {
+  color: var(--jl-dim);
+}
+.jl .jl-fieldset {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .jl-fieldset > legend {
+  padding: 0 4px;
+}
+
+/* Checkboxes and radios: a hairline box, filled with an ink gap when chosen. */
+.jl .jl-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.jl .jl-check,
+.jl .jl-radio {
+  appearance: none;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+  cursor: inherit;
+}
+.jl .jl-radio {
+  border-radius: 50%;
+}
+.jl .jl-check:checked,
+.jl .jl-radio:checked {
+  background: var(--jl-text);
+  border-color: var(--jl-text);
+  box-shadow: inset 0 0 0 2px var(--jl-ink);
+}
+.jl .jl-choice:hover > input:not(:checked, :disabled) {
+  border-color: var(--jl-muted);
+}
+.jl .jl-check:focus-visible,
+.jl .jl-radio:focus-visible {
+  outline-offset: 2px;
+}
+.jl .jl-choice:has(:disabled) {
+  color: var(--jl-faint);
+  cursor: default;
+}
+.jl .jl-check:disabled,
+.jl .jl-radio:disabled {
+  border-color: var(--jl-line-strong);
+}
+.jl .jl-check:checked:disabled,
+.jl .jl-radio:checked:disabled {
+  background: var(--jl-faint);
+  border-color: var(--jl-faint);
+}
+/* A hairline range: a 1 px track and a narrow thumb, like the panel's FPS range ticks. */
+.jl .jl-range {
+  appearance: none;
+  width: 160px;
+  height: 20px;
+  padding: 0;
+  color: var(--jl-text);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.jl .jl-range:hover {
+  color: var(--jl-bright);
+}
+.jl .jl-range:focus-visible {
+  outline-offset: 0;
+}
+.jl .jl-range::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--jl-control);
+}
+.jl .jl-range::-moz-range-track {
+  height: 1px;
+  background: var(--jl-control);
+}
+.jl .jl-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 3px;
+  height: 12px;
+  margin-top: -6px;
+  background: currentColor;
+}
+.jl .jl-range::-moz-range-thumb {
+  width: 3px;
+  height: 12px;
+  background: currentColor;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Tabs and segmented buttons: tracked labels, the selected one inverted as in the panel. */
+.jl .jl-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--jl-line-strong);
+}
+.jl .jl-tab,
+.jl .jl-seg > button {
+  height: 24px;
+  padding: 0 10px;
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-muted);
+}
+.jl .jl-seg {
+  display: inline-flex;
+}
+.jl .jl-seg > button {
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .jl-seg > button + button {
+  margin-left: -1px;
+}
+.jl .jl-tab[aria-selected="true"],
+.jl .jl-seg > [aria-pressed="true"] {
+  position: relative;
+  color: var(--jl-ink);
+  background: var(--jl-text);
+  border-color: var(--jl-text);
+  font-weight: 600;
+}
+.jl .jl-tab[aria-selected="true"]:hover,
+.jl .jl-seg > [aria-pressed="true"]:hover {
+  color: var(--jl-ink);
+  background: var(--jl-bright);
+}
+.jl .jl-tab[aria-selected="true"]:focus-visible,
+.jl .jl-seg > [aria-pressed="true"]:focus-visible {
+  outline-color: var(--jl-ink);
+}
+.jl .jl-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-muted);
+}
+.jl .jl-crumbs li + li::before {
+  content: "/";
+  content: "/" / "";
+  padding: 0 1ch;
+  color: var(--jl-dim);
+}
+.jl .jl-crumbs a:hover {
+  color: var(--jl-bright);
+}
+.jl .jl-crumbs [aria-current="page"] {
+  color: var(--jl-text);
+}
+
+/* Progress and meters: a hairline box filled in text colour. A meter past its high mark turns
+   orange, the colour jank.js gives a frame over budget. */
+.jl .jl-progress,
+.jl .jl-meter {
+  appearance: none;
+  width: 160px;
+  height: 8px;
+  vertical-align: middle;
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .jl-progress::-webkit-progress-bar {
+  background: none;
+}
+.jl .jl-progress::-webkit-progress-value {
+  background: var(--jl-text);
+}
+.jl .jl-progress::-moz-progress-bar {
+  background: var(--jl-text);
+}
+/* Chromium centres a half-height bar, placed absolutely in a grid; in normal flow it fills the
+   box, as it already does in Safari. */
+.jl .jl-meter::-webkit-meter-inner-element {
+  display: block;
+}
+.jl .jl-meter::-webkit-meter-bar {
+  position: static;
+  height: 100%;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+.jl .jl-meter::-webkit-meter-optimum-value {
+  background: var(--jl-text);
+}
+.jl .jl-meter::-webkit-meter-suboptimum-value {
+  background: var(--jl-muted);
+}
+.jl .jl-meter::-webkit-meter-even-less-good-value {
+  background: var(--jl-orange);
+}
+.jl .jl-meter::-moz-meter-bar {
+  background: var(--jl-text);
+}
+.jl .jl-meter:-moz-meter-sub-optimum::-moz-meter-bar {
+  background: var(--jl-muted);
+}
+.jl .jl-meter:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+  background: var(--jl-orange);
+}
+/* A spinner from braille frames, stepped by CSS; still when motion is reduced. */
+.jl .jl-spin::before {
+  content: "⠋";
+  animation: jl-spin 0.8s steps(1) infinite;
+}
+@keyframes jl-spin {
+  10% {
+    content: "⠙";
+  }
+  20% {
+    content: "⠹";
+  }
+  30% {
+    content: "⠸";
+  }
+  40% {
+    content: "⠼";
+  }
+  50% {
+    content: "⠴";
+  }
+  60% {
+    content: "⠦";
+  }
+  70% {
+    content: "⠧";
+  }
+  80% {
+    content: "⠇";
+  }
+  90% {
+    content: "⠏";
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jl .jl-spin::before {
+    animation: none;
+  }
+}
+
+/* Boxes: a hairline section with a tracked header, like the panel's sections. */
+.jl .jl-box,
+.jl .jl-notice,
+.jl .jl-details {
+  border: 1px solid var(--jl-line-strong);
+}
+.jl .jl-box > header {
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-muted);
+  border-bottom: 1px solid var(--jl-line-strong);
+}
+.jl .jl-box > :not(header),
+.jl .jl-details > :not(summary) {
+  padding: 8px 10px;
+}
+.jl .jl-notice {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+}
+/* Disclosure: + opens and – closes, the panel's grow and shrink marks. */
+.jl .jl-details > summary {
+  padding: 0 10px;
+  line-height: 24px;
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-muted);
+  list-style: none;
+  cursor: pointer;
+}
+.jl .jl-details > summary::-webkit-details-marker {
+  display: none;
+}
+.jl .jl-details > summary::before {
+  content: "+ ";
+  content: "+ " / "";
+}
+.jl .jl-details[open] > summary::before {
+  content: "– ";
+  content: "– " / "";
+}
+.jl .jl-details[open] > summary {
+  color: var(--jl-text);
+  border-bottom: 1px solid var(--jl-line-strong);
+}
+.jl .jl-details > summary:hover {
+  color: var(--jl-bright);
+}
+/* Popover: a hairline box in the top layer, centred; Esc or a click outside closes it. */
+.jl .jl-pop {
+  max-width: 40ch;
+  margin: auto;
+  padding: 10px 12px;
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+}
