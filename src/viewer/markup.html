@@ -1,9 +1,9 @@
 <header class="jank-viewer-top">
   <h1 class="jank-viewer-brand">
     <span class="jank-viewer-word">JANK.JS</span>
-    <span class="jank-viewer-dim jank-viewer-tracked">VIEWER</span>
+    <span class="jl-dim jank-viewer-tracked">VIEWER</span>
   </h1>
-  <span class="jank-viewer-dim">/</span>
+  <span class="jl-dim">/</span>
   <span class="jank-viewer-file" data-k="file">no recording</span>
   <span class="jank-viewer-chip" title="nothing is fetched or uploaded">
     OFFLINE
@@ -28,7 +28,7 @@
 </p>
 <div class="jank-viewer-empty" data-k="empty">
   <p>drop a recording here, or OPEN one.</p>
-  <p class="jank-viewer-dim">nothing leaves this machine.</p>
+  <p class="jl-dim">nothing leaves this machine.</p>
 </div>
 <section
   class="jank-viewer-session"
@@ -38,7 +38,7 @@
 >
   <div class="jank-viewer-side">
     <span class="jank-viewer-tracked jank-viewer-muted">SESSION</span>
-    <span class="jank-viewer-dim" data-k="bucket"></span>
+    <span class="jl-dim" data-k="bucket"></span>
   </div>
   <canvas
     data-k="session"
@@ -60,11 +60,11 @@
     <section class="jank-viewer-captures" aria-label="Captures">
       <h2 class="jank-viewer-h">
         <span class="jank-viewer-tracked">CAPTURES</span>
-        <span class="jank-viewer-dim" data-k="rule"></span>
+        <span class="jl-dim" data-k="rule"></span>
       </h2>
       <div role="table" aria-label="Captures" data-k="capture-table">
         <div role="rowgroup">
-          <div role="row" class="jank-viewer-sr">
+          <div role="row" class="jl-sr">
             <span role="columnheader">rank</span>
             <span role="columnheader">frame</span>
             <span role="columnheader">frame time</span>
@@ -74,7 +74,7 @@
         </div>
         <div data-k="capture-rows" role="rowgroup"></div>
       </div>
-      <p class="jank-viewer-dim jank-viewer-pad" data-k="capture-empty" hidden>
+      <p class="jl-dim jank-viewer-pad" data-k="capture-empty" hidden>
         no frame crossed the threshold in this recording.
       </p>
     </section>
@@ -82,7 +82,7 @@
   <aside class="jank-viewer-inspector" aria-label="Frame inspector">
     <div class="jank-viewer-ihead">
       <span class="jank-viewer-chip jank-viewer-on" data-k="i-frame"></span>
-      <span class="jank-viewer-push jank-viewer-dim">
+      <span class="jank-viewer-push jl-dim">
         <span data-k="i-capture"></span>
         <button
           type="button"
@@ -109,7 +109,7 @@
       </span>
       <span class="jank-viewer-muted" data-k="i-ratio"></span>
     </p>
-    <p class="jank-viewer-dim" data-k="i-over"></p>
+    <p class="jl-dim" data-k="i-over"></p>
     <p class="jank-viewer-likely" data-k="i-likely-row">
       <span
         class="jank-viewer-tag"
@@ -123,7 +123,7 @@
     <section>
       <h2 class="jank-viewer-h">
         <span class="jank-viewer-tracked">CPU</span>
-        <span class="jank-viewer-dim jank-viewer-legend">
+        <span class="jl-dim jank-viewer-legend">
           <i class="jank-viewer-solid"></i>
           exact
         </span>
@@ -133,7 +133,7 @@
     <section>
       <h2 class="jank-viewer-h">
         <span class="jank-viewer-tracked">GPU</span>
-        <span class="jank-viewer-dim jank-viewer-legend">
+        <span class="jl-dim jank-viewer-legend">
           <i class="jank-viewer-dashed"></i>
           <span data-k="i-gpu-meta"></span>
         </span>
@@ -143,14 +143,14 @@
     <section>
       <h2 class="jank-viewer-h">
         <span class="jank-viewer-tracked">COUNTERS</span>
-        <span class="jank-viewer-dim" data-k="i-counter-meta"></span>
+        <span class="jl-dim" data-k="i-counter-meta"></span>
       </h2>
       <div class="jank-viewer-grid" data-k="i-counters"></div>
     </section>
     <section>
       <h2 class="jank-viewer-h">
         <span class="jank-viewer-tracked">EVENTS</span>
-        <span class="jank-viewer-dim">within 10 frames</span>
+        <span class="jl-dim">within 10 frames</span>
       </h2>
       <div data-k="i-events"></div>
     </section>
@@ -165,7 +165,7 @@
     <div class="jank-viewer-actions">
       <button
         type="button"
-        class="jank-viewer-btn jank-viewer-primary"
+        class="jank-viewer-btn jl-primary"
         data-action="export-capture"
       >
         EXPORT CAPTURE
@@ -178,18 +178,18 @@
 </div>
 <footer class="jank-viewer-status">
   <span
-    class="jank-viewer-dim"
+    class="jl-dim"
     data-k="build-info"
     aria-label="jank.js viewer build"
   ></span>
-  <span>
+  <span class="jank-viewer-frame">
     <i class="jank-viewer-mark"></i>
     <b data-k="s-frame">FRAME –</b>
     <span class="jank-viewer-muted" data-k="s-range"></span>
   </span>
   <span class="jank-viewer-push">
     <span role="alert" data-k="error"></span>
-    <span class="jank-viewer-dim" role="status" data-k="s-format">
+    <span class="jl-dim" role="status" data-k="s-format">
       no recording open
     </span>
   </span>

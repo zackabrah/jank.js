@@ -1,64 +1,22 @@
+@import "../ui/junkui.css";
 @import "../performance/tokens.css";
 
-/* jank.js viewer. The same flat system as the panel: hairlines, one mono face. */
-html.jank-viewer {
-  color-scheme: dark;
-  background: var(--jank-ink);
-  color: var(--jank-text);
-  font: 400 var(--jank-size-body) / 20px var(--jank-font);
-  font-variant-numeric: tabular-nums;
-  font-variant-ligatures: none;
-  font-feature-settings:
-    "liga" 0,
-    "calt" 0,
-    "tnum" 1;
-  -webkit-font-smoothing: antialiased;
-}
-.jank-viewer body {
-  margin: 0;
-}
-.jank-viewer *,
+/* jank.js viewer on junkui (.jl on the root), which sets its type, colours, reset and focus.
+   The same flat system as the panel: hairlines, one mono face. */
 .jank-viewer *::before,
 .jank-viewer *::after {
   box-sizing: border-box;
 }
-/* Resets carry no specificity, so every class below wins without !important. */
-:where(.jank-viewer) h2,
-:where(.jank-viewer) p {
-  margin: 0;
-  font: inherit;
-}
-:where(.jank-viewer) button,
 :where(.jank-viewer) label {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 0;
-  border-radius: var(--jank-radius);
-  padding: 0;
   cursor: pointer;
 }
 .jank-viewer button:disabled {
-  cursor: default;
   color: var(--jank-faint);
-}
-.jank-viewer :focus {
-  outline: none;
-}
-.jank-viewer :focus-visible {
-  outline: 1px dotted var(--jank-text);
-  outline-offset: -3px;
-}
-.jank-viewer [hidden] {
-  display: none !important;
 }
 #app {
   min-height: 100vh;
   display: grid;
   grid-template-rows: 32px 28px auto minmax(0, 1fr) 28px;
-}
-.jank-viewer-dim {
-  color: var(--jank-dim);
 }
 .jank-viewer-muted {
   color: var(--jank-muted);
@@ -130,37 +88,23 @@ html.jank-viewer {
   height: 22px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
+  /* Centred by eye, as the panel's buttons are: capitals sit 1 px high in a plain box, and
+     letter-spacing adds space after the last letter. */
+  padding: 2px calc(10px - var(--jank-track-label) / 2) 0
+    calc(10px + var(--jank-track-label) / 2);
   font-size: var(--jank-size-label);
   letter-spacing: var(--jank-track-label);
   color: var(--jank-text);
   border: 1px solid var(--jank-control);
 }
-.jank-viewer-btn:not(:disabled):hover,
-.jank-viewer-link:hover,
-.jank-viewer-icon:not(:disabled):hover {
-  color: var(--jank-bright);
-}
-.jank-viewer-primary {
-  color: var(--jank-ink);
-  background: var(--jank-text);
-  border-color: var(--jank-text);
-  font-weight: 600;
-}
-.jank-viewer-primary:not(:disabled):hover {
-  color: var(--jank-ink);
-  background: var(--jank-bright);
-}
-.jank-viewer-primary:focus-visible {
-  outline-color: var(--jank-ink);
-}
-.jank-viewer-primary:disabled {
+.jank-viewer .jl-primary:disabled {
   color: var(--jank-faint);
   background: var(--jank-ink);
   border-color: var(--jank-line-strong);
   font-weight: 400;
 }
-.jank-viewer-picker {
+/* Two classes, so junkui's input rule never sizes the hidden picker. */
+.jank-viewer .jank-viewer-picker {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -290,14 +234,6 @@ html.jank-viewer {
 .jank-viewer-pad {
   padding: 0 10px;
 }
-.jank-viewer-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .jank-viewer-inspector {
   padding: 0 20px 16px;
   border-left: 1px solid var(--jank-line);
@@ -316,7 +252,7 @@ html.jank-viewer {
   color: var(--jank-muted);
   border: 1px solid var(--jank-control);
 }
-.jank-viewer-ihead .jank-viewer-dim {
+.jank-viewer-ihead .jl-dim {
   font-size: var(--jank-size-label);
 }
 .jank-viewer-headline {
@@ -487,7 +423,9 @@ html.jank-viewer {
   border-top: 1px solid var(--jank-line);
   white-space: nowrap;
 }
-.jank-viewer-status > span:first-child {
+/* The frame group: mark, frame and range, spaced here because the built markup has no
+   whitespace between tags. */
+.jank-viewer-frame {
   display: flex;
   align-items: center;
   gap: 12px;

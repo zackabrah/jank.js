@@ -761,7 +761,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
   const root = document.createElement("section");
 
-  root.className = "jank";
+  root.className = "jank jl";
   root.setAttribute("aria-label", "jank.js performance monitor");
 
   const id = `jank-${++trayCount}`;
@@ -2567,7 +2567,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     element.className = "jank-cap";
     element.innerHTML =
-      '<canvas class="jank-thumb" aria-hidden="true"></canvas><span class="jank-cap-text"><span><i class="jank-n"></i> <span class="jank-f"></span> <b class="jank-ms"></b></span><span class="jank-near"></span></span><button type="button" class="jank-btn jank-small">OPEN</button>';
+      '<canvas class="jank-thumb" aria-hidden="true"></canvas><span class="jank-cap-text"><span><i class="jank-n"></i> <span class="jank-f"></span> <b class="jank-ms"></b></span><span class="jank-near"></span></span><button type="button" class="jl-btn jl-small">OPEN</button>';
 
     put(part(element, ".jank-n"), `#${entry.number}`);
 

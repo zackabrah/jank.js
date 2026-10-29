@@ -1,0 +1,264 @@
+/* junkui: Junklab's interface layer, CSS variables on plain HTML. Flat: hairlines, one mono
+   face, no radius, shadow or gradient. Every rule is scoped under .jl, so a host page's styles
+   cannot restyle it and it never restyles the host. */
+.jl {
+  --jl-ink: #0a0a0a; /* background */
+  --jl-line-strong: #2e2e2e; /* input borders, disabled outlines */
+  --jl-control: #3a3a3a; /* button borders */
+  --jl-faint: #6a6a6a; /* disabled text */
+  --jl-dim: #7a7a7a; /* labels, footnotes */
+  --jl-muted: #a3a3a3; /* secondary values, inactive controls */
+  --jl-text: #e8e8e8; /* primary text, inverted fills */
+  --jl-bright: #ffffff; /* hover text */
+  /* The Junklab colours, as Junktro and the brand artwork use them. Each product gives each
+     one meaning, and uses none as decoration. */
+  --jl-purple: #8f00fd;
+  --jl-purple-lit: #be00fc;
+  --jl-green: #00fd00;
+  --jl-green-lit: #b7ff50;
+  --jl-orange: #f26032; /* the Junklab mark */
+  --jl-font: ui-monospace, Menlo, Consolas, monospace;
+  --jl-size-label: 11px;
+  --jl-size-body: 12px;
+  --jl-track-label: 0.12em;
+  --jl-radius: 0;
+}
+.jl,
+.jl * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--jl-radius);
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: none;
+  text-align: inherit;
+  text-transform: none;
+  text-decoration: none;
+  list-style: none;
+  box-shadow: none;
+}
+.jl {
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  color-scheme: dark;
+  font: 400 var(--jl-size-body) / 20px var(--jl-font);
+  font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
+  font-feature-settings:
+    "liga" 0,
+    "calt" 0,
+    "tnum" 1;
+  letter-spacing: 0;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+.jl [hidden] {
+  display: none !important;
+}
+/* As browsers draw them: the reset above would left-align button labels and hide a summary's
+   disclosure marker. */
+.jl button {
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+}
+.jl summary {
+  list-style: revert;
+}
+.jl button:disabled {
+  cursor: default;
+}
+.jl :focus {
+  outline: none;
+}
+.jl :focus-visible {
+  outline: 1px dotted var(--jl-text);
+  outline-offset: -3px;
+}
+.jl .jl-dim {
+  color: var(--jl-dim);
+}
+
+/* Controls */
+.jl .jl-icon {
+  width: 22px;
+  height: 20px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--jl-muted);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+}
+.jl .jl-btn {
+  height: 28px;
+  /* Centred by eye: capitals sit 1 px high in a plain box, and letter-spacing adds space after
+     the last letter, so the label moves down 1 px and right by half a letter-space. */
+  padding: 2px calc(10px - var(--jl-track-label) / 2) 0
+    calc(10px + var(--jl-track-label) / 2);
+  font-size: var(--jl-size-label);
+  letter-spacing: var(--jl-track-label);
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+}
+.jl .jl-btn.jl-small {
+  height: 20px;
+  padding: 0 6px;
+  letter-spacing: 0.1em;
+  color: var(--jl-muted);
+}
+/* Toggles are wide enough for OFF, so ON and OFF line up down a column. */
+.jl .jl-toggle {
+  min-width: calc(3ch + 3 * 0.08em + 14px);
+  height: 18px;
+  padding: 0 6px;
+  font-size: var(--jl-size-label);
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--jl-muted);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+}
+.jl .jl-btn:disabled,
+.jl .jl-toggle:disabled {
+  color: var(--jl-faint);
+  background: var(--jl-ink);
+  border-color: var(--jl-line-strong);
+  font-weight: 400;
+}
+.jl button:not(:disabled):hover {
+  color: var(--jl-bright);
+}
+.jl input,
+.jl select {
+  height: 20px;
+  padding: 0 4px;
+  font-size: var(--jl-size-body);
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-line-strong);
+}
+.jl input {
+  width: 72px;
+  text-align: right;
+  appearance: textfield;
+}
+.jl input::-webkit-inner-spin-button,
+.jl input::-webkit-outer-spin-button {
+  appearance: none;
+}
+.jl [aria-invalid="true"] {
+  border-color: var(--jl-text);
+}
+/* Drawn by junkui, not the platform, so it matches the inputs' 20 px box in every browser;
+   the arrow is two half-filled squares meeting in a V. */
+.jl select {
+  padding-right: 18px;
+  font-size: var(--jl-size-label);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--jl-muted) 50%),
+    linear-gradient(135deg, var(--jl-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 10px) 50%,
+    calc(100% - 6px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+}
+/* Where CSS may draw the open list too (Chromium, Safari), junkui draws it: a flat list in the
+   input's border, the highlighted row inverted like a pressed control, ✓ on the chosen one.
+   Elsewhere the platform's own list opens from the box above. */
+@supports (appearance: base-select) {
+  .jl select,
+  .jl select::picker(select) {
+    appearance: base-select;
+  }
+  /* Its own defaults would make the box at least 24 px tall. */
+  .jl select {
+    min-height: 0;
+  }
+  .jl select::picker-icon {
+    display: none;
+  }
+  /* Below the box, flipping up only when it doesn't fit, rather than toward more space. */
+  .jl select::picker(select) {
+    position-try-order: normal;
+    padding: 0;
+    border-radius: var(--jl-radius);
+    color: var(--jl-text);
+    background: var(--jl-ink);
+    border: 1px solid var(--jl-line-strong);
+  }
+  .jl option {
+    min-height: 20px;
+    padding: 0 8px 0 4px;
+    font-size: var(--jl-size-label);
+    white-space: nowrap;
+  }
+  .jl option::checkmark {
+    color: var(--jl-muted);
+  }
+  .jl option:hover,
+  .jl option:focus-visible {
+    outline: none;
+    color: var(--jl-ink);
+    background: var(--jl-text);
+  }
+  .jl option:hover::checkmark,
+  .jl option:focus-visible::checkmark {
+    color: inherit;
+  }
+}
+
+/* Inverted: chips, primary, and pressed controls. */
+.jl .jl-chip,
+.jl .jl-toggle[aria-pressed="true"],
+.jl .jl-btn[aria-pressed="true"],
+.jl .jl-primary,
+.jl .jl-icon[aria-pressed="true"] {
+  color: var(--jl-ink);
+  background: var(--jl-text);
+  border-color: var(--jl-text);
+  font-weight: 600;
+}
+.jl .jl-chip[data-tone="off"] {
+  color: var(--jl-muted);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+  font-weight: 400;
+}
+.jl .jl-toggle[aria-pressed="true"]:focus-visible,
+.jl .jl-btn[aria-pressed="true"]:focus-visible,
+.jl .jl-primary:focus-visible,
+.jl .jl-icon[aria-pressed="true"]:focus-visible {
+  outline-color: var(--jl-ink);
+}
+.jl .jl-toggle[aria-pressed="true"]:not(:disabled):hover,
+.jl .jl-btn[aria-pressed="true"]:hover,
+.jl .jl-primary:not(:disabled):hover,
+.jl .jl-icon[aria-pressed="true"]:hover {
+  color: var(--jl-ink);
+  background: var(--jl-bright);
+}
+.jl .jl-chip {
+  padding: 0 6px;
+  line-height: 18px;
+  letter-spacing: 0.08em;
+}
+
+/* Hidden from sight, still read aloud; a skip control appears while it has focus. */
+.jl .jl-sr,
+.jl .jl-skip:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

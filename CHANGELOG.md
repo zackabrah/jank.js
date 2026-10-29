@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Build the recording viewer on junkui too. Its root carries `jl`, and junkui now supplies its type, reset, focus, dim text, primary button and screen-reader text; the documented `--jank-*` overrides still apply. junkui keeps buttons' labels centred and `<summary>` disclosure markers, which its reset had removed.
+- Centre the viewer's button labels as the panel's are, and space its status bar again: the frame mark shows and "FRAME 61" no longer runs into the range beside it.
+- Build the panel's shared controls on junkui, Junklab's CSS-variable interface layer (`src/ui/junkui.css`): buttons, toggles, icon buttons, chips, inputs, focus, and visually hidden text now use `jl-` classes under the panel root, which also carries `jl`. Nothing looks or behaves differently, and the documented `--jank-*` overrides still apply. Host CSS aimed at the old internal classes (`jank-btn`, `jank-toggle`, `jank-icon`, `jank-chip`, `jank-primary`, `jank-small`, `jank-sr`, `jank-dim`) must use the `jl-` names.
 - Remove four theme tokens nothing read: `--jank-pad-x`, `--jank-pad-y`, `--jank-button-h` and `--jank-bar-pitch`. Overriding them never changed the panel or viewer.
 - Show the frame rate's range beside the FPS tile: the fastest one-second rate in the panel's recent history on top, the slowest below, a line between them and a tick at the current rate. Each rate is counted the way the tile counts it, frames in the last second, so the range only holds values the tile could show. Screen readers hear "frame rate ranged from 55 to 61 fps".
 - Centre the panel's button labels. Capitals sat 1 px high in their box, and letter spacing left extra space after the last letter.

@@ -189,7 +189,7 @@ A timer query measures elapsed GPU time between its start and end, which can inc
 
 ## Appearance and theming
 
-Import `jank.js/style.css` for the panel. It is self-contained: every rule is scoped under `.jank` and sets the properties it needs (font, colours, box sizing, line height), so the host's CSS does not restyle the panel and the panel does not leak into the host. The panel and offline viewer use system monospace fonts with no font downloads. Existing `jank.js/font.css` imports still resolve to an empty compatibility stylesheet and can be removed. Override `--jank-font` to use a host-provided font.
+Import `jank.js/style.css` for the panel. It is self-contained: every rule is scoped under the panel root (`.jank`, with junkui's `.jl` for its shared controls) and sets the properties it needs (font, colours, box sizing, line height), so the host's CSS does not restyle the panel and the panel does not leak into the host. The panel and offline viewer use system monospace fonts with no font downloads. Existing `jank.js/font.css` imports still resolve to an empty compatibility stylesheet and can be removed. Override `--jank-font` to use a host-provided font.
 
 The jank.js tokens are the theming surface. They are defined on `.jank` in `src/performance/tokens.css`, which `style.css` includes. Override any of them with a rule on `.jank` that loads after the stylesheet:
 

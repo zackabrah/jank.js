@@ -9,6 +9,8 @@ const allowedSource = new Set([
   "types",
   "adapters",
   "viewer",
+  // junkui, the shared interface layer; extracted to its own package once Junktro uses it.
+  "ui",
 ]);
 
 for (const entry of await readdir("src")) {

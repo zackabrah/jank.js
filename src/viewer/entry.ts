@@ -47,7 +47,7 @@ import "./viewer.css";
 
 // The jank.js viewer. Offline: it reads files, drops and its opener's handoff, and
 // never fetches. Host-provided strings are written as text, never as HTML.
-document.documentElement.classList.add("jank-viewer");
+document.documentElement.classList.add("jank-viewer", "jl");
 
 const app = document.querySelector<HTMLElement>("#app")!;
 
@@ -206,7 +206,7 @@ function renderStatic() {
       open.append(go);
 
       for (const cell of [
-        element("span", "jank-viewer-dim", `#${mark.rank}`),
+        element("span", "jl-dim", `#${mark.rank}`),
         element("span", "", count(recording!.frames[mark.at]!.id)),
         ms,
         element("span", "jank-viewer-muted", mark.near),
@@ -930,7 +930,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
   const cpu: HTMLElement[] = [];
 
   if (frame.coverage === UNAVAILABLE)
-    cpu.push(element("p", "jank-viewer-dim", "not recorded"));
+    cpu.push(element("p", "jl-dim", "not recorded"));
   else {
     for (const lane of info.cpu) {
       const value = lane.values[selected]!;
@@ -964,7 +964,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
       cpu.push(
         element(
           "p",
-          "jank-viewer-dim",
+          "jl-dim",
           `${frame.droppedScopes} scopes omitted; unattributed includes them`,
         ),
       );
@@ -996,7 +996,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
       : [
           element(
             "p",
-            "jank-viewer-dim",
+            "jl-dim",
             data.gpu ? "no sample from this frame" : "not recorded",
           ),
         ]),
@@ -1037,7 +1037,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
             shown.append(
               element(
                 "span",
-                "jank-viewer-dim",
+                "jl-dim",
                 ` ${value > old ? "+" : ""}${counter(value - old)}`,
               ),
             );
@@ -1059,7 +1059,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
   slot("i-counters").replaceChildren(
     ...(cells.length
       ? cells.slice(0, MAX_COUNTERS)
-      : [element("p", "jank-viewer-dim", "not recorded")]),
+      : [element("p", "jl-dim", "not recorded")]),
   );
 
   const events = eventsNear(data, selected);
@@ -1072,7 +1072,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
           row.append(
             element(
               "span",
-              "jank-viewer-dim jank-viewer-offset",
+              "jl-dim jank-viewer-offset",
               event.offset > 0 ? `+${event.offset}` : String(event.offset),
             ),
             element(
@@ -1086,7 +1086,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
 
           return row;
         })
-      : [element("p", "jank-viewer-dim", "no events")]),
+      : [element("p", "jl-dim", "no events")]),
   );
 
   action("export-capture").disabled = !captureAround();
