@@ -166,6 +166,7 @@ test("jank.js frame timings agree with Chrome's trace, long-animation-frame timi
         jank.render +
         jank.overhead.collectionMs +
         jank.overhead.refreshMs,
+      jankRefreshMs: jank.overhead.refreshMs,
       jankIntervalMs: jank.interval,
       jankScopesMs: intervalUnion(jank.scopes),
       hostIntervalMs: next ? next.at - frame.at : null,
@@ -282,20 +283,39 @@ test("jank.js frame timings agree with Chrome's trace, long-animation-frame timi
   expect(rows.some((row) => row.jankWorkMs > 16.7)).toBe(true);
   expect(longFrames.length).toBeGreaterThanOrEqual(3);
 
-  // Every frame matched its own trace callback, not a neighbour 16 ms away.
-  expect(report.traceMatchMs.max).toBeLessThan(0.5);
+  // Every frame matched its own trace callback, not a neighbour 16 ms away. This compares the
+  // scene's clock with Chrome's, not jank.js; a quarter of a frame allows the scheduling delay
+  // of a busy CI runner (0.52 ms seen on macOS) while still ruling out the wrong callback.
+  expect(report.traceMatchMs.max).toBeLessThan(4);
 
   // jank.js never reports more CPU than Chrome measured for the callback (within two timer
   // ticks), and what it leaves out (the two other meters and the scene's bookkeeping) stays
-  // small.
+  // small. The upper bound adds only windows that cannot overlap: the host's update and render
+  // and the panel refresh. Scope begin and end run inside the host's own update and render
+  // timing, so adding their collection cost too would count that time twice.
   expect(
-    Math.min(...rows.map((row) => row.traceCallbackMs - row.jankCostMs)),
+    Math.min(
+      ...rows.map(
+        (row) => row.traceCallbackMs - row.jankWorkMs - row.jankRefreshMs,
+      ),
+    ),
   ).toBeGreaterThan(-0.05);
   expect(report.unaccountedMs.p95).toBeLessThan(1);
 
-  // stats.js and stats-gl time the same work region; they must agree with jank.js.
-  expect(report.statsJsMsVsJank.max).toBeLessThan(0.1);
-  expect(report.statsGlMsVsJank.max).toBeLessThan(0.1);
+  // stats.js and stats-gl start before the work jank.js times and stop after it, so they never
+  // read less (two timer ticks of allowance). They read more only by their own begin and end
+  // calls; a stall in those can lengthen one frame, so the excess is bounded at the 95th
+  // percentile.
+  for (const meter of [
+    (row: (typeof rows)[number]) => row.statsJsMs ?? row.jankWorkMs,
+    (row: (typeof rows)[number]) => row.statsGlMs,
+  ])
+    expect(
+      Math.min(...rows.map((row) => meter(row) - row.jankWorkMs)),
+    ).toBeGreaterThan(-0.01);
+
+  expect(report.statsJsMsVsJank.p95).toBeLessThan(0.1);
+  expect(report.statsGlMsVsJank.p95).toBeLessThan(0.1);
 
   // Frame intervals are exactly the host's rAF timestamps, and over the run they add up to
   // the trace's callback span, give or take one frame of scheduling delay at each end.
@@ -303,9 +323,15 @@ test("jank.js frame timings agree with Chrome's trace, long-animation-frame timi
   expect(Math.abs(report.intervalTotalVsTraceMs)).toBeLessThan(34);
 
   // Each frame's scope time is exactly the work that ran inside its window, so time carried
-  // across a frame boundary is neither lost nor double-counted. The allowance covers the
-  // timer calls between one scope and the next, which no scope includes.
-  expect(report.scopesVsModelMs.max).toBeLessThan(0.1);
+  // across a frame boundary is neither lost nor double-counted. Scopes never exceed that work
+  // (two timer ticks of allowance), which rules out double counting. They fall short only by
+  // the scene's own code between one scope and the next, which no scope includes; a stall
+  // there can lengthen one frame's gap, but lost carried time would show on the 40% of frames
+  // that carry the previous callback's tail, so the shortfall is bounded at the 95th percentile.
+  expect(
+    Math.max(...rows.map((row, i) => row.jankScopesMs - modelScopes(i))),
+  ).toBeLessThan(0.01);
+  expect(report.scopesVsModelMs.p95).toBeLessThan(0.1);
 
   // Frame rates agree with both meters within two frames. The meters count a frame when its
   // callback ends and jank.js when its rAF timestamp falls. Under load Chrome's timestamps

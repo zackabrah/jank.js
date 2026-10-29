@@ -290,11 +290,13 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
 
   await threshold.click();
 
-  await page.getByLabel("threshold ms").fill("30");
+  // Above one or two dropped frames, so a busy CI runner's own hitches can't trigger the
+  // capture before the spike does.
+  await page.getByLabel("threshold ms").fill("40");
 
   await page.keyboard.press("Enter");
 
-  await expect(threshold).toHaveText("30.0 ms");
+  await expect(threshold).toHaveText("40.0 ms");
 
   await expect(threshold).toBeFocused();
 
@@ -312,7 +314,8 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
 
   await expect(slot(page, "state")).toHaveText("armed");
 
-  await page.evaluate(() => window.fixture.spike(45));
+  // However the browser stamps 100 ms of work across frames, one interval clears 40 ms.
+  await page.evaluate(() => window.fixture.spike(100));
 
   await expect(slot(page, "captured-meta")).toHaveText(
     /^1 \/ 10 · \d+\.\d MB$/,
