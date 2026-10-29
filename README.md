@@ -2,8 +2,9 @@
 
 This branch contains the development stack, proposed architecture, type contracts, and the
 first internal measurement implementation. The collector handles frames, scopes, bounded
-history, snapshots and overhead. The public profiler, capture controller, panel, viewer and
-UI runtime are still pending. Packages remain private. `jank.js` now exports
+history, snapshots and overhead. An internal capture controller owns recording windows and
+the saved archive. The public profiler, panel, viewer and UI runtime are still pending.
+Packages remain private. `jank.js` now exports
 `parseRecording`, `serializeRecording` and `RecordingError`; `junkui` still exports types only.
 
 - [Architecture and ownership](docs/architecture.md)

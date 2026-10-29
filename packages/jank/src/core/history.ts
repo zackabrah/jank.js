@@ -1,4 +1,4 @@
-import type { FrameSample } from "./frames.ts";
+import { copyFrame, type FrameSample } from "./frames.ts";
 import { collectionLimits } from "./limits.ts";
 import type { CostSummary } from "./snapshot.ts";
 
@@ -19,13 +19,7 @@ export class FrameHistory {
       this.frames.length < historyCapacity
         ? this.frames
         : [...this.frames.slice(this.nextIndex), ...this.frames.slice(0, this.nextIndex)];
-    return ordered.map((frame) => ({
-      ...frame,
-      cpu: { ...frame.cpu },
-      scopes: frame.scopes.map((scope) => ({ ...scope })),
-      coverage: { ...frame.coverage },
-      overhead: { ...frame.overhead },
-    }));
+    return ordered.map(copyFrame);
   }
 
   clear(): void {

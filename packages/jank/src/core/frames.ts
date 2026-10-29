@@ -45,3 +45,14 @@ export interface ChannelDescription {
   readonly id: string;
   readonly label: string;
 }
+
+/** Copy every mutable child at the snapshot/recording boundary. */
+export function copyFrame(frame: FrameSample): FrameSample {
+  return {
+    ...frame,
+    cpu: { ...frame.cpu },
+    scopes: frame.scopes.map((scope) => ({ ...scope })),
+    coverage: { ...frame.coverage },
+    overhead: { ...frame.overhead },
+  };
+}

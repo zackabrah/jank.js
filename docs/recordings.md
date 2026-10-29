@@ -20,10 +20,17 @@ less, never more. Manual and recent recordings may be empty. The final open fram
 
 The codec remains independent of browser globals, filesystem access, scheduling and capture
 state. Shared collection limits belong to the core; recording-specific limits belong to the
-recording package. Capturing live data is the next implementation step.
+recording package.
+
+The internal capture controller is implemented separately. It consumes each sealed frame once,
+owns manual/automatic windows and the ten-entry archive, and holds one independent scope
+request. Its recent-frame and recording-assembly inputs are explicit callbacks supplied by the
+profiler composition. An assembly failure retains active data for retry. Disarming an active
+automatic window lets it finish; arming during manual capture requires stopping that capture
+first. Rearming during cooldown preserves the current deadline. Public composition is next.
 
 Verification includes round trips, malformed values and references, multibyte size cases,
 200 seeded arbitrary-JSON inputs, and an isolated built-package consumer. This stage has
-45 codec tests alongside the 28 collector tests. Existing browser host-loop tests pass in
+45 codec tests, 17 controller tests, two copy-isolation cases and 28 collector tests. Existing browser host-loop tests pass in
 Chromium, Firefox and WebKit. A collection benchmark was also rerun after sharing limit
 definitions; its local Node batch averages are not a browser or old-version speed comparison.
