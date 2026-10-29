@@ -16,10 +16,11 @@
     "check": "biome ci --error-on-warnings . && pnpm typecheck && pnpm test:contracts && pnpm test:tooling && pnpm test",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:package": "pnpm build:types && node --test tests/package/*.test.mjs",
+    "test:package": "pnpm build && node --test tests/package/*.test.mjs",
     "test:browser": "playwright test",
     "dev:fixture": "vite --host 127.0.0.1 --port 4186 --strictPort",
     "bench": "node --experimental-strip-types scripts/benchmark.mjs",
+    "build": "pnpm -r build",
     "build:types": "pnpm -r build:types",
     "test:tooling": "node --test tests/tooling/*.test.mjs",
     "prepare": "git config core.hooksPath .githooks"

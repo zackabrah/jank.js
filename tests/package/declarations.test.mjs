@@ -65,6 +65,29 @@ tabs.dispose();
     );
     assert.ifError(result.error);
     assert.equal(result.status, 0, result.stdout + result.stderr);
+    writeFileSync(
+      join(directory, "runtime.mjs"),
+      `
+import assert from "node:assert/strict";
+import { parseRecording, serializeRecording } from "jank.js";
+const input = {
+  format: "jank.js-recording", schemaVersion: 3,
+  clock: { unit: "milliseconds", origin: "profiler-start" },
+  metadata: { createdAt: "2026-10-30T00:00:00.000Z", toolVersion: "0.2.1", application: null,
+    environment: { userAgent: null, platform: null, hardwareConcurrency: null, crossOriginIsolated: null,
+      viewport: null, timer: { source: "custom", estimatedResolutionMs: null } } },
+  targetFps: 60, capture: { kind: "recent" }, truncated: false,
+  frames: [], channels: [], counters: [], events: [], gpu: []
+};
+assert.deepEqual(parseRecording(serializeRecording(input)), { ok: true, recording: input });
+assert.equal(parseRecording('{').problem.code, "invalid-json");
+`,
+    );
+    const runtime = spawnSync(process.execPath, [join(directory, "runtime.mjs")], {
+      encoding: "utf8",
+    });
+    assert.ifError(runtime.error);
+    assert.equal(runtime.status, 0, runtime.stdout + runtime.stderr);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

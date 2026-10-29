@@ -3,12 +3,14 @@
 This branch contains the development stack, proposed architecture, type contracts, and the
 first internal measurement implementation. The collector handles frames, scopes, bounded
 history, snapshots and overhead. The public profiler, capture controller, panel, viewer and
-UI runtime are still pending. Packages remain private and export types only.
+UI runtime are still pending. Packages remain private. `jank.js` now exports
+`parseRecording`, `serializeRecording` and `RecordingError`; `junkui` still exports types only.
 
 - [Architecture and ownership](docs/architecture.md)
 - [Code quality and enforcement](docs/quality.md)
 - [Feature and verification plan](docs/rewrite-plan.md)
 - [Implemented collection behavior and verification](docs/collection.md)
+- [Recording format and validation](docs/recordings.md)
 - [jank.js public type contracts](packages/jank/src/index.ts)
 - [junkui public type contracts](packages/junkui/src/index.ts)
 
@@ -33,7 +35,7 @@ pnpm bench
 
 `check` validates formatting, lint rules, types, browser-free core contracts, consumer examples,
 tooling policy and unit/property tests. `test:package` builds both declaration packages and
-compiles an isolated consumer against those artifacts. `test:browser` exercises the host loop
+compiles an isolated consumer and exercises the built recording codec. `test:browser` exercises the host loop
 in Chromium, Firefox and WebKit. Install those Playwright browsers if they are not available.
 
 The pre-commit hook runs `check` and `test:package`. CI also runs coverage and browser tests.

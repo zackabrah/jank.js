@@ -1,6 +1,7 @@
 import type { Channel, ScopeToken } from "./channels.ts";
 import type { ChannelDescription } from "./frames.ts";
 import { FrameHistory, summarizeCost } from "./history.ts";
+import { collectionLimits } from "./limits.ts";
 import { inactiveScope, ScopeRecorder } from "./scopes.ts";
 import type { FrameSnapshot } from "./snapshot.ts";
 
@@ -50,7 +51,7 @@ class FrameCollector {
 
   constructor(options: CollectorOptions) {
     const capacity = options.maxScopesPerFrame ?? 128;
-    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 1024) {
+    if (!Number.isInteger(capacity) || capacity < 1 || capacity > collectionLimits.scopesPerFrame) {
       throw new RangeError("Scope capacity must be an integer from 1 to 1024");
     }
     const targetFps = options.targetFps ?? 60;
@@ -155,7 +156,7 @@ class FrameCollector {
     if (previous && (previous.active || previous.description.label !== description.label)) {
       throw new Error("A channel ID must be inactive and keep its historical label before reuse");
     }
-    if (!previous && this.channels.size >= 64) {
+    if (!previous && this.channels.size >= collectionLimits.channels) {
       throw new RangeError(
         "At most 64 channel identities may be retained; clear removes disposed identities",
       );
@@ -292,7 +293,7 @@ function validDuration(value: number): boolean {
 }
 
 function validateChannelText(value: string): void {
-  if (value.trim() === "" || value.length > 240) {
+  if (value.trim() === "" || value.length > collectionLimits.labelLength) {
     throw new Error("A channel ID and label must each contain 1–240 characters");
   }
 }

@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Proposed contracts for the readability rewrite; no runtime implementation.",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "build:types": "tsc -p tsconfig.build.json"
   },
   "exports": {

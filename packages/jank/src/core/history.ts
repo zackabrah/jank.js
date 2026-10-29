@@ -1,7 +1,8 @@
 import type { FrameSample } from "./frames.ts";
+import { collectionLimits } from "./limits.ts";
 import type { CostSummary } from "./snapshot.ts";
 
-const historyCapacity = 600;
+const historyCapacity = collectionLimits.recentFrames;
 
 /** Owns sealed frames. Only snapshots cross the mutable storage boundary. */
 export class FrameHistory {

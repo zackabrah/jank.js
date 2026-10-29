@@ -3,13 +3,15 @@
   "version": "0.2.1",
   "private": true,
   "type": "module",
-  "description": "Proposed contracts for the readability rewrite; no runtime implementation.",
+  "description": "Private rewrite: recording codecs and proposed profiler contracts.",
   "scripts": {
-    "build:types": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [

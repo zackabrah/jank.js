@@ -27,6 +27,8 @@ export type {
   TraceSink,
 } from "./profiler.ts";
 export type { CaptureController, CaptureOptions, CaptureState } from "./recordings/capture.ts";
+export { parseRecording, serializeRecording } from "./recordings/codec.ts";
+export { RecordingError } from "./recordings/read-values.ts";
 export type {
   ParseRecording,
   Recording,
