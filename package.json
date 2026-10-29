@@ -10,7 +10,7 @@
     "format": "oxlint --allow all --deny @stylistic/padding-line-between-statements --deny jank/group-object-statements --fix . && oxfmt --write .",
     "format:check": "oxlint --allow all --deny @stylistic/padding-line-between-statements --deny jank/group-object-statements . && oxfmt --check .",
     "test": "vitest run",
-    "test:run": "node --test scripts/release/*.test.mjs scripts/lint/*.test.mjs && vitest run --coverage",
+    "test:run": "node --test scripts/release/*.test.mjs scripts/lint/*.test.mjs scripts/ci/*.test.mjs && vitest run --coverage",
     "build": "pnpm typecheck && pnpm build:package",
     "check": "pnpm verify:boundary && pnpm format:check && pnpm lint && pnpm test:run && pnpm build",
     "build:package": "vite build --config vite.library.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",

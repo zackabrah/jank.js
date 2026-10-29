@@ -19,7 +19,8 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       exclude: ["src/**/*.test.ts"],
-      reporter: ["text-summary", "html"],
+      // json-summary feeds the CI job summary (scripts/ci/summary.mjs).
+      reporter: ["text-summary", "html", "json-summary"],
       // Floors at the measured levels, so coverage can rise but never quietly fall. The
       // viewer and graph drawing are canvas and DOM code covered by the Playwright suite.
       thresholds: {
