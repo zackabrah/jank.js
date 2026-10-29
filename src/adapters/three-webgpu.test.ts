@@ -96,13 +96,11 @@ it("ignores completions after disable/dispose and does not dispose host resource
   });
 
   source.captureFrame(1);
-
   source.setEnabled(false);
 
   await fixture.resolve([1], 3);
 
   expect(onSample).not.toHaveBeenCalled();
-
   expect(source.read().status).toBe("disabled");
 
   source.setEnabled(true);
@@ -110,13 +108,11 @@ it("ignores completions after disable/dispose and does not dispose host resource
   fixture.renderer.info.frame = 2;
 
   source.captureFrame(2);
-
   source.dispose();
 
   await fixture.resolve([2], 3);
 
   expect(onSample).not.toHaveBeenCalled();
-
   expect(fixture.renderer.backend.trackTimestamp).toBe(true);
 });
 
@@ -129,7 +125,6 @@ it("reports unsupported features and rejects unverified Three revisions", () => 
     createThreeWebGpuSource(fixture.renderer, { revision: "186" }).read()
       .status,
   ).toBe("unsupported");
-
   expect(() =>
     createThreeWebGpuSource(fixture.renderer, { revision: "185" }),
   ).toThrow("only with Three.js r186");

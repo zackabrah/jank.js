@@ -118,7 +118,6 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
       run(process.execPath, [script, "publish"], repo, env);
 
       assert.equal(git("rev-parse", "v0.2.0"), git("rev-parse", "HEAD"));
-
       assert.equal(
         git("ls-remote", "origin", "refs/heads/main").split(/\s/)[0],
         git("rev-parse", "HEAD"),
@@ -165,9 +164,7 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
       run(process.execPath, [script, "publish"], repo, env);
 
       assert.equal(git("ls-remote", "origin", "refs/heads/main"), remoteHead);
-
       assert.equal(git("rev-parse", "HEAD"), env.GITHUB_SHA);
-
       assert.match(readFileSync(output, "utf8"), /created=false\n$/);
     } finally {
       rmSync(root, { recursive: true, force: true });

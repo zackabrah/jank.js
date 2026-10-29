@@ -8,6 +8,8 @@ import {
 
 import type { PerformanceRecording } from "../core/recording-types.ts";
 
+const maxBuckets = 1000;
+
 /** UI-independent state. Each returned snapshot is detached from the loaded recording. */
 export function createRecordingViewModel() {
   let recording: PerformanceRecording | null = null;
@@ -15,6 +17,7 @@ export function createRecordingViewModel() {
   let selected: number | null = null,
     range: { start: number; end: number } | null = null;
 
+  /** Spans the range over the whole recording, or clears it when there are no frames. */
   function resetRange() {
     range = recording?.frames.length
       ? {
@@ -75,9 +78,11 @@ export function createRecordingViewModel() {
       if (
         !Number.isInteger(bucketCount) ||
         bucketCount < 1 ||
-        bucketCount > 1000
+        bucketCount > maxBuckets
       )
-        throw new RangeError("Timeline resolution must be 1–1000 buckets");
+        throw new RangeError(
+          `Timeline resolution must be 1–${maxBuckets} buckets`,
+        );
 
       if (!recording) return null;
 

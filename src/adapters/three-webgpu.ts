@@ -1,5 +1,10 @@
 import type { GpuProfile } from "../types/gpu-profile-types.ts";
 
+const verifiedRevision = "186";
+
+/** Native frames awaiting a timestamp resolve before the oldest is dropped. */
+const maxLinkedFrames = 600;
+
 export interface ThreeTimestampRenderer {
   info: { frame: number };
   backend: unknown;
@@ -16,6 +21,12 @@ interface TimestampBackend {
   getTimestampFrames(type: string): unknown;
 }
 
+/** Status before any timing has resolved: waiting for a sample, or switched off. */
+function idleStatus(enabled: boolean): GpuProfile["status"] {
+  return enabled ? "pending" : "disabled";
+}
+
+/** True for a three.js WebGPU backend that can record GPU timestamps. */
 function isTimestampBackend(value: unknown): value is TimestampBackend {
   return (
     typeof value === "object" &&
@@ -36,7 +47,7 @@ export function createThreeWebGpuSource(
   renderer: ThreeTimestampRenderer,
   options: { revision: string; onSample?: (profile: GpuProfile) => void },
 ) {
-  if (options.revision !== "186")
+  if (options.revision !== verifiedRevision)
     throw new Error("The WebGPU adapter is verified only with Three.js r186");
 
   const backend = isTimestampBackend(renderer.backend)
@@ -61,7 +72,7 @@ export function createThreeWebGpuSource(
   let profile: GpuProfile = {
     available: supported,
     enabled,
-    status: !supported ? "unsupported" : enabled ? "pending" : "disabled",
+    status: supported ? idleStatus(enabled) : "unsupported",
     currentFrame: renderer.info.frame,
     sampleFrame: null,
     sampleAgeFrames: null,
@@ -73,6 +84,7 @@ export function createThreeWebGpuSource(
     error: null,
   };
 
+  /** A copy of the profile with the renderer's current frame and sample age filled in. */
   const read = (): GpuProfile => ({
     ...profile,
     currentFrame: renderer.info.frame,
@@ -84,6 +96,7 @@ export function createThreeWebGpuSource(
     passes: profile.passes.map((pass) => ({ ...pass })),
   });
 
+  /** Links a renderer frame to a diagnostics frame and starts one timestamp read if none is in flight. */
   function captureFrame(diagnosticFrame: number): void {
     if (disposed || !enabled || !backend) return;
 
@@ -100,7 +113,7 @@ export function createThreeWebGpuSource(
 
     frameLinks.set(nativeFrame, diagnosticFrame);
 
-    if (frameLinks.size > 600) {
+    if (frameLinks.size > maxLinkedFrames) {
       frameLinks.delete(frameLinks.keys().next().value!);
 
       dropped++;
@@ -199,7 +212,7 @@ export function createThreeWebGpuSource(
       profile = {
         ...profile,
         enabled,
-        status: enabled ? "pending" : "disabled",
+        status: idleStatus(enabled),
         sampleFrame: null,
         sampleAgeFrames: null,
         diagnosticFrame: null,

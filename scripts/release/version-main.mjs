@@ -9,10 +9,19 @@ import {
 
 import { join } from "node:path";
 
-import { planVersions } from "./semver.mjs";
+import { mainBranch, planVersions } from "./semver.mjs";
 
+const mainRef = `refs/heads/${mainBranch}`;
+
+/** The only run allowed to write versions: a GitHub Actions push to main. */
+const versionRun = { actions: "true", event: "push", ref: mainRef };
+
+const step = { plan: "plan", publish: "publish" };
+
+/** Runs git and returns its trimmed stdout. */
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
 
+/** Fetches every page of a GitHub API list through gh and flattens the pages. */
 const api = (path) =>
   JSON.parse(
     execFileSync("gh", ["api", path, "--paginate", "--slurp"], {
@@ -20,15 +29,16 @@ const api = (path) =>
     }),
   ).flat();
 
+/** Sets a step output for later workflow steps; a no-op outside Actions. */
 const output = (name, value) => {
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
 };
 
 if (
-  process.env.GITHUB_ACTIONS !== "true" ||
-  process.env.GITHUB_EVENT_NAME !== "push" ||
-  process.env.GITHUB_REF !== "refs/heads/main"
+  process.env.GITHUB_ACTIONS !== versionRun.actions ||
+  process.env.GITHUB_EVENT_NAME !== versionRun.event ||
+  process.env.GITHUB_REF !== versionRun.ref
 )
   throw new Error(
     "Version writes run only in the main push workflow; use semver tests locally.",
@@ -48,10 +58,11 @@ mkdirSync(temp, { recursive: true });
 
 const planPath = join(temp, "semantic-version-plan.json");
 
+/** True while this run's commit is still the tip of main on the remote. */
 const current = () =>
-  git("ls-remote", "origin", "refs/heads/main").split(/\s/)[0] === expected;
+  git("ls-remote", "origin", mainRef).split(/\s/)[0] === expected;
 
-if (process.argv[2] === "plan") {
+if (process.argv[2] === step.plan) {
   output("changed", "false");
 
   if (!current()) {
@@ -86,7 +97,7 @@ if (process.argv[2] === "plan") {
     for (const pr of api(`repos/${repo}/commits/${sha}/pulls`)) {
       if (
         !pr.merged_at ||
-        pr.base?.ref !== "main" ||
+        pr.base?.ref !== mainBranch ||
         pr.merge_commit_sha !== sha ||
         seen.has(pr.number)
       )
@@ -143,7 +154,7 @@ if (process.argv[2] === "plan") {
   output("version", plan.version);
 
   console.log(`Prepared ${plan.entries.length} PR bumps: ${plan.version}`);
-} else if (process.argv[2] === "publish") {
+} else if (process.argv[2] === step.publish) {
   output("created", "false");
 
   const plan = JSON.parse(readFileSync(planPath, "utf8"));

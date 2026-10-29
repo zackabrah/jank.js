@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/knip/schema-jsonc.json",
+  // Loaded by HTML pages through <script> tags rather than imported.
+  "entry": ["src/viewer/entry.ts", "e2e/fixtures/*.js"],
+  // Type declarations for the .mjs scripts that TypeScript sources import.
+  "ignore": ["**/*.d.mts"],
+  // The accuracy fixture loads both from node_modules by URL, not by import.
+  "ignoreDependencies": ["stats.js", "stats-gl"],
+  // Browser imports of the built package and stats-gl, resolved by the test and benchmark
+  // servers rather than from source.
+  "ignoreUnresolved": [
+    "/index.js",
+    "./index.js",
+    "./adapters/webgl2.js",
+    "./stats-gl/main.js",
+  ],
+}

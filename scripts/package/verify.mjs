@@ -12,19 +12,22 @@ const root = process.cwd();
 
 const temp = await mkdtemp(join(tmpdir(), "jank-consumer-"));
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const win32 = "win32";
 
+const windows = process.platform === win32;
+
+const npm = windows ? "npm.cmd" : "npm";
+
+/** Path to a locally installed CLI, with the .cmd shim on Windows. */
 const executable = (name) =>
-  resolve(
-    "node_modules/.bin",
-    name + (process.platform === "win32" ? ".cmd" : ""),
-  );
+  resolve("node_modules/.bin", name + (windows ? ".cmd" : ""));
 
+/** Runs a command synchronously and captures its output; Windows needs a shell for .cmd shims. */
 const run = (command, args, cwd) =>
   execFileSync(command, args, {
     cwd,
     stdio: "pipe",
-    ...(process.platform === "win32" ? { shell: true } : {}),
+    ...(windows ? { shell: true } : {}),
   });
 
 try {
@@ -95,11 +98,8 @@ try {
   );
 
   assert.ok(viewer.includes("jank.js recording viewer"));
-
   assert.ok(viewer.includes("Recording file"));
-
   assert.ok(!viewer.includes("@font-face"), "The viewer must use system fonts");
-
   assert.ok(
     !packageFiles.some((file) => /\.(woff2?|otf|ttf)$/i.test(file)),
     "The package must not ship font binaries",
@@ -111,9 +111,7 @@ try {
     !/@font-face|url\(|@import/i.test(font),
     "The legacy font.css entry must not load fonts",
   );
-
   assert.equal(manifest.exports["./viewer.html"], "./dist-package/viewer.html");
-
   assert.ok(!manifest.devDependencies.gsap);
 
   const style = await readFile(
@@ -131,6 +129,7 @@ try {
     `import { buildInfo, createDiagnostics, createPreparationProfiler, createRecordingViewModel, serializeRecording } from 'jank.js';
 import { createThreeWebGpuSource } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer } from 'jank.js/adapters/three';
+import { createWebGl2GpuSource } from 'jank.js/adapters/webgl2';
 import assert from 'node:assert/strict';
 assert.equal(buildInfo.version, ${JSON.stringify(manifest.version)});
 assert.match(buildInfo.commit, /^[a-f0-9]{40}$/);
@@ -143,6 +142,8 @@ assert.equal(view.snapshot().summary.frames, 1);
 assert.equal(view.snapshot().selected.attribution, 'unavailable');
 const gpu = createThreeWebGpuSource({info:{frame:0},backend:{},hasFeature:()=>false,resolveTimestampsAsync:async()=>undefined},{revision:'186'});
 assert.equal(gpu.read().status, 'unsupported'); gpu.dispose();
+const webgl = createWebGl2GpuSource({QUERY_RESULT:0,QUERY_RESULT_AVAILABLE:0,getExtension:()=>null,getParameter:()=>null,isContextLost:()=>false,createQuery:()=>null,deleteQuery(){},beginQuery(){},endQuery(){},getQueryParameter:()=>null});
+assert.equal(webgl.read().status, 'unsupported'); webgl.dispose();
 const channel = registerThreeRenderer(monitor, { render: { calls: 3, triangles: 12, points: 0, lines: 0 }, memory: { geometries: 1, textures: 0 } });
 assert.equal(monitor.snapshot().systems[0].values.drawCalls, 3);
 const preparation = createPreparationProfiler(); preparation.start({label:'Test',kind:'fresh-context'}); preparation.measure('audio',()=>42); assert.equal(preparation.snapshot().stages[0].stage,'audio');
@@ -156,6 +157,7 @@ channel.dispose(); monitor.dispose();`,
     `import { createDiagnostics, createPerformanceTray, createRecordingViewModel, parseRecording, inspectFrame, type PerformanceRecording, type PerformanceTrayOptions, type GpuProfile } from 'jank.js';
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer, type ThreeRendererInfo } from 'jank.js/adapters/three';
+import { createWebGl2GpuSource } from 'jank.js/adapters/webgl2';
 const options: PerformanceTrayOptions = { shell: document.body, monitor: createDiagnostics() };
 createPerformanceTray(options).dispose();
 export type Profile = GpuProfile;
@@ -163,7 +165,8 @@ const viewer = createRecordingViewModel(); viewer.clear();
 export function recording(text: string): PerformanceRecording { return parseRecording(text); }
 export function frame(data: PerformanceRecording, id: number) { return inspectFrame(data, id); }
 export function timestamps(renderer: ThreeTimestampRenderer) { return createThreeWebGpuSource(renderer, {revision:'186'}); }
-export function counters(info: ThreeRendererInfo) { return registerThreeRenderer(options.monitor, info); }`,
+export function counters(info: ThreeRendererInfo) { return registerThreeRenderer(options.monitor, info); }
+export function webglTray(gl: WebGL2RenderingContext) { return createPerformanceTray({ ...options, gpu: createWebGl2GpuSource(gl) }); }`,
   );
 
   run(

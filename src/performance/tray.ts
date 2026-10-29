@@ -1,6 +1,23 @@
-import { serializeRecording } from "../core/recording.ts";
+import {
+  automaticCapture,
+  completeCoverage,
+  maxAfterFrames,
+  maxBeforeFrames,
+  maxTargetFps,
+  msPerSecond,
+  recordingFrameCapacity,
+  serializeRecording,
+} from "../core/recording.ts";
 
-import { intervalUnion } from "../core/inspection.ts";
+import {
+  iconLabel,
+  intervalUnion,
+  nearbyEventLabels,
+  scopesBySystem,
+  sortedP95,
+} from "../core/inspection.ts";
+
+import { download, findIn } from "./ui/dom.ts";
 
 import { panelMarkup } from "./ui/markup.ts";
 
@@ -17,22 +34,25 @@ import {
   budgetLimit,
   count,
   counter,
+  counterSources,
   fixed,
   observedTick,
   timerHonesty,
   words,
 } from "./ui/format.ts";
 
-import type {
-  Diagnostics,
-  DiagnosticFrame,
-  DiagnosticSnapshot,
+import {
+  defaultAfterFrames,
+  defaultBeforeFrames,
+  defaultCooldownMs,
+  type Diagnostics,
+  type DiagnosticFrame,
+  type DiagnosticSnapshot,
 } from "../core/diagnostics.ts";
 
 import type {
   AutoCaptureOptions,
   DiagnosticEvent,
-  DiagnosticScope,
   PerformanceRecording,
 } from "../core/recording-types.ts";
 
@@ -46,6 +66,21 @@ import type {
   TemporalDebugView,
   TemporalDiagnostics,
 } from "../types/motion-types.ts";
+
+const percent = 100;
+
+const bytesPerMegabyte = 1e6;
+
+/** Graph bars are drawn at a 3 px pitch. */
+const graphPitch = 3;
+
+const gpuStatus = {
+  unsupported: "unsupported",
+  disabled: "disabled",
+  pending: "pending",
+  ready: "ready",
+  error: "error",
+} as const;
 
 /** Optional renderer timing source; the host retains renderer and frame-loop ownership. */
 export interface PerformanceGpuSource {
@@ -83,12 +118,14 @@ export interface PerformancePreparationSource {
   history(): readonly PreparationSnapshot[];
 }
 
+/** A detached copy, so a frozen or exported profile can't change under the panel. */
 export function copyTemporalDiagnostics(
   profile: TemporalDiagnostics,
 ): TemporalDiagnostics {
   return { ...profile };
 }
 
+/** Status line for whether object motion feeds temporal reconstruction. */
 export function temporalHistoryStatus(
   profile: TemporalDiagnostics | undefined,
 ): string {
@@ -99,6 +136,7 @@ export function temporalHistoryStatus(
     : "off · reconstruction uses camera motion only";
 }
 
+/** A deep copy, so a frozen or exported view can't change under the panel. */
 export function copyCullingDiagnostics(
   profile: CullingDiagnostics,
 ): CullingDiagnostics {
@@ -125,6 +163,7 @@ export function copyCullingDiagnostics(
   };
 }
 
+/** Status line for frustum culling and the optional view-distance cutoff. */
 export function visibilityCullingStatus(
   profile: CullingDiagnostics | undefined,
 ): string {
@@ -142,17 +181,19 @@ export function visibilityCullingStatus(
   );
 }
 
+/** Copies a profile and its passes so history and frozen views hold their own values. */
 function copyGpuProfile(profile: GpuProfile): GpuProfile {
   return { ...profile, passes: profile.passes.map((pass) => ({ ...pass })) };
 }
 
+/** The renderer's current frame, else a ready sample's frame plus its age; null when unknown. */
 function currentGpuFrame(profile: GpuProfile | undefined): number | null {
   if (!profile) return null;
 
   if (profile.currentFrame !== null) return profile.currentFrame;
 
   if (
-    profile.status === "ready" &&
+    profile.status === gpuStatus.ready &&
     profile.sampleFrame !== null &&
     profile.sampleAgeFrames !== null
   )
@@ -161,23 +202,35 @@ function currentGpuFrame(profile: GpuProfile | undefined): number | null {
   return null;
 }
 
+/** Names the frame a GPU sample came from: the matching diagnostic frame, else the renderer frame. */
+function gpuFrameLabel(view: GpuProfile | undefined): string {
+  if (view?.diagnosticFrame != null)
+    return `from frame ${count(view.diagnosticFrame)}`;
+
+  if (view?.sampleFrame != null)
+    return `renderer frame ${count(view.sampleFrame)}`;
+
+  return "";
+}
+
+/** Status line for the GPU timing source's current state. */
 export function gpuTimingStatus(profile: GpuProfile | undefined): string {
   if (!profile) return "waiting for the renderer";
 
   switch (profile.status) {
-    case "unsupported":
+    case gpuStatus.unsupported:
       return "unsupported · timestamp queries are unavailable on this device";
 
-    case "disabled":
+    case gpuStatus.disabled:
       return "off · gpu timing is disabled";
 
-    case "pending":
+    case gpuStatus.pending:
       return "pending · waiting for asynchronous gpu timing";
 
-    case "ready":
+    case gpuStatus.ready:
       return "ready · asynchronous gpu sample";
 
-    case "error":
+    case gpuStatus.error:
       return `error · ${profile.error ?? "gpu timing could not be read"}`;
 
     default: {
@@ -199,17 +252,16 @@ export class GpuProfileHistory {
   private readonly recentCapacity: number;
   private readonly recordingCapacity: number;
 
+  /** Capacities: samples kept while idle, and samples kept for one recording. */
   constructor(recentCapacity = 600, recordingCapacity = 6000) {
     this.recentCapacity = recentCapacity;
-
     this.recordingCapacity = recordingCapacity;
   }
 
+  /** Begins a recording after the newest renderer frame seen, so older readbacks stay out. */
   start(profile: GpuProfile | undefined) {
     this.recorded.length = 0;
-
     this.discardedRecordedSamples = 0;
-
     this.hasRecording = true;
 
     const frame = currentGpuFrame(profile);
@@ -218,6 +270,7 @@ export class GpuProfileHistory {
       frame === null ? null : Math.max(this.lastSampleFrame, frame);
   }
 
+  /** Keeps each new ready sample once, and adds it to the recording when it follows the start frame. */
   observe(profile: GpuProfile | undefined, recording: boolean) {
     // A renderer may become available after Record. Establish its boundary before
     // considering any readback, which can belong to an older submitted frame.
@@ -230,14 +283,13 @@ export class GpuProfileHistory {
 
     if (
       !profile ||
-      profile.status !== "ready" ||
+      profile.status !== gpuStatus.ready ||
       profile.sampleFrame === null ||
       profile.sampleFrame <= this.lastSampleFrame
     )
       return;
 
     this.lastSampleFrame = profile.sampleFrame;
-
     this.recent.push(copyGpuProfile(profile));
 
     if (this.recent.length > this.recentCapacity) this.recent.shift();
@@ -251,24 +303,21 @@ export class GpuProfileHistory {
 
       if (this.recorded.length > this.recordingCapacity) {
         this.recorded.shift();
-
         this.discardedRecordedSamples++;
       }
     }
   }
 
+  /** Drops every sample and restarts from the renderer's current frame. */
   clear(profile: GpuProfile | undefined) {
     this.recent.length = this.recorded.length = 0;
-
     this.lastSampleFrame = profile?.sampleFrame ?? -1;
-
     this.recordingStartFrame = currentGpuFrame(profile);
-
     this.hasRecording = false;
-
     this.discardedRecordedSamples = 0;
   }
 
+  /** Describes the held history: which one, its capacity, its size and the samples dropped. */
   summary() {
     return {
       history: this.hasRecording ? "recording" : "recent",
@@ -280,6 +329,7 @@ export class GpuProfileHistory {
     };
   }
 
+  /** The GPU section of an exported recording: the summary, the latest profile and the held samples. */
   export(latest: GpuProfile | undefined) {
     return {
       units: "milliseconds" as const,
@@ -297,6 +347,8 @@ export class GpuProfileHistory {
 export interface FrameStats {
   /** Frames that ended within the last second; null until a full second is held. */
   fps: number | null;
+  /** The slowest and fastest of those one-second rates across the history; null like fps. */
+  fpsRange: { low: number; high: number } | null;
   avg: number;
   p95: number;
   worst: number;
@@ -332,7 +384,7 @@ export function frameStats(
 
     if (frame.interval > worst.interval) worst = frame;
 
-    if (frame.at > last.at - 1000) shown++;
+    if (frame.at > last.at - msPerSecond) shown++;
   });
 
   intervals.sort();
@@ -344,12 +396,29 @@ export function frameStats(
   for (let i = intervals.length - 1; i >= 0 && intervals[i]! > limitMs; i--)
     missed++;
 
-  const held = last.at - (frames[0]!.at - frames[0]!.interval);
+  const start = frames[0]!.at - frames[0]!.interval;
+
+  // The rate the tile would have shown at each frame with a full second behind it.
+  let low = Infinity,
+    high = -Infinity;
+
+  for (let i = 0, from = 0; i < frames.length; i++) {
+    const end = frames[i]!.at;
+
+    if (end - msPerSecond < start) continue;
+
+    while (frames[from]!.at <= end - msPerSecond) from++;
+
+    low = Math.min(low, i - from + 1);
+
+    high = Math.max(high, i - from + 1);
+  }
 
   return {
-    fps: held >= 1000 ? shown : null,
+    fps: last.at - start >= msPerSecond ? shown : null,
+    fpsRange: high >= low ? { low, high } : null,
     avg: sum / frames.length,
-    p95: intervals[Math.floor((frames.length - 1) * 0.95)]!,
+    p95: sortedP95(intervals),
     worst: worst.interval,
     worstFrame: worst.id,
     missed,
@@ -363,29 +432,16 @@ export interface FrameScopes {
   unattributed: number;
 }
 
+/** Per-system CPU time for a frame with complete scopes; overlapping scopes count once. */
 function frameScopes(frame: DiagnosticFrame): FrameScopes | null {
-  if (frame.coverage !== "complete") return null;
+  if (frame.coverage !== completeCoverage) return null;
 
-  const groups = new Map<string, DiagnosticScope[]>();
-
-  for (const scope of frame.scopes) {
-    let group = groups.get(scope.system);
-
-    if (!group) groups.set(scope.system, (group = []));
-
-    group.push(scope);
-  }
+  const groups = scopesBySystem(frame.scopes);
 
   const systems = new Map<string, { label: string; ms: number }>();
 
   for (const [system, group] of groups)
-    systems.set(system, {
-      label: group[0]!.label,
-      ms:
-        group.length === 1
-          ? group[0]!.end - group[0]!.start
-          : intervalUnion(group),
-    });
+    systems.set(system, { label: group[0]!.label, ms: intervalUnion(group) });
 
   return {
     systems,
@@ -443,7 +499,7 @@ export function scopeAverages(
 
 export type PerformanceTrayMode = "line" | "mini" | "full";
 
-export type PerformanceTrayCorner =
+type PerformanceTrayCorner =
   | "top-right"
   | "top-left"
   | "bottom-right"
@@ -469,23 +525,98 @@ export interface PerformanceTrayOptions {
 
 const modeKey = "jank.js:panel-mode";
 
-const recordingCapacity = 6000;
+const trayMode = { line: "line", mini: "mini", full: "full" } as const;
+
+const tabName = {
+  live: "live",
+  loading: "loading",
+  capture: "capture",
+} as const;
+
+const editorKey = {
+  threshold: "threshold",
+  before: "before",
+  after: "after",
+  cooldown: "cooldown",
+} as const;
+
+const debugView = {
+  none: "none",
+  motion: "motion",
+  history: "history",
+} as const;
+
+/** Auto capture states the header names while not recording. */
+const shownCaptureStates = new Set<string>(["armed", "cooldown"]);
+
+const freshContext = "fresh-context";
+
+const mainView = "main";
+
+const enterKey = "Enter";
+
+const escapeKey = "Escape";
+
+/** Tab keys move focus to the tab at the returned index. */
+const tabMoves = new Map<string, (index: number, length: number) => number>([
+  ["ArrowRight", (index, length) => (index + 1) % length],
+  ["ArrowLeft", (index, length) => (index + length - 1) % length],
+  ["Home", () => 0],
+  ["End", (_, length) => length - 1],
+]);
+
+const viewerReady = "jank.js:viewer-ready";
+
+/** An opaque origin, such as a file: page, serializes as "null". */
+const opaqueOrigin = "null";
 
 const captureLimit = 10;
 
-/** The monitor's own lifecycle markers; never offered as the event near a capture. */
-const toolEvents = new Set([
-  "Spike captured",
-  "Recording started",
-  "Recording stopped",
-  "Recording complete",
-]);
+const presetFps = { low: 30, standard: 60, high: 120 } as const;
 
+/** Intervals around the trigger kept for a capture's thumbnail. */
+const thumbnailFramesBefore = 13;
+
+const thumbnailFramesAfter = 7;
+
+const thumbnailWidth = 60;
+
+const thumbnailHeight = 24;
+
+/** CSS widths until the first ResizeObserver report. */
+const defaultGraphWidth = 340;
+
+const defaultMiniWidth = 236;
+
+const graphHeight = 120;
+
+const miniHeight = 36;
+
+/** Room under the full graph for its axis labels. */
+const graphLabelHeight = 20;
+
+const recentEventLimit = 6;
+
+const counterLimit = 12;
+
+/** Line mode reads at 4 per s; the larger views at 10, or 4 while lowered. */
+const slowRefreshMs = 250;
+
+const fastRefreshMs = 100;
+
+/** Mean refresh cost that lowers the redraw rate, and the cost that restores it. */
+const lowerAboveMs = 0.25;
+
+const restoreBelowMs = 0.1;
+
+/** The panel size saved for this origin, when storage holds a valid one. */
 function rememberedMode(): PerformanceTrayMode | undefined {
   try {
     const value = globalThis.localStorage?.getItem(modeKey);
 
-    return value === "line" || value === "mini" || value === "full"
+    return value === trayMode.line ||
+      value === trayMode.mini ||
+      value === trayMode.full
       ? value
       : undefined;
   } catch {
@@ -493,6 +624,7 @@ function rememberedMode(): PerformanceTrayMode | undefined {
   }
 }
 
+/** Saves the panel size for this origin. */
 function rememberMode(mode: PerformanceTrayMode) {
   try {
     globalThis.localStorage?.setItem(modeKey, mode);
@@ -501,46 +633,33 @@ function rememberMode(mode: PerformanceTrayMode) {
   }
 }
 
-function download(text: string, name: string) {
-  const url = URL.createObjectURL(
-    new Blob([text], { type: "application/json" }),
-  );
-
-  const a = document.createElement("a");
-
-  a.href = url;
-
-  a.download = name;
-
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-function findIn<T extends HTMLElement>(
-  from: HTMLElement,
-  selector: string,
-  type: { new (): T },
-): T {
-  const value = from.querySelector(selector);
-
-  if (!(value instanceof type))
-    throw new Error(`Missing performance element ${selector}`);
-
-  return value;
-}
-
+/** Shows or hides an element, writing only on change. */
 function show(element: HTMLElement, visible: boolean) {
   if (element.hidden === visible) element.hidden = !visible;
 }
 
+/** Enables or disables a button, writing only on change. */
 function disable(element: HTMLButtonElement, disabled: boolean) {
   if (element.disabled !== disabled) element.disabled = disabled;
 }
 
-/** The frames a graph of this width draws at a 3 px pitch. */
+/** The frames a graph of this width draws at its pitch. */
 function inView(frames: readonly DiagnosticFrame[], canvasWidth: number) {
-  return frames.slice(Math.max(0, frames.length - Math.floor(canvasWidth / 3)));
+  return frames.slice(
+    Math.max(0, frames.length - Math.floor(canvasWidth / graphPitch)),
+  );
+}
+
+/** Status line for the LOADING tab: no source, nothing measured, or the current session. */
+function preparationStatus(
+  connected: boolean,
+  current: PreparationSnapshot | null,
+): string {
+  if (!connected) return "no preparation source connected";
+
+  if (!current) return "no loading measured yet";
+
+  return `${current.label} · ${current.kind.replace("-", " ")} · ${current.status}${current.pending ? ` · ${current.pending} unfinished at cutoff` : ""} · stages overlap and do not add up to the session`;
 }
 
 interface Capture {
@@ -560,6 +679,74 @@ interface Row {
   value: HTMLElement;
 }
 
+/** Required element lookup inside a row or capture entry. */
+const part = (from: HTMLElement, selector: string) =>
+  findIn(from, selector, HTMLElement);
+
+/** Bars drawn beyond a graph's left edge, so a glide never reveals a gap. */
+const glideFrames = 40;
+
+let motionQuery: MediaQueryList | undefined;
+
+/** True when the user's system asks for less motion; graphs then jump between redraws. */
+function reducedMotion() {
+  motionQuery ??= globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
+
+  return motionQuery?.matches ?? false;
+}
+
+/**
+ * Slides a graph's bars from where they were back to rest after each redraw, so they glide
+ * instead of jumping. Only the motion is smoothed: every bar is a measured frame, drawn where
+ * it belongs once the glide ends. The compositor runs the animation, so it costs no script.
+ */
+function glider(canvas: HTMLCanvasElement) {
+  let newest = -1,
+    drawnAt = 0,
+    from = 0,
+    duration = 0,
+    animation: Animation | null = null;
+
+  return (frameId: number | undefined, redrawMs: number) => {
+    const now = performance.now();
+
+    const steps = newest < 0 || frameId === undefined ? 0 : frameId - newest;
+
+    // Distance still to travel from an unfinished glide, so motion carries on rather than jumping.
+    const elapsed = animation?.currentTime;
+
+    const carry =
+      animation && typeof elapsed === "number" && duration
+        ? from * Math.max(0, 1 - elapsed / duration)
+        : 0;
+
+    const gap = now - drawnAt;
+
+    newest = frameId ?? -1;
+
+    drawnAt = now;
+
+    animation?.cancel();
+
+    animation = null;
+
+    if (steps <= 0 || reducedMotion() || typeof canvas.animate !== "function")
+      return;
+
+    from = Math.min(glideFrames * graphPitch, steps * graphPitch + carry);
+
+    duration = Math.min(Math.max(gap, redrawMs), 2 * redrawMs);
+
+    animation = canvas.animate(
+      [{ transform: `translateX(${from}px)` }, { transform: "none" }],
+      { duration, easing: "linear" },
+    );
+    // Start on this frame's clock: a new animation otherwise waits a frame, and the bars
+    // would pause at every redraw.
+    animation.startTime = document.timeline.currentTime;
+  };
+}
+
 /** Unique ids when more than one panel mounts. */
 let trayCount = 0;
 
@@ -574,8 +761,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
   const root = document.createElement("section");
 
-  root.className = "jank";
-
+  root.className = "jank jl";
   root.setAttribute("aria-label", "jank.js performance monitor");
 
   const id = `jank-${++trayCount}`;
@@ -586,15 +772,16 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     temporal: !!temporal,
     viewer: !!options.viewerUrl,
   });
-
   root.dataset["corner"] = options.corner ?? "top-right";
 
+  /** Required element lookup inside this panel. */
   const find = <T extends HTMLElement>(selector: string, type: { new (): T }) =>
     findIn(root, selector, type);
 
   // Looked up once: a refresh writes through these without querying the DOM.
   const slots = new Map<string, HTMLElement>();
 
+  /** The data-k element for a key, queried once and then cached. */
   const slot = (key: string) => {
     let element = slots.get(key);
 
@@ -604,18 +791,25 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     return element;
   };
 
+  /** The data-action button with this name. */
   const action = (name: string) =>
     find(`[data-action="${name}"]`, HTMLButtonElement);
 
-  const tabs = (["live", "loading", "capture"] as const).map((name) => ({
+  const tabs = Object.values(tabName).map((name) => ({
     name,
     tab: find(`[data-tab="${name}"]`, HTMLButtonElement),
     panel: find(`[data-panel="${name}"]`, HTMLDivElement),
   }));
 
-  const graphCanvas = find('[data-k="graph"]', HTMLCanvasElement);
+  const graphView = find('[data-k="graph-view"]', HTMLElement),
+    graphCanvas = find('[data-k="graph"]', HTMLCanvasElement),
+    graphText = find('[data-k="graph-text"]', HTMLCanvasElement);
 
-  const miniCanvas = find('[data-k="mini-graph"]', HTMLCanvasElement);
+  const miniView = find('[data-k="mini-view"]', HTMLElement),
+    miniCanvas = find('[data-k="mini-graph"]', HTMLCanvasElement);
+
+  const glideGraph = glider(graphCanvas),
+    glideMini = glider(miniCanvas);
 
   const freezeButton = action("freeze"),
     freezeIcon = action("freeze-icon"),
@@ -637,19 +831,18 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
   const fpsInput = find('input[aria-label="Target FPS"]', HTMLInputElement);
 
-  const presets = ([30, 60, 120] as const).map((fps) => ({
+  const presets = Object.values(presetFps).map((fps) => ({
     fps,
     button: find(`[data-fps="${fps}"]`, HTMLButtonElement),
   }));
 
-  const editors = (["threshold", "before", "after", "cooldown"] as const).map(
-    (key) => ({
-      key,
-      button: find(`[data-edit="${key}"]`, HTMLButtonElement),
-      input: find(`[data-input="${key}"]`, HTMLInputElement),
-    }),
-  );
+  const editors = Object.values(editorKey).map((key) => ({
+    key,
+    button: find(`[data-edit="${key}"]`, HTMLButtonElement),
+    input: find(`[data-input="${key}"]`, HTMLInputElement),
+  }));
 
+  /** The host's current loading session; a throwing source reads as none. */
   const readPreparation = () => {
     try {
       return preparation?.read() ?? null;
@@ -658,6 +851,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   };
 
+  /** Past loading sessions; a throwing source reads as none. */
   const preparationHistory = () => {
     try {
       return preparation?.history() ?? [];
@@ -666,6 +860,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   };
 
+  /** Temporal diagnostics; a throwing source reads as unavailable. */
   const readTemporal = (): TemporalDiagnostics | undefined => {
     try {
       return temporal?.read();
@@ -674,6 +869,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   };
 
+  /** Culling diagnostics; a throwing source reads as unavailable. */
   const readCulling = (): CullingDiagnostics | undefined => {
     try {
       return culling?.read();
@@ -682,6 +878,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   };
 
+  /** GPU timing; a throwing source becomes an error profile the panel can show. */
   const readGpu = (): GpuProfile | undefined => {
     if (!gpu) return undefined;
 
@@ -725,12 +922,12 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     cullingDebugRequested = false,
     objectMotionRequested = true,
     temporalDebugRequested: TemporalDebugView = "none",
-    budgetMs = 1000 / 60,
-    targetFps = 60,
+    budgetMs = msPerSecond / presetFps.standard,
+    targetFps: number = presetFps.standard,
     theme: GraphTheme | undefined,
     stats: FrameStats | null = null,
-    graphWidth = 340,
-    miniWidth = 236;
+    graphWidth = defaultGraphWidth,
+    miniWidth = defaultMiniWidth;
 
   let frozenSnapshot: DiagnosticSnapshot | undefined;
 
@@ -746,9 +943,9 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
   const captureWindow = {
     thresholdMs: options.capture?.thresholdMs,
-    beforeFrames: options.capture?.beforeFrames ?? 120,
-    afterFrames: options.capture?.afterFrames ?? 120,
-    cooldownMs: options.capture?.cooldownMs ?? 5000,
+    beforeFrames: options.capture?.beforeFrames ?? defaultBeforeFrames,
+    afterFrames: options.capture?.afterFrames ?? defaultAfterFrames,
+    cooldownMs: options.capture?.cooldownMs ?? defaultCooldownMs,
   };
 
   const captures: Capture[] = [];
@@ -761,6 +958,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
   // Text and attribute writes are skipped when unchanged, so a steady panel writes nothing.
   const written = new WeakMap<object, Map<string, string>>();
 
+  /** Records the last value written per element and key; false when it hasn't changed. */
   const changed = (element: object, key: string, value: string) => {
     let values = written.get(element);
 
@@ -773,38 +971,40 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     return true;
   };
 
+  /** Sets text content when it changed. */
   const put = (element: HTMLElement, value: string) => {
     if (changed(element, "text", value)) element.textContent = value;
   };
 
+  /** Sets an attribute when it changed. */
   const flag = (element: HTMLElement, name: string, value: string) => {
     if (changed(element, name, value)) element.setAttribute(name, value);
   };
 
+  /** Sets the data-tone colour hint when it changed. */
   const tone = (element: HTMLElement, value: string) => {
     if (changed(element, "tone", value)) element.dataset["tone"] = value;
   };
 
+  /** Sets a bar's width as a clamped percentage when it changed. */
   const width = (element: HTMLElement, fraction: number) => {
-    const value = `${(Math.min(1, Math.max(0, fraction)) * 100).toFixed(1)}%`;
+    const value = `${(Math.min(1, Math.max(0, fraction)) * percent).toFixed(1)}%`;
 
     if (changed(element, "width", value)) element.style.width = value;
   };
 
+  /** Shows a toggle's state as ON/OFF text and aria-pressed. */
   const pressed = (element: HTMLButtonElement, on: boolean) => {
     flag(element, "aria-pressed", String(on));
 
     put(element, on ? "ON" : "OFF");
   };
 
-  const part = (from: HTMLElement, selector: string) =>
-    findIn(from, selector, HTMLElement);
-
+  /** Builds one label, bar and value row. */
   const row = (className: string): Row => {
     const element = document.createElement("div");
 
     element.className = className;
-
     element.innerHTML =
       '<span class="jank-k"></span><span class="jank-lead"><i></i></span><span class="jank-v"></span>';
 
@@ -848,7 +1048,6 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     const element = document.createElement("div");
 
     element.className = "jank-stage";
-
     element.innerHTML =
       '<span class="jank-k"></span><span class="jank-track"><i class="jank-ghost"></i><i class="jank-bar"></i></span>';
 
@@ -886,7 +1085,6 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
   mountedShells.add(shell);
 
   shell.classList.add("jank-host");
-
   shell.append(root);
 
   if (typeof ResizeObserver === "function") {
@@ -894,17 +1092,16 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       for (const entry of entries) {
         const next = Math.floor(entry.contentRect.width);
 
-        if (entry.target === graphCanvas && next) graphWidth = next;
+        if (entry.target === graphView && next) graphWidth = next;
 
-        if (entry.target === miniCanvas && next) miniWidth = next;
+        if (entry.target === miniView && next) miniWidth = next;
       }
 
       dirty = true;
     });
 
-    sizes.observe(graphCanvas);
-
-    sizes.observe(miniCanvas);
+    sizes.observe(graphView);
+    sizes.observe(miniView);
 
     abort.signal.addEventListener("abort", () => sizes.disconnect());
   }
@@ -917,7 +1114,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     if (chosen) rememberMode(next);
 
-    monitor.setExpanded(next !== "line");
+    monitor.setExpanded(next !== trayMode.line);
 
     theme = undefined;
 
@@ -928,13 +1125,14 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     if (!chosen) return;
 
     const target =
-      next === "full"
+      next === trayMode.full
         ? tabs.find((entry) => entry.name === tab)!.tab
-        : action(next === "mini" ? "mini-grow" : "line-grow");
+        : action(next === trayMode.mini ? "mini-grow" : "line-grow");
 
     target.focus?.();
   }
 
+  /** Selects a tab, updates its ARIA state and makes the next refresh draw. */
   function setTab(next: typeof tab, focus = false) {
     tab = next;
 
@@ -961,12 +1159,14 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
   setTab("live");
 
+  /** Adds a listener that is removed when the panel is disposed. */
   const on = <K extends keyof HTMLElementEventMap>(
     element: HTMLElement,
     name: K,
     listener: (event: HTMLElementEventMap[K]) => void,
   ) => element.addEventListener(name, listener, listen);
 
+  /** Redraws now instead of waiting for the next due refresh. */
   const redraw = () => {
     dirty = true;
 
@@ -987,27 +1187,17 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     on(entry.tab, "click", () => setTab(entry.name));
 
     on(entry.tab, "keydown", (event) => {
-      const index = tabs.indexOf(entry);
+      const move = tabMoves.get(event.key);
 
-      const next =
-        event.key === "ArrowRight"
-          ? tabs[(index + 1) % tabs.length]
-          : event.key === "ArrowLeft"
-            ? tabs[(index + tabs.length - 1) % tabs.length]
-            : event.key === "Home"
-              ? tabs[0]
-              : event.key === "End"
-                ? tabs.at(-1)
-                : undefined;
-
-      if (!next) return;
+      if (!move) return;
 
       event.preventDefault();
 
-      setTab(next.name, true);
+      setTab(tabs[move(tabs.indexOf(entry), tabs.length)]!.name, true);
     });
   }
 
+  /** Freezes or resumes the display, holding copies of every source while frozen. */
   function toggleFreeze() {
     frozen = !frozen;
 
@@ -1120,7 +1310,6 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       data.gpu?.samples.some((sample) => sample.diagnosticFrame != null)
     ) {
       exportedGpu.samples = data.gpu?.samples ?? [];
-
       exportedGpu.sampleCount = exportedGpu.samples.length;
     }
 
@@ -1172,6 +1361,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     };
   }
 
+  /** The recording as JSON, or undefined with the export error shown. */
   function serialized(error: HTMLElement): string | undefined {
     try {
       const json = serializeRecording(exported());
@@ -1191,6 +1381,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   }
 
+  /** Opens the viewer window and sends it the recording once it announces it is ready. */
   function openInViewer(json: string, name: string, error: HTMLElement) {
     const url = options.viewerUrl;
 
@@ -1206,7 +1397,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       return;
     }
 
-    // The viewer announces itself; only the window opened here receives the recording.
+    /** The viewer announces itself; only the window opened here receives the recording. */
     const handoff = (event: MessageEvent) => {
       const data: unknown = event.data;
 
@@ -1215,13 +1406,13 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
         typeof data !== "object" ||
         data === null ||
         !("type" in data) ||
-        data.type !== "jank.js:viewer-ready"
+        data.type !== viewerReady
       )
         return;
 
       target.postMessage(
         { type: "jank.js:recording", name, json },
-        event.origin === "null" ? "*" : event.origin,
+        event.origin === opaqueOrigin ? "*" : event.origin,
       );
 
       removeEventListener("message", handoff);
@@ -1251,13 +1442,15 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     if (json) openInViewer(json, "jank-recording.json", captureError);
   });
 
-  // Budget: presets, or a typed custom target. Re-arm so a derived threshold follows it.
+  // Budget: presets, or a typed custom target.
+
+  /** Sets the frame budget from a target fps, re-arming auto capture so a derived threshold follows it. */
   function setTarget(fps: number) {
     monitor.setTargetFps(fps);
 
     targetFps = fps;
 
-    budgetMs = 1000 / fps;
+    budgetMs = msPerSecond / fps;
 
     if (autoRequested) monitor.armCapture(coreWindow());
 
@@ -1273,10 +1466,13 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     const value = fpsInput.valueAsNumber;
 
-    if (commit && !(Number.isFinite(value) && value >= 1 && value <= 1000)) {
+    if (
+      commit &&
+      !(Number.isFinite(value) && value >= 1 && value <= maxTargetFps)
+    ) {
       flag(fpsInput, "aria-invalid", "true");
 
-      put(slot("budget-ms"), "1 to 1000 fps");
+      put(slot("budget-ms"), `1 to ${maxTargetFps} fps`);
 
       return false;
     }
@@ -1301,17 +1497,16 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     show(fpsInput, true);
 
     fpsInput.focus?.();
-
     fpsInput.select?.();
   });
 
   // The key is the panel's own: keep its keypress from activating the button focused next.
   on(fpsInput, "keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== "Escape") return;
+    if (event.key !== enterKey && event.key !== escapeKey) return;
 
     event.preventDefault();
 
-    if (closeCustom(event.key === "Enter")) customButton.focus?.();
+    if (closeCustom(event.key === enterKey)) customButton.focus?.();
   });
 
   on(fpsInput, "blur", () => {
@@ -1319,6 +1514,8 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
   });
 
   // Auto capture window, edited in place: Enter commits, Escape reverts.
+
+  /** The panel's capture window as core options; an unset threshold is left out so the core derives it. */
   function coreWindow(): AutoCaptureOptions {
     return {
       ...(captureWindow.thresholdMs === undefined
@@ -1339,29 +1536,31 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     redraw();
   });
 
+  /** The value an editor's input opens with, in that editor's unit. */
   const editValue = (key: (typeof editors)[number]["key"]) =>
-    key === "threshold"
-      ? Number((captureWindow.thresholdMs ?? budgetMs * 2).toFixed(2))
-      : key === "before"
-        ? captureWindow.beforeFrames
-        : key === "after"
-          ? captureWindow.afterFrames
-          : captureWindow.cooldownMs / 1000;
+    ({
+      threshold: Number((captureWindow.thresholdMs ?? budgetMs * 2).toFixed(2)),
+      before: captureWindow.beforeFrames,
+      after: captureWindow.afterFrames,
+      cooldown: captureWindow.cooldownMs / msPerSecond,
+    })[key];
 
+  /** Applies an edited capture setting when valid and re-arms auto capture; false rejects it. */
   function accept(key: (typeof editors)[number]["key"], value: number) {
     if (!Number.isFinite(value) || value < 0) return false;
 
-    if (key === "threshold") {
+    if (key === editorKey.threshold) {
       if (value <= 0) return false;
 
       captureWindow.thresholdMs = value;
-    } else if (key === "cooldown") captureWindow.cooldownMs = value * 1000;
+    } else if (key === editorKey.cooldown)
+      captureWindow.cooldownMs = value * msPerSecond;
     else {
-      const limit = key === "before" ? 599 : 5400;
+      const limit = key === editorKey.before ? maxBeforeFrames : maxAfterFrames;
 
       if (!Number.isInteger(value) || value > limit) return false;
 
-      if (key === "before") captureWindow.beforeFrames = value;
+      if (key === editorKey.before) captureWindow.beforeFrames = value;
       else captureWindow.afterFrames = value;
     }
 
@@ -1371,6 +1570,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
   }
 
   for (const editor of editors) {
+    /** Closes the editor, committing first when asked; false keeps it open on an invalid value. */
     const close = (commit: boolean) => {
       if (editor.input.hidden) return true;
 
@@ -1399,16 +1599,15 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       show(editor.input, true);
 
       editor.input.focus?.();
-
       editor.input.select?.();
     });
 
     on(editor.input, "keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== "Escape") return;
+      if (event.key !== enterKey && event.key !== escapeKey) return;
 
       event.preventDefault();
 
-      if (close(event.key === "Enter")) editor.button.focus?.();
+      if (close(event.key === enterKey)) editor.button.focus?.();
     });
 
     // Leaving the field keeps a valid value and reverts an invalid one.
@@ -1472,7 +1671,12 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
   on(temporalSelect, "change", () => {
     const view = temporalSelect.value;
 
-    if (view !== "none" && view !== "motion" && view !== "history") return;
+    if (
+      view !== debugView.none &&
+      view !== debugView.motion &&
+      view !== debugView.history
+    )
+      return;
 
     temporalDebugRequested = view;
 
@@ -1505,7 +1709,10 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
   /** Keep a completed automatic capture; the monitor itself holds only the latest. */
   function keepCapture() {
-    if (!autoRequested || monitor.snapshot(false).capture.mode !== "automatic")
+    if (
+      !autoRequested ||
+      monitor.snapshot(false).capture.mode !== automaticCapture
+    )
       return;
 
     let data: PerformanceRecording, json: string;
@@ -1533,45 +1740,39 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     if (!trigger) return;
 
-    const from = data.frames[Math.max(0, index - 10)]!,
-      to = data.frames[Math.min(data.frames.length - 1, index + 10)]!;
-
-    const near = data.events
-      .filter(
-        (event) =>
-          !toolEvents.has(event.label) &&
-          event.at >= from.at - from.interval &&
-          event.at <= to.at,
-      )
-      .map((event) => event.label);
-
     captures.push({
       number: ++capturesMade,
       frame: trigger.id,
       ms: trigger.interval,
-      near: near.length ? near.slice(0, 3).join(" · ") : "no event nearby",
+      near: nearbyEventLabels(data, index),
       json,
       bytes: new TextEncoder().encode(json).byteLength,
       intervals: data.frames
-        .slice(Math.max(0, index - 13), index + 7)
+        .slice(
+          Math.max(0, index - thumbnailFramesBefore),
+          index + thumbnailFramesAfter,
+        )
         .map((frame) => frame.interval),
     });
 
     if (captures.length > captureLimit) captures.shift();
   }
 
+  /** Called from the host's frame loop; the monitor times the panel's own work. */
   function refresh(at: number) {
     if (disposed) return;
 
     monitor.measureRefresh(() => refreshView(at));
   }
 
+  /** Collects GPU samples and finished recordings every frame, and redraws when a refresh is due. */
   function refreshView(at: number) {
     if (disposed) return;
 
     // Collect each completed renderer frame while recording, even with the view frozen.
-    // Line mode reads at 4 per s; the larger views at 10, or 4 while lowered.
-    const due = at - lastRefresh >= (mode === "line" || lowered ? 250 : 100);
+    const due =
+      at - lastRefresh >=
+      (mode === trayMode.line || lowered ? slowRefreshMs : fastRefreshMs);
 
     const profile =
       gpu && (monitor.recording || wasRecording || due) ? readGpu() : undefined;
@@ -1593,6 +1794,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     render(profile);
   }
 
+  /** Redraws the header and whichever size and tab is showing. */
   function render(profile: GpuProfile | undefined) {
     const recording = monitor.recording;
 
@@ -1610,7 +1812,8 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     dirty = false;
 
     const snapshot =
-      frozenSnapshot ?? monitor.snapshot(mode === "full" && tab === "live");
+      frozenSnapshot ??
+      monitor.snapshot(mode === trayMode.full && tab === tabName.live);
 
     if (!frozen) {
       budgetMs = snapshot.budget.frameMs;
@@ -1624,50 +1827,52 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     stats = frameStats(frames, budgetMs, timerMs);
 
-    renderHeader(snapshot);
+    put(slot("state"), headerState(snapshot));
 
-    if (mode === "line") renderLine();
-    else if (mode === "mini") renderMini(frames);
+    if (mode === trayMode.line) renderLine();
+    else if (mode === trayMode.mini) renderMini(frames);
     else {
       put(slot("budget"), fixed(budgetMs));
 
-      if (tab === "live") renderLive(snapshot, profile);
-      else if (tab === "loading") renderLoading();
+      if (tab === tabName.live) renderLive(snapshot, profile);
+      else if (tab === tabName.loading) renderLoading();
       else renderCapture();
 
       renderOverhead(snapshot);
     }
   }
 
-  function renderHeader(snapshot: DiagnosticSnapshot) {
+  /** Header text: frozen, recording progress, the auto capture state, or the loading session. */
+  function headerState(snapshot: DiagnosticSnapshot) {
+    if (frozen) return "FROZEN";
+
     const capture = snapshot.capture;
 
-    const limit =
-      capture.mode === "automatic"
-        ? capture.beforeFrames + 1 + capture.afterFrames
-        : recordingCapacity;
+    if (monitor.recording) {
+      const limit =
+        capture.mode === automaticCapture
+          ? capture.beforeFrames + 1 + capture.afterFrames
+          : recordingFrameCapacity;
 
-    put(
-      slot("state"),
-      frozen
-        ? "FROZEN"
-        : monitor.recording
-          ? `${count(snapshot.recordedFrames)} / ${count(limit)}`
-          : capture.state === "armed" || capture.state === "cooldown"
-            ? capture.state
-            : tab === "loading" && readPreparation()
-              ? `session ${readPreparation()!.id}`
-              : "",
-    );
+      return `${count(snapshot.recordedFrames)} / ${count(limit)}`;
+    }
+
+    if (shownCaptureStates.has(capture.state)) return capture.state;
+
+    const session = tab === tabName.loading ? readPreparation() : null;
+
+    return session ? `session ${session.id}` : "";
   }
 
   /** Over budget beyond what the timer can resolve; see frameStats. */
   const limit = () => stats?.limitMs ?? budgetLimit(budgetMs, timerMs);
 
+  /** True when a time is past the over-budget line. */
   function over(value: number) {
     return value > limit();
   }
 
+  /** Fills the line size: fps, average and worst frame. */
   function renderLine() {
     put(slot("line-fps"), stats?.fps == null ? "–" : String(stats.fps));
 
@@ -1685,6 +1890,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     show(slot("line-worst-unit"), !miss);
   }
 
+  /** Fills the mini size: stats, the heaviest CPU scope and the small graph. */
   function renderMini(frames: readonly DiagnosticFrame[]) {
     put(slot("mini-fps"), stats?.fps == null ? "–" : String(stats.fps));
 
@@ -1715,37 +1921,58 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     show(slot("mini-top-row"), !!top);
 
-    put(label, top ? `${top.label.split(" ")[0]} ${fixed(top.ms)}` : "");
+    put(label, top ? top.label.split(" ")[0]! : "");
+
+    put(slot("mini-top-ms"), top ? fixed(top.ms) : "");
 
     flag(label, "title", top ? `heaviest cpu scope: ${top.label}` : "");
 
-    draw(miniCanvas, miniWidth, 36, frames, false);
+    draw(miniCanvas, null, miniWidth, miniHeight, frames, false);
+
+    glideMini(frames.at(-1)?.id, redrawMs());
   }
 
+  /** The redraw period the panel is running at now, which a glide spans. */
+  const redrawMs = () =>
+    mode === trayMode.line || lowered ? slowRefreshMs : fastRefreshMs;
+
+  /**
+   * Draws the frame-time graph: bars on a canvas wider than its view, so they can glide, and
+   * labels, when asked, on a fixed canvas over them.
+   */
   function draw(
     canvas: HTMLCanvasElement,
+    text: HTMLCanvasElement | null,
     canvasWidth: number,
     height: number,
     frames: readonly DiagnosticFrame[],
     labels: boolean,
     events: readonly DiagnosticEvent[] = [],
   ) {
-    const context = prepareCanvas(canvas, canvasWidth, height);
+    const margin = glideFrames * graphPitch;
+
+    const context = prepareCanvas(canvas, canvasWidth + margin, height);
 
     if (!context) return;
+
+    const cssWidth = `${canvasWidth + margin}px`;
+
+    if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth;
 
     theme ??= graphTheme(root);
 
     drawFrameGraph(
       context,
+      text ? prepareCanvas(text, canvasWidth, height) : null,
       theme,
       frames,
       budgetMs,
       limit(),
       {
         width: canvasWidth,
-        height: labels ? height - 20 : height,
-        pitch: 3,
+        margin,
+        height: labels ? height - graphLabelHeight : height,
+        pitch: graphPitch,
         bar: 2,
         labels,
         budgetColor: labels ? theme.text : theme.muted,
@@ -1754,6 +1981,36 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     );
   }
 
+  /** The FPS tile's range: the slowest and fastest one-second rates, with the current one marked. */
+  function renderFpsRange() {
+    const current = stats,
+      range = slot("fps-range");
+
+    const shown = current?.fps != null && current.fpsRange !== null;
+
+    show(range, shown);
+
+    if (!shown) return;
+
+    const { low, high } = current.fpsRange!;
+
+    put(slot("fps-high"), String(high));
+
+    put(slot("fps-low"), String(low));
+
+    flag(range, "aria-label", `frame rate ranged from ${low} to ${high} fps`);
+
+    // The top of the line is the fastest rate, the bottom the slowest; an even range sits mid-way.
+    const fraction = high > low ? (high - current.fps!) / (high - low) : 1 / 2;
+
+    const top = `${(fraction * percent).toFixed(1)}%`;
+
+    const mark = slot("fps-mark");
+
+    if (changed(mark, "top", top)) mark.style.top = top;
+  }
+
+  /** Fills the LIVE tab: tiles, graph, events, CPU scopes, GPU, counters, culling and temporal. */
   function renderLive(
     snapshot: DiagnosticSnapshot,
     profile: GpuProfile | undefined,
@@ -1781,6 +2038,8 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       tone(element, miss ? "miss" : "");
     }
 
+    renderFpsRange();
+
     flag(
       slot("missed"),
       "title",
@@ -1789,9 +2048,19 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     const frames = snapshot.frames;
 
-    draw(graphCanvas, graphWidth, 120, frames, true, snapshot.events);
+    draw(
+      graphCanvas,
+      graphText,
+      graphWidth,
+      graphHeight,
+      frames,
+      true,
+      snapshot.events,
+    );
 
-    const recent = snapshot.events.slice(-6).toReversed();
+    glideGraph(frames.at(-1)?.id, redrawMs());
+
+    const recent = snapshot.events.slice(-recentEventLimit).toReversed();
 
     eventItems(Math.max(1, recent.length)).forEach((item, i) => {
       const event = recent[i];
@@ -1799,7 +2068,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       put(
         item.root,
         event
-          ? `${(event.at / 1000).toFixed(1)} s ${event.label}${event.detail ? ` · ${event.detail}` : ""}`
+          ? `${(event.at / msPerSecond).toFixed(1)} s ${iconLabel(event.label)}${event.detail ? ` · ${event.detail}` : ""}`
           : "no events",
       );
     });
@@ -1882,16 +2151,9 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
       put(slot("gpu-src"), gpu.label ?? "renderer");
 
-      put(
-        slot("gpu-frame"),
-        view?.diagnosticFrame != null
-          ? `from frame ${count(view.diagnosticFrame)}`
-          : view?.sampleFrame != null
-            ? `renderer frame ${count(view.sampleFrame)}`
-            : "",
-      );
+      put(slot("gpu-frame"), gpuFrameLabel(view));
 
-      const ready = view?.status === "ready";
+      const ready = view?.status === gpuStatus.ready;
 
       const passes = ready ? view.passes : [];
 
@@ -1928,19 +2190,13 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       })),
     );
 
-    const sources = [
-      ...new Set(
-        snapshot.systems
-          .filter((system) => Object.keys(system.values).length)
-          .map((system) => system.label.split(" ")[0]!.toLowerCase()),
-      ),
-    ];
+    const sources = counterSources(snapshot.systems);
 
     const counterSource = slot("counter-src");
 
     put(counterSource, sources.join(" · "));
 
-    const shown = values.slice(0, 12);
+    const shown = values.slice(0, counterLimit);
 
     counterRows(shown.length).forEach((target, i) => {
       put(target.label, shown[i]!.key);
@@ -1981,6 +2237,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   }
 
+  /** Shows culling counts and status, from the frozen copy while frozen. */
   function renderCulling() {
     const view = frozen ? frozenCulling : readCulling();
 
@@ -2014,7 +2271,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     const instances = view?.instances;
 
-    const main = instances?.views.find((sample) => sample.view === "main");
+    const main = instances?.views.find((sample) => sample.view === mainView);
 
     put(
       slot("culling-detail"),
@@ -2029,6 +2286,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     );
   }
 
+  /** Syncs the GPU, culling and temporal switches with the host's live state. */
   function renderControls(profile: GpuProfile | undefined) {
     // Host-owned switches follow live renderer state even while the display is frozen.
     if (gpu) {
@@ -2048,7 +2306,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
       pressed(gpuButton, enabled);
 
-      disable(gpuButton, profile?.status === "unsupported");
+      disable(gpuButton, profile?.status === gpuStatus.unsupported);
 
       put(slot("gpu-name"), gpu.label ?? "renderer");
     }
@@ -2082,6 +2340,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     }
   }
 
+  /** Fills the LOADING tab with the current session, the cold run and past sessions. */
   function renderLoading() {
     const current = frozen ? frozenPreparation : readPreparation();
 
@@ -2093,15 +2352,16 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       sessions.push(current);
 
     const cold =
-      sessions.find((run) => run.kind === "fresh-context") ?? sessions[0];
+      sessions.find((run) => run.kind === freshContext) ?? sessions[0];
 
     const longest = Math.max(0, ...sessions.map((run) => run.elapsedMs));
 
-    const seconds = longest >= 1000;
+    const seconds = longest >= msPerSecond;
 
-    const unit = seconds ? 1000 : 1,
+    const unit = seconds ? msPerSecond : 1,
       digits = seconds ? 2 : 1;
 
+    /** Formats a time in the unit shared by the whole tab. */
     const show2 = (ms: number) => fixed(ms / unit, digits);
 
     put(slot("unit"), seconds ? "S" : "MS");
@@ -2120,7 +2380,9 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     put(
       slot("cache"),
-      hits + misses ? `${Math.round((hits / (hits + misses)) * 100)}%` : "–",
+      hits + misses
+        ? `${Math.round((hits / (hits + misses)) * percent)}%`
+        : "–",
     );
 
     const step = axisStep(longest / unit || 1);
@@ -2232,7 +2494,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
       put(
         target.label,
-        `#${run.id}${run.kind === "fresh-context" ? " cold" : ""}${now ? " now" : ""}`,
+        `#${run.id}${run.kind === freshContext ? " cold" : ""}${now ? " now" : ""}`,
       );
 
       put(target.value, show2(run.elapsedMs));
@@ -2248,16 +2510,10 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       );
     });
 
-    put(
-      slot("loading-status"),
-      !preparation
-        ? "no preparation source connected"
-        : current
-          ? `${current.label} · ${current.kind.replace("-", " ")} · ${current.status}${current.pending ? ` · ${current.pending} unfinished at cutoff` : ""} · stages overlap and do not add up to the session`
-          : "no loading measured yet",
-    );
+    put(slot("loading-status"), preparationStatus(!!preparation, current));
   }
 
+  /** Fills the CAPTURE tab: budget, capture window, scope and DevTools switches, and kept captures. */
   function renderCapture() {
     for (const preset of presets)
       flag(preset.button, "aria-pressed", String(preset.fps === targetFps));
@@ -2276,7 +2532,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
       threshold: `${fixed(captureWindow.thresholdMs ?? budgetMs * 2)} ms`,
       before: `${count(captureWindow.beforeFrames)} fr`,
       after: `${count(captureWindow.afterFrames)} fr`,
-      cooldown: `${fixed(captureWindow.cooldownMs / 1000)} s`,
+      cooldown: `${fixed(captureWindow.cooldownMs / msPerSecond)} s`,
     };
 
     for (const editor of editors) put(editor.button, values[editor.key]);
@@ -2293,7 +2549,7 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     put(
       slot("captured-meta"),
-      `${captures.length} / ${captureLimit} · ${fixed(captures.reduce((sum, entry) => sum + entry.bytes, 0) / 1e6)} MB`,
+      `${captures.length} / ${captureLimit} · ${fixed(captures.reduce((sum, entry) => sum + entry.bytes, 0) / bytesPerMegabyte)} MB`,
     );
 
     show(slot("captures-empty"), !captures.length);
@@ -2305,13 +2561,13 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     slot("captures").replaceChildren(...captures.map(captureRow));
   }
 
+  /** Builds one kept capture's row: thumbnail, frame, time, nearby event and OPEN. */
   function captureRow(entry: Capture) {
     const element = document.createElement("div");
 
     element.className = "jank-cap";
-
     element.innerHTML =
-      '<canvas class="jank-thumb" aria-hidden="true"></canvas><span class="jank-cap-text"><span><i class="jank-n"></i> <span class="jank-f"></span> <b class="jank-ms"></b></span><span class="jank-near"></span></span><button type="button" class="jank-btn jank-small">OPEN</button>';
+      '<canvas class="jank-thumb" aria-hidden="true"></canvas><span class="jank-cap-text"><span><i class="jank-n"></i> <span class="jank-f"></span> <b class="jank-ms"></b></span><span class="jank-near"></span></span><button type="button" class="jl-btn jl-small">OPEN</button>';
 
     put(part(element, ".jank-n"), `#${entry.number}`);
 
@@ -2352,8 +2608,8 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
 
     const context = prepareCanvas(
       findIn(element, "canvas", HTMLCanvasElement),
-      60,
-      24,
+      thumbnailWidth,
+      thumbnailHeight,
     );
 
     if (context)
@@ -2362,13 +2618,14 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
         (theme ??= graphTheme(root)),
         entry.intervals,
         limit(),
-        60,
-        24,
+        thumbnailWidth,
+        thumbnailHeight,
       );
 
     return element;
   }
 
+  /** Shows the panel's own cost and lowers its redraw rate when refresh gets expensive. */
   function renderOverhead(snapshot: DiagnosticSnapshot) {
     const costs = snapshot.overhead;
 
@@ -2381,13 +2638,13 @@ export function createPerformanceTray(options: PerformanceTrayOptions) {
     put(slot("oh-refresh-peak"), fixed(costs.refresh.peak, 2));
 
     // The panel measures itself and backs off when its own refresh gets expensive.
-    if (costs.refresh.mean > 0.25) lowered = true;
-    else if (costs.refresh.mean < 0.1) lowered = false;
+    if (costs.refresh.mean > lowerAboveMs) lowered = true;
+    else if (costs.refresh.mean < restoreBelowMs) lowered = false;
 
     put(
       slot("oh-note"),
       lowered
-        ? "excludes browser paint and GPU work · redraw lowered to 4 per s, refresh over 0.25 ms avg"
+        ? `excludes browser paint and GPU work · redraw lowered to 4 per s, refresh over ${lowerAboveMs} ms avg`
         : "excludes browser paint and GPU work",
     );
 

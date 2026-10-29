@@ -7,22 +7,28 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json --noEmit",
     "lint": "oxlint --type-aware --deny-warnings --format=agent .",
     "lint:fix": "oxlint --type-aware --fix .",
-    "format": "oxlint --allow all --deny @stylistic/padding-line-between-statements --fix . && oxfmt --write .",
-    "format:check": "oxlint --allow all --deny @stylistic/padding-line-between-statements . && oxfmt --check .",
+    "format": "oxlint --allow all --deny @stylistic/padding-line-between-statements --deny jank/group-object-statements --fix . && oxfmt --write .",
+    "format:check": "oxlint --allow all --deny @stylistic/padding-line-between-statements --deny jank/group-object-statements . && oxfmt --check .",
     "test": "vitest run",
-    "test:run": "node --test scripts/release/*.test.mjs && vitest run",
+    "test:run": "node --test scripts/release/*.test.mjs scripts/lint/*.test.mjs scripts/ci/*.test.mjs scripts/readme/*.test.mjs && vitest run --coverage",
     "build": "pnpm typecheck && pnpm build:package",
-    "check": "pnpm verify:boundary && pnpm format:check && pnpm lint && pnpm test:run && pnpm build",
+    "check": "pnpm verify:boundary && pnpm format:check && pnpm lint && pnpm knip && pnpm test:run && pnpm build",
     "build:package": "vite build --config vite.library.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",
     "prepack": "pnpm build:package",
     "test:package": "node scripts/package/verify.mjs",
+    "knip": "knip --no-progress",
     "test:e2e": "playwright test",
+    "docs:captures": "pnpm build:package && node scripts/capture.mjs",
+    "docs:chips": "node scripts/readme/update.mjs",
     "docs:images": "pnpm build && playwright test --project=chromium && node scripts/update-doc-images.mjs",
     "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
     "release:prepare": "pnpm check:full && pnpm pack --pack-destination artifacts/npm",
     "bench": "pnpm build:package && node scripts/benchmark.mjs",
+    "stress": "pnpm build:package && node scripts/stress.mjs",
     "preview": "vite preview --outDir dist/viewer --host 127.0.0.1 --port 5183 --strictPort",
-    "verify:boundary": "node scripts/verify-boundary.mjs"
+    "verify:boundary": "node scripts/verify-boundary.mjs",
+    "commit": "cz",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -31,13 +37,29 @@
     "@types/node": "22.20.3",
     "@types/three": "0.186.0",
     "@types/web": "0.0.356",
+    "@vitest/coverage-v8": "5.0.1",
+    "commitizen": "4.3.2",
+    "cz-git": "1.14.0",
+    "fast-check": "4.10.2",
+    "knip": "6.43.0",
     "oxfmt": "0.68.0",
     "oxlint": "1.83.0",
     "oxlint-tsgolint": "7.0.2001",
+    "stats-gl": "4.2.3",
+    "stats.js": "0.17.0",
     "three": "0.186.0",
     "typescript": "7.0.2",
     "vite": "8.3.0",
     "vitest": "5.0.1"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-git",
+      "markBreakingChangeMode": true,
+      "allowBreakingChanges": [],
+      "maxHeaderLength": 72,
+      "breaklineNumber": 72
+    }
   },
   "engines": {
     "node": ">=22.12.0"
@@ -94,6 +116,10 @@
     "./adapters/three-webgpu": {
       "types": "./dist-package/types/adapters/three-webgpu.d.ts",
       "import": "./dist-package/adapters/three-webgpu.js"
+    },
+    "./adapters/webgl2": {
+      "types": "./dist-package/types/adapters/webgl2.d.ts",
+      "import": "./dist-package/adapters/webgl2.js"
     },
     "./viewer.html": "./dist-package/viewer.html"
   }

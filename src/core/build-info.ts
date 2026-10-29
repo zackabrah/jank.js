@@ -1,3 +1,7 @@
+/**
+ *
+ */
+
 export interface BuildInfo {
   readonly version: string;
   readonly commit: string | null;
@@ -6,6 +10,8 @@ export interface BuildInfo {
 
 declare const JANK_BUILD_INFO: BuildInfo;
 
+const shortCommitLength = 8;
+
 /** Identity of this built library, not the consuming application's checkout. */
 export const buildInfo: BuildInfo = Object.freeze(
   typeof JANK_BUILD_INFO === "undefined"
@@ -13,4 +19,4 @@ export const buildInfo: BuildInfo = Object.freeze(
     : JANK_BUILD_INFO,
 );
 
-export const buildLabel = `v${buildInfo.version} · ${buildInfo.commit?.slice(0, 8) ?? "unknown commit"}${buildInfo.dirty ? " · local changes" : ""}`;
+export const buildLabel = `v${buildInfo.version} · ${buildInfo.commit?.slice(0, shortCommitLength) ?? "unknown commit"}${buildInfo.dirty ? " · local changes" : ""}`;

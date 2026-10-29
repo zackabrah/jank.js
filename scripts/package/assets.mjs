@@ -14,8 +14,10 @@ const styles = await build({
   },
 });
 
+const asset = "asset";
+
 const stylesheet = styles.output.find(
-  (file) => file.type === "asset" && file.fileName.endsWith(".css"),
+  (file) => file.type === asset && file.fileName.endsWith(".css"),
 );
 
 if (!stylesheet) throw new Error("The panel CSS build emitted no stylesheet");
