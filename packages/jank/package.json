@@ -1,0 +1,19 @@
+{
+  "name": "jank.js",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "description": "Proposed contracts for the readability rewrite; no runtime implementation.",
+  "scripts": {
+    "build:types": "tsc -p tsconfig.build.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT"
+}

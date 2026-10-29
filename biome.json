@@ -7,56 +7,102 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": [
-      "**",
-      "!!**/reference",
-      "!!**/dist",
-      "!!**/dist-package",
-      "!!**/artifacts",
-      "!!**/coverage",
-      "!!**/playwright-report",
-      "!!**/test-results",
-      "!!pnpm-lock.yaml",
-      "!!docs/readme/*.svg",
-      "!!OPEN RECORDING VIEWER.html"
-    ]
+    "includes": ["**", "!!**/dist", "!!**/coverage", "!!**/artifacts", "!!pnpm-lock.yaml"]
   },
   "formatter": {
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 80
+    "lineWidth": 100
   },
   "linter": {
-    "includes": ["**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc}"],
     "rules": {
       "preset": "recommended",
-      "style": {
-        "noNonNullAssertion": "off"
-      },
       "complexity": {
-        "useLiteralKeys": "off"
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        },
+        "useMaxParams": {
+          "level": "error",
+          "options": {
+            "max": 4
+          }
+        }
+      },
+      "style": {
+        "noNestedTernary": "error",
+        "noNonNullAssertion": "error",
+        "noParameterAssign": "error",
+        "useBlockStatements": "error",
+        "useImportType": "error",
+        "useExportType": "error",
+        "useSingleVarDeclarator": "error"
       },
       "suspicious": {
-        "noAssignInExpressions": "off"
+        "noExplicitAny": "error",
+        "noImportCycles": "error"
+      },
+      "nursery": {
+        "noFloatingPromises": "error",
+        "noMisusedPromises": "error"
       }
-    }
-  },
-  "assist": {
-    "enabled": false
-  },
-  "html": {
-    "formatter": {
-      "enabled": true,
-      "indentScriptAndStyle": true,
-      "selfCloseVoidElements": "always"
     }
   },
   "overrides": [
     {
-      "includes": ["src/viewer/markup.html"],
-      "html": {
-        "formatter": {
-          "whitespaceSensitivity": "ignore"
+      "includes": ["packages/junkui/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["jank.js", "jank.js/**", "**/jank/**", "three", "three/**"],
+                    "message": "junkui must be independent of the profiler and renderers."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/jank/src/core/**",
+        "packages/jank/src/recordings/**",
+        "packages/jank/src/analysis/**",
+        "packages/jank/src/loading/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "junkui",
+                      "junkui/**",
+                      "**/junkui/**",
+                      "**/panel/**",
+                      "**/viewer/**",
+                      "**/adapters/**",
+                      "three",
+                      "three/**",
+                      "node:*"
+                    ],
+                    "message": "Measurement, recording and analysis cannot depend on presentation or renderer adapters."
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }

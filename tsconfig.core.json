@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": [
+    "packages/jank/src/core/**/*.ts",
+    "packages/jank/src/recordings/**/*.ts",
+    "packages/jank/src/analysis/**/*.ts",
+    "packages/jank/src/loading/**/*.ts",
+    "packages/jank/src/profiler.ts",
+    "tests/contracts/core-environment.ts"
+  ]
+}

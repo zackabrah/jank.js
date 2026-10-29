@@ -1,7 +1,29 @@
-# jank.js
+# Readability rewrite
 
-This is the independent public performance tool. Keep private demonstration scenes, artwork, audio, server configuration and history out of this repository. Keep zero runtime dependencies, host-owned frame loops and optional renderer adapters. The recording viewer and small automated test fixtures belong to the tool. Reference checkouts are read-only.
+This worktree starts from development tooling and new contracts. The original checkout is a
+read-only behavioral and visual reference. Do not copy its implementation wholesale.
 
-Use pnpm 11.24.0 and the pinned tooling. Run changed-file Biome lint fixes and formatting, then pnpm check. Run pnpm test:package for exports/assets and focused Playwright cases for UI, lifecycle or recording changes. pnpm check:full is the release gate. Benchmark collection/refresh changes with pnpm bench and state measurement limits.
+Keep `jank.js` as the profiler package name. `junkui` is an independent UI and theme package.
+Both are private while the rewrite is incomplete. Do not publish or push without instruction.
 
-Keep commits focused and verified. Do not push, publish or deploy unless requested. Never invent repository or registry URLs. Use labelled controls, not raw JSON authoring fields.
+Read `docs/architecture.md` before implementation and `docs/quality.md` before changing rules.
+The public API and recording format may change. Preserve the existing user-facing features,
+appearance, accessibility, host-owned frame loop, and truthful measurement semantics.
+
+Use pnpm 11.24.0 and the exact pinned development dependencies. Keep shipped packages free of
+runtime dependencies. Renderer adapters remain optional. Keep private scenes and assets out.
+
+Name concepts and units explicitly. Prefer direct control flow, cohesive modules, and one
+owner per mutable value. Extract shared code only when callers share a real invariant.
+Do not create forwarding layers, generic service containers, event buses, or a `utils` bucket.
+
+Biome's recommended rules plus the documented additions are the automated baseline. Do not
+enable every rule or weaken a rule merely to get a green check. Any local suppression must
+explain a concrete invariant and be reviewed. A short file alone is not a design improvement.
+
+For this contracts stage run `pnpm check` and `pnpm build:types`. Runtime, package-consumer,
+browser, accessibility, visual, fuzz and benchmark gates are added with their first real
+implementation slices. Do not add empty tests, placeholder implementations, or no-op gates.
+
+Commit each completed, verified slice before starting another. Preserve unrelated work.
+Use labelled controls; JSON is an interchange format, never an authoring interface.
