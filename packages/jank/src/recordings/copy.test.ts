@@ -33,7 +33,7 @@ it.each([false, true])(
       copy.frames[0]?.coverage,
       copy.frames[0]?.overhead,
       copy.channels[0],
-      copy.counters[0]?.values,
+      copy.counters[0]?.status === "ready" ? copy.counters[0].values : null,
       copy.events[0],
       copy.gpu[0]?.passes[0],
     ]) {

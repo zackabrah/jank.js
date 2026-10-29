@@ -1,20 +1,17 @@
 import type {
   CreateLoadingProfiler,
   CreatePanel,
-  CreateProfiler,
   CreateViewer,
   GpuState,
-  ParseRecording,
 } from "../../packages/jank/src/index.ts";
+import { createProfiler, parseRecording } from "../../packages/jank/src/index.ts";
 import type { CreateTabs } from "../../packages/junkui/src/index.ts";
 
 // These declarations are compile-time consumers, not placeholder implementations.
-declare const createProfiler: CreateProfiler;
 declare const createPanel: CreatePanel;
 declare const createViewer: CreateViewer;
 declare const createLoadingProfiler: CreateLoadingProfiler;
 declare const createTabs: CreateTabs;
-declare const parseRecording: ParseRecording;
 declare const container: HTMLElement;
 declare const firstTab: HTMLButtonElement;
 declare const firstPanel: HTMLElement;

@@ -14,12 +14,15 @@ export class FrameHistory {
     this.nextIndex = (this.nextIndex + 1) % historyCapacity;
   }
 
+  /** Internal immutable observations; consumers use snapshot() for detached data. */
+  read(): readonly FrameSample[] {
+    return this.frames.length < historyCapacity
+      ? this.frames
+      : [...this.frames.slice(this.nextIndex), ...this.frames.slice(0, this.nextIndex)];
+  }
+
   snapshot(): FrameSample[] {
-    const ordered =
-      this.frames.length < historyCapacity
-        ? this.frames
-        : [...this.frames.slice(this.nextIndex), ...this.frames.slice(0, this.nextIndex)];
-    return ordered.map(copyFrame);
+    return this.read().map(copyFrame);
   }
 
   clear(): void {

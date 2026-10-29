@@ -35,10 +35,16 @@ export interface EventSample {
 
 export type CounterValue = number | string | boolean | null;
 
-export interface CounterSample {
+export type CounterSample = {
   readonly atMs: number;
   readonly channelId: string;
-  readonly values: Readonly<Record<string, CounterValue>>;
+} & (
+  | { readonly status: "ready"; readonly values: Readonly<Record<string, CounterValue>> }
+  | { readonly status: "error"; readonly message: string }
+);
+
+export function copyCounterSample(sample: CounterSample): CounterSample {
+  return sample.status === "ready" ? { ...sample, values: { ...sample.values } } : { ...sample };
 }
 
 export interface ChannelDescription {

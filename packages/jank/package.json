@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "private": true,
   "type": "module",
-  "description": "Private rewrite: recording codecs and proposed profiler contracts.",
+  "description": "Private rewrite: host-owned profiling, capture and validated recording files.",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly"

@@ -18,11 +18,12 @@ claim that one universal "industry standard" specifies every detail.
 | Contract examples and negative cases   | Intended integrations type-check; invalid states, mutation and fake scope tokens are rejected                                                                                  |
 | Tooling-policy tests                   | Real Biome invocations reject representative violations and allow ordinary readable code                                                                                       |
 
-The collector now also has deterministic Vitest tests, seeded fast-check properties, a real
-host-loop test in Chromium/Firefox/WebKit, and isolated declaration-package consumer checks.
-Coverage floors are 90% per implemented core file for statements, branches, functions and
-lines. These floors support behavioral tests; they do not replace reviewing their assertions.
-`pnpm bench` records synchronous collection overhead and the limits of its workload.
+Collection, capture, files and public composition have deterministic Vitest tests, seeded
+fast-check properties, real host-loop/download tests in Chromium/Firefox/WebKit, and isolated
+package runtime/type consumers. Coverage floors are 90% per implemented file for statements,
+branches, functions and lines. These floors support behavioral tests; they do not replace
+reviewing their assertions. `pnpm bench` measures public collection, capture and serialization
+workloads and records their limits.
 
 Implementation follows test-driven development: first reproduce behavior with a failing test,
 then implement it, then simplify while retaining the passing tests. Browser-discovered failures

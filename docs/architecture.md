@@ -1,8 +1,9 @@
 # Architecture proposal
 
-Status: architecture and contracts established; the internal collection slice is implemented.
-See [collection behavior](collection.md) for verified semantics. Public composition and the
-remaining runtime features are pending.
+Status: architecture and contracts established; collection, capture, validated files and public
+profiler composition are implemented. See [collection behavior](collection.md) and
+[recording behavior](recordings.md) for verified semantics. UI, analysis, loading and adapter
+implementations are pending.
 
 ## Decisions already made
 
@@ -120,7 +121,8 @@ bounded buffers; readonly is not a deep-freeze guarantee and does not replace bo
 - Use `startedAtMs`, `durationMs`, `widthPx`, `frameId` and `rendererFrameId` where units or
   domains matter. Do not use `n`, `x`, `at`, `ms` or `data` for a long-lived domain concept.
 - Use a discriminated union when fields depend on a status. `GpuState` cannot be both disabled
-  and ready; capture state is not a collection of independent flags.
+  and ready; capture state is not a collection of independent flags. Counter samples contain
+  either validated values or a provider error, never an invented zero after failure.
 - Use `null` for a known absence in a snapshot, optional fields for configuration defaults,
   and an empty array for a known empty collection. Unknown GPU time is never zero.
 - Store observed facts once. Derive interval duration from frame boundaries, frame budget from
@@ -137,24 +139,30 @@ boundaries, not a declaration that every future module needs a public interface.
 
 ## State ownership and lifecycle
 
-| State or resource                                    | Owner                | Lifetime / cleanup                                                     |
-| ---------------------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
-| Clock origin, frame IDs, open scopes, recent history | Profiler             | One profiler; frame IDs never repeat after clear                       |
-| Manual/automatic capture and completed archive       | Capture controller   | Profiler lifetime; survives closing the panel                          |
-| Loading operation                                    | Its loading run      | Sealed by finish/replacement; late completion cannot enter another run |
-| GPU queries and asynchronous readback                | Specific adapter     | Adapter disposal releases only its own queries and settings            |
-| Host renderer, host frame loop, injected trace sink  | Host                 | Never disposed by panel or profiler                                    |
-| Expanded-mode demand for scopes                      | Individual panel     | Acquires/releases its own request; cannot disable another caller       |
-| Frozen display and selected tab                      | Panel                | Frozen snapshot is presentation state; collection continues            |
-| Imported recording and selected frame/range          | Viewer               | Failed import leaves current valid recording and selection intact      |
-| DOM listeners, observers and canvas surfaces         | Mounted view/control | Removed on dispose; repeated dispose is harmless                       |
-| User preferences                                     | Browser integration  | Small validated values; storage failure must not stop profiling        |
+| State or resource                                         | Owner                | Lifetime / cleanup                                                       |
+| --------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------ |
+| Clock origin, frame IDs, open scopes, recent history      | Profiler             | One profiler; frame IDs never repeat after clear                         |
+| Manual/automatic capture and completed archive            | Capture controller   | Profiler lifetime; survives closing the panel                            |
+| Counter providers, event/GPU history, latest observations | Observation history  | Profiler lifetime; snapshots and recording selections copy nested values |
+| Loading operation                                         | Its loading run      | Sealed by finish/replacement; late completion cannot enter another run   |
+| GPU queries and asynchronous readback                     | Specific adapter     | Adapter disposal releases only its own queries and settings              |
+| Host renderer, host frame loop, injected trace sink       | Host                 | Never disposed by panel or profiler                                      |
+| Expanded-mode demand for scopes                           | Individual panel     | Acquires/releases its own request; cannot disable another caller         |
+| Frozen display and selected tab                           | Panel                | Frozen snapshot is presentation state; collection continues              |
+| Imported recording and selected frame/range               | Viewer               | Failed import leaves current valid recording and selection intact        |
+| DOM listeners, observers and canvas surfaces              | Mounted view/control | Removed on dispose; repeated dispose is harmless                         |
+| User preferences                                          | Browser integration  | Small validated values; storage failure must not stop profiling          |
 
 `clear()` invalidates open scopes and pending capture state atomically. Late GPU samples whose
 frame IDs no longer exist stay unlinked or are dropped according to the adapter's documented
 policy; they are never attached to a reused ID. Disposal is idempotent. Calls such as late
 panel refresh become no-ops after disposal; invalid configuration and programming mistakes
 throw descriptive errors before mutating state.
+
+Host counter callbacks can remove channels, clear or dispose the profiler. Polling checks
+provider identity and a lifecycle generation before retaining results. A disposed channel
+handle cannot remove a replacement provider. Callback failures become explicit counter errors;
+trace failures release only the trace request and produce a diagnostic event.
 
 ## Timing and data flow
 

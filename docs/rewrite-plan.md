@@ -34,11 +34,12 @@ available until the complete parity matrix and release checks pass.
 2. **Complete: one internal measurement path.** Host frame boundary → channel scope → bounded history → snapshot.
    Implement the model with deterministic tests, clear/dispose behavior and measured collection
    overhead. Resolve API friction using a tiny real host fixture before adding optional sources.
-   Implemented and verified using TDD; see [collection evidence](collection.md). The public
-   profiler composition is deliberately deferred until its capture controller is implemented.
-3. **Capture and files.** Implement the state machine, detached archive, schema validator and
-   serializer. Add property tests and isolated file-consumer checks. Keep defaults in the owner
-   of the policy, not in the parser.
+   Implemented and verified using TDD; see [collection evidence](collection.md).
+3. **Complete: capture, files and public profiler.** State machine, detached archive, schema
+   validator, serializer and `createProfiler` composition are implemented with TDD. Property
+   tests, isolated runtime/type consumers and real browser downloads verify the path. Defaults
+   remain in the policy owner. Counter/error retention, event/GPU ownership and borrowed tracing
+   are covered; see [recording evidence](recordings.md).
 4. **junkui foundation.** Rebuild tokens and scoped native controls against the current look.
    Add an independent gallery and accessible tabs. Check focused interactions and host styles.
 5. **The live panel.** Build LINE first, then MINI and FULL. Separate live/loading/capture views,

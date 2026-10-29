@@ -1,5 +1,6 @@
 import type { CounterSample, CounterValue, EventSample, FrameSample } from "../core/frames.ts";
 import type { GpuSample } from "../core/gpu.ts";
+import { collectionLimits } from "../core/limits.ts";
 import { recordingLimits } from "./limits.ts";
 import {
   choice,
@@ -28,7 +29,10 @@ export function readCounterValues(
         return [key, value];
       }
       if (typeof value === "string") {
-        return [key, text(value, `${path}.${key}`)];
+        if (value.length > collectionLimits.labelLength) {
+          invalid(`${path}.${key}`, "Counter text exceeds the label limit");
+        }
+        return [key, value];
       }
       return [key, number(value, `${path}.${key}`, -Number.MAX_VALUE)];
     }),
@@ -51,11 +55,18 @@ export function readCounters(
 ): CounterSample[] {
   return list(value, "$.counters", recordingLimits.counters, (entry, path) => {
     const data = object(entry, path);
-    return {
+    const base = {
       atMs: sampleTime(data.atMs, `${path}.atMs`, frames),
       channelId: reference(data.channelId, `${path}.channelId`, channelIds),
-      values: readCounterValues(data.values, `${path}.values`),
     };
+    const status = choice(data.status, `${path}.status`, ["ready", "error"]);
+    return status === "ready"
+      ? { ...base, status, values: readCounterValues(data.values, `${path}.values`) }
+      : {
+          ...base,
+          status,
+          message: text(data.message, `${path}.message`, recordingLimits.detailLength),
+        };
   });
 }
 

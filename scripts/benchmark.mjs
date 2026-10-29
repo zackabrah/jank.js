@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { cpus, platform, release } from "node:os";
-import { createFrameCollector } from "../packages/jank/src/core/collector.ts";
+import { createProfiler, serializeRecording } from "../packages/jank/src/index.ts";
 
 const sampleCount = 15;
 const framesPerSample = 5_000;
@@ -9,22 +9,63 @@ const cases = [
   { name: "8 scopes per frame", scopesPerFrame: 8, snapshotEvery: 0 },
   { name: "128 scopes per frame", scopesPerFrame: 128, snapshotEvery: 0 },
   { name: "8 scopes and snapshot every 6 frames", scopesPerFrame: 8, snapshotEvery: 6 },
+  { name: "manual capture with 8 scopes", scopesPerFrame: 8, capture: true },
+  {
+    name: "manual capture and serialize with 8 scopes",
+    scopesPerFrame: 8,
+    capture: true,
+    serialize: true,
+  },
+  {
+    name: "manual capture with 64 counter providers",
+    scopesPerFrame: 0,
+    capture: true,
+    counters: 64,
+  },
 ];
+
+function prepareWorkload(workload, enabled, now) {
+  const profiler = enabled ? createProfiler({ now }) : null;
+  const channel = profiler?.createChannel({
+    id: "work",
+    label: "Work",
+    ...(workload.counters ? { readCounters: () => ({ elapsedMs: now() }) } : {}),
+  });
+  for (let index = 1; index < (workload.counters ?? 0); index += 1) {
+    profiler?.createChannel({
+      id: `counter-${index}`,
+      label: `Counter ${index}`,
+      readCounters: () => ({ elapsedMs: now() }),
+    });
+  }
+  if (workload.scopesPerFrame > 0) {
+    profiler?.requestScopes();
+  }
+  return { profiler, channel };
+}
+
+function finishCapture(workload, profiler) {
+  if (!workload.capture) {
+    return 0;
+  }
+  const recording = profiler?.capture.stop();
+  if (!recording) {
+    return 0;
+  }
+  return workload.serialize ? serializeRecording(recording).length : recording.frames.length;
+}
 
 function runWorkload(workload, enabled) {
   let timeMs = 0;
   let checksum = 0;
-  const collector = enabled
-    ? createFrameCollector({ now: () => timeMs, costNow: () => performance.now() })
-    : null;
-  const channel = collector?.createChannel({ id: "work", label: "Work" });
-  if (workload.scopesPerFrame > 0) {
-    collector?.requestScopes();
-  }
+  const { profiler, channel } = prepareWorkload(workload, enabled, () => timeMs);
   const startedAtMs = performance.now();
+  if (workload.capture) {
+    profiler?.capture.start();
+  }
   for (let frame = 0; frame < framesPerSample; frame += 1) {
     timeMs = frame * 16;
-    collector?.beginFrame(timeMs);
+    profiler?.beginFrame(timeMs);
     for (let scope = 0; scope < workload.scopesPerFrame; scope += 1) {
       const token = channel?.begin();
       timeMs += 0.01;
@@ -33,13 +74,14 @@ function runWorkload(workload, enabled) {
         channel.end(token);
       }
     }
-    collector?.endFrame({ updateMs: 1, renderMs: 2 });
+    profiler?.endFrame({ updateMs: 1, renderMs: 2 });
     if (workload.snapshotEvery > 0 && frame % workload.snapshotEvery === 0) {
-      checksum += collector?.snapshot().frames.length ?? 0;
+      checksum += profiler?.snapshot().frames.length ?? 0;
     }
   }
+  checksum += finishCapture(workload, profiler);
   const elapsedMs = performance.now() - startedAtMs;
-  collector?.dispose();
+  profiler?.dispose();
   if (!Number.isFinite(checksum)) {
     throw new Error("Benchmark checksum overflowed");
   }
@@ -93,7 +135,7 @@ const report = {
   framesPerSample,
   units: "microseconds per host frame",
   limitations:
-    "Local Node microbenchmark with synthetic frame time and real cost clock. Includes synchronous collection, copying and GC noise; excludes browser layout, paint, GPU, capture, adapters and UI. Baseline is the same host loop without collection, not the previous implementation. Min/max describe batch means, not frame-tail latency.",
+    "Local Node microbenchmark of the public profiler with synthetic frame time and real cost clock. Includes synchronous collection, copying and GC noise; marked workloads also include capture start/stop assembly and optional validated serialization, amortized across 5,000 frames. Excludes construction, disposal, browser layout, paint, GPU, adapters and UI. Counter providers return one numeric value each. Baseline is the same host loop without profiling, not the previous implementation. Min/max describe batch means, not frame-tail latency or export latency.",
   results,
 };
 

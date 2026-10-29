@@ -1,5 +1,5 @@
 import type { Channel, ScopeToken } from "./channels.ts";
-import type { ChannelDescription } from "./frames.ts";
+import type { ChannelDescription, FrameSample, ScopeSample } from "./frames.ts";
 import { FrameHistory, summarizeCost } from "./history.ts";
 import { collectionLimits } from "./limits.ts";
 import { inactiveScope, ScopeRecorder } from "./scopes.ts";
@@ -41,6 +41,9 @@ class FrameCollector {
   private readonly channels = new Map<string, RegisteredChannel>();
   private readonly scopes: ScopeRecorder;
   private pending: PendingFrame | null = null;
+  private sealed: FrameSample | null = null;
+  private firstValidFrameId = 1;
+  private scopeObserver: ((scope: ScopeSample) => void) | null = null;
   private nextFrameId = 0;
   private lastBoundaryMs = 0;
   private scopeRequests = 0;
@@ -48,6 +51,7 @@ class FrameCollector {
   private targetFps: number;
   private totalCollectionMs = 0;
   private refreshDepth = 0;
+  private epoch = 0;
 
   constructor(options: CollectorOptions) {
     const capacity = options.maxScopesPerFrame ?? 128;
@@ -113,7 +117,7 @@ class FrameCollector {
       endedAtMs,
       frame.collectScopes,
     );
-    this.history.append({
+    const sample: FrameSample = {
       id: frame.id,
       startedAtMs: frame.startedAtMs,
       endedAtMs,
@@ -121,7 +125,9 @@ class FrameCollector {
       scopes,
       coverage,
       overhead: { collectionMs: frame.collectionMs, refreshMs: frame.refreshMs },
-    });
+    };
+    this.history.append(sample);
+    this.sealed = sample;
   }
 
   endFrame(cpu: { readonly updateMs: number; readonly renderMs: number }): void {
@@ -169,7 +175,7 @@ class FrameCollector {
       end: (token) => {
         if (channel.active && !this.disposed && token !== inactiveScope) {
           const costStart = this.costNow();
-          this.scopes.end(id, token, this.readClock());
+          this.scopes.end(id, token, this.readClock(), this.scopeObserver);
           this.collectCost(costStart);
         }
       },
@@ -233,6 +239,30 @@ class FrameCollector {
     }
   }
 
+  /** Charge orchestration work while subtracting already measured nested collection calls. */
+  measureCollection<T>(work: () => T): T {
+    if (this.disposed) {
+      return work();
+    }
+    const startedAtMs = this.costNow();
+    const collectedBefore = this.totalCollectionMs;
+    const epoch = this.epoch;
+    try {
+      return work();
+    } finally {
+      if (this.pending && epoch === this.epoch) {
+        const durationMs = Math.max(
+          0,
+          this.costNow() - startedAtMs - (this.totalCollectionMs - collectedBefore),
+        );
+        if (validDuration(durationMs)) {
+          this.pending.collectionMs += durationMs;
+          this.totalCollectionMs += durationMs;
+        }
+      }
+    }
+  }
+
   snapshot(): FrameSnapshot {
     const costStart = this.costNow();
     const frames = this.history.snapshot();
@@ -247,6 +277,26 @@ class FrameCollector {
     };
     this.collectCost(costStart);
     return snapshot;
+  }
+
+  /** One handoff per boundary, consumed by the profiler's capture owner. */
+  takeSealedFrame(): FrameSample | null {
+    const frame = this.sealed;
+    this.sealed = null;
+    return frame;
+  }
+
+  recentFrames(): readonly FrameSample[] {
+    return this.history.read();
+  }
+  time(): number {
+    return this.readClock();
+  }
+  knowsFrame(id: number): boolean {
+    return id >= this.firstValidFrameId && id <= this.nextFrameId;
+  }
+  observeScopes(observer: ((scope: ScopeSample) => void) | null): void {
+    this.scopeObserver = observer;
   }
 
   private collectCost(startedAtMs: number): void {
@@ -268,7 +318,10 @@ class FrameCollector {
   }
 
   clear(): void {
+    this.epoch += 1;
     this.pending = null;
+    this.sealed = null;
+    this.firstValidFrameId = this.nextFrameId + 1;
     this.scopes.clear();
     this.history.clear();
     this.totalCollectionMs = 0;
@@ -284,6 +337,7 @@ class FrameCollector {
       this.disposed = true;
       this.clear();
       this.channels.clear();
+      this.scopeObserver = null;
     }
   }
 }

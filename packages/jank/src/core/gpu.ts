@@ -24,3 +24,7 @@ export type GpuState =
       readonly sample: GpuSample;
       readonly droppedSamples: number;
     };
+
+export function copyGpuSample(sample: GpuSample): GpuSample {
+  return { ...sample, passes: sample.passes.map((pass) => ({ ...pass })) };
+}

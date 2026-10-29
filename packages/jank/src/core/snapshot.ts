@@ -19,6 +19,7 @@ export interface FrameSnapshot {
 }
 
 export interface ProfilerSnapshot extends FrameSnapshot {
+  /** Latest observation per active counter provider. Recordings retain the sampling history. */
   readonly counters: readonly CounterSample[];
   readonly events: readonly EventSample[];
   readonly gpu: GpuState | null;

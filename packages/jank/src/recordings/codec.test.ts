@@ -81,8 +81,12 @@ describe("recording files", () => {
     if (!result.ok) {
       throw new Error(result.problem.message);
     }
-    expect(Object.hasOwn(result.recording.counters[0]?.values ?? {}, "__proto__")).toBe(true);
-    expect(Object.getPrototypeOf(result.recording.counters[0]?.values)).toBe(Object.prototype);
+    const counter = result.recording.counters[0];
+    if (counter?.status !== "ready") {
+      throw new Error("Expected a ready counter");
+    }
+    expect(Object.hasOwn(counter.values, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(counter.values)).toBe(Object.prototype);
     const extra = parseRecording(changedJson("unexpected", { ignored: true }));
     expect(extra).toEqual({ ok: true, recording: recordingFixture() });
   });
@@ -143,7 +147,9 @@ describe("recording files", () => {
           timer: { source: "performance.now" as const, estimatedResolutionMs: 0.1 },
         },
       },
-      counters: [{ atMs: 110, channelId: "physics", values: { offset: -5 } }],
+      counters: [
+        { status: "ready" as const, atMs: 110, channelId: "physics", values: { offset: -5 } },
+      ],
       events: [{ atMs: 120, label: "日本語 😀", detail: "Received asset" }],
     };
     expect(parseRecording(serializeRecording(recording))).toEqual({ ok: true, recording });
@@ -174,6 +180,7 @@ describe("recording files", () => {
 });
 
 const invalidCases: [string, unknown, string][] = [
+  ["counters.0.values.mode", "x".repeat(241), "$.counters[0].values.mode"],
   ["frames", [], "$.counters[0].atMs"],
   [
     "counters.0.values",
@@ -248,7 +255,7 @@ it("rejects oversized collections at their owning field", () => {
     ["frames", 6001, {}],
     ["channels", 65, {}],
     ["events", 201, {}],
-    ["counters", 1201, {}],
+    ["counters", 76801, {}],
     ["gpu", 6001, {}],
     ["frames.0.scopes", 1025, {}],
     ["gpu.0.passes", 257, {}],

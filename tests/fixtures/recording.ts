@@ -36,6 +36,7 @@ export function recordingFixture(): Recording {
     counters: [
       {
         atMs: 110,
+        status: "ready",
         channelId: "physics",
         values: { bodies: 3, mode: "active", ready: true, pending: null },
       },

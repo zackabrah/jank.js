@@ -2,7 +2,8 @@
 
 The internal collector is implemented. It owns host frame boundaries, CPU scopes, 600 sealed
 frames, channel identity and synchronous overhead. It imports no DOM, Node, renderer, capture
-or presentation code. There is no public `createProfiler` implementation until capture is real.
+or presentation code. Public `createProfiler` now composes this owner with capture and optional
+observations; see [the subsequent capture slice](recordings.md).
 
 ## Timing and ownership decisions
 
@@ -43,7 +44,7 @@ identity and label limits, stale clocks, Firefox's rounded scope clock, and pre-
 boundaries. Refactoring keeps clock validation in the collector, interval retention in the
 scope recorder, and ring-buffer storage/copying in frame history.
 
-`pnpm check` runs 28 unit/property tests plus the existing contract and tooling tests. Two
+The collector suite contains 28 unit/property tests alongside contract and tooling checks. Two
 seeded properties cover 100 cases each: contiguous bounded history and conservation of scope
 duration across late boundaries. Focused tests cover clipping, nesting, capacity, CPU overflow,
 snapshot isolation, independent demand, disposal, clearing and overhead on thrown callbacks.
@@ -56,8 +57,9 @@ outside this slice.
 
 ## Measurement
 
-Run `pnpm bench`; the report is written to `artifacts/collection-benchmark.json`. The checked-in
-[measurement report](verification/collection.json) records this slice's run and machine.
+The checked-in [measurement report](verification/collection.json) records this internal
+collector slice's historical run and machine. `pnpm bench` now exercises the public profiler
+and writes `artifacts/collection-benchmark.json`; see the [current capture report](verification/capture.json).
 Each workload warms both paths three times, then runs 15 paired samples of 5,000 host frames,
 alternating baseline/instrumented order. The baseline performs the same host bookkeeping
 without the collector. Costs use a real high-resolution clock; frame time is synthetic.

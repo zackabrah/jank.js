@@ -31,12 +31,18 @@ export class ScopeRecorder {
     return token;
   }
 
-  end(channelId: string, token: ScopeToken, atMs: number): void {
+  end(
+    channelId: string,
+    token: ScopeToken,
+    atMs: number,
+    observe: ((scope: ScopeSample) => void) | null = null,
+  ): void {
     const scope = this.scopes.get(token);
     if (!scope || scope.channelId !== channelId || scope.endedAtMs !== null) {
       return;
     }
     scope.endedAtMs = atMs;
+    observe?.({ channelId, startedAtMs: scope.startedAtMs, endedAtMs: atMs });
   }
 
   seal(

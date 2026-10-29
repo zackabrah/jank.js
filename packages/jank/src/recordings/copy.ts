@@ -1,4 +1,5 @@
-import { copyFrame } from "../core/frames.ts";
+import { copyCounterSample, copyFrame } from "../core/frames.ts";
+import { copyGpuSample } from "../core/gpu.ts";
 import type { Recording } from "./recording.ts";
 
 /** Trusted recorded data needs a boundary copy, not serialization and revalidation. */
@@ -20,11 +21,8 @@ export function copyRecording(recording: Recording): Recording {
     capture: { ...recording.capture },
     frames: recording.frames.map(copyFrame),
     channels: recording.channels.map((channel) => ({ ...channel })),
-    counters: recording.counters.map((sample) => ({ ...sample, values: { ...sample.values } })),
+    counters: recording.counters.map(copyCounterSample),
     events: recording.events.map((event) => ({ ...event })),
-    gpu: recording.gpu.map((sample) => ({
-      ...sample,
-      passes: sample.passes.map((pass) => ({ ...pass })),
-    })),
+    gpu: recording.gpu.map(copyGpuSample),
   };
 }

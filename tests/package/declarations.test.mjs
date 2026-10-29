@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-test("both public declaration packages work without workspace source files", () => {
+test("built profiler and both declaration packages work without workspace source files", () => {
   const directory = mkdtempSync(join(tmpdir(), "jank-package-consumer-"));
   try {
     for (const [folder, name] of [
@@ -41,10 +41,11 @@ test("both public declaration packages work without workspace source files", () 
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
+import { createProfiler } from "jank.js";
 import type { CreateTabs } from "junkui";
-declare const createProfiler: CreateProfiler;
+const factory: CreateProfiler = createProfiler;
 declare const createTabs: CreateTabs;
-const profiler = createProfiler({ targetFps: 60 });
+const profiler = factory({ targetFps: 60 });
 const channel: Channel = profiler.createChannel({ id: "physics", label: "Physics" });
 const token: ScopeToken = channel.begin();
 channel.end(token);
@@ -69,18 +70,29 @@ tabs.dispose();
       join(directory, "runtime.mjs"),
       `
 import assert from "node:assert/strict";
-import { parseRecording, serializeRecording } from "jank.js";
-const input = {
-  format: "jank.js-recording", schemaVersion: 3,
-  clock: { unit: "milliseconds", origin: "profiler-start" },
-  metadata: { createdAt: "2026-10-30T00:00:00.000Z", toolVersion: "0.2.1", application: null,
-    environment: { userAgent: null, platform: null, hardwareConcurrency: null, crossOriginIsolated: null,
-      viewport: null, timer: { source: "custom", estimatedResolutionMs: null } } },
-  targetFps: 60, capture: { kind: "recent" }, truncated: false,
-  frames: [], channels: [], counters: [], events: [], gpu: []
-};
-assert.deepEqual(parseRecording(serializeRecording(input)), { ok: true, recording: input });
+import { readFileSync } from "node:fs";
+import { createProfiler, parseRecording, serializeRecording } from "jank.js";
+let timeMs = 0;
+const profiler = createProfiler({ now: () => timeMs });
+const channel = profiler.createChannel({ id: "physics", label: "Physics", readCounters: () => ({ bodies: 10 }) });
+profiler.capture.start();
+profiler.beginFrame(timeMs);
+const token = channel.begin();
+timeMs = 5;
+channel.end(token);
+profiler.endFrame({ updateMs: 5, renderMs: 0 });
+timeMs = 16;
+profiler.beginFrame(timeMs);
+const recording = profiler.capture.stop();
+assert.ok(recording);
+assert.equal(recording.frames.length, 1);
+assert.equal(recording.frames[0].scopes[0].channelId, "physics");
+assert.equal(recording.counters[0].values.bodies, 10);
+const manifest = JSON.parse(readFileSync(new URL("node_modules/jank.js/package.json", import.meta.url), "utf8"));
+assert.equal(recording.metadata.toolVersion, manifest.version);
+assert.deepEqual(parseRecording(serializeRecording(recording)), { ok: true, recording });
 assert.equal(parseRecording('{').problem.code, "invalid-json");
+profiler.dispose();
 `,
     );
     const runtime = spawnSync(process.execPath, [join(directory, "runtime.mjs")], {
