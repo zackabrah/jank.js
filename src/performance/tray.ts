@@ -441,13 +441,7 @@ function frameScopes(frame: DiagnosticFrame): FrameScopes | null {
   const systems = new Map<string, { label: string; ms: number }>();
 
   for (const [system, group] of groups)
-    systems.set(system, {
-      label: group[0]!.label,
-      ms:
-        group.length === 1
-          ? group[0]!.end - group[0]!.start
-          : intervalUnion(group),
-    });
+    systems.set(system, { label: group[0]!.label, ms: intervalUnion(group) });
 
   return {
     systems,

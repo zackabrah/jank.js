@@ -47,8 +47,12 @@ const explanations: Record<DiagnosticFrame["coverage"], string> = {
 export function intervalUnion(
   intervals: readonly { start: number; end: number }[],
 ): number {
-  // Sort intervals by start time, then merge overlapping intervals and sum their lengths
-  const sorted = intervals.toSorted((a, b) => a.start - b.start);
+  // Sort intervals by start time, then merge overlapping intervals and sum their lengths.
+  // A single interval needs no sorted copy; the panel unions every system's scopes per frame.
+  const sorted =
+    intervals.length > 1
+      ? intervals.toSorted((a, b) => a.start - b.start)
+      : intervals;
 
   let start = 0,
     end = 0,
