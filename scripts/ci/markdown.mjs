@@ -153,5 +153,5 @@ export function accuracy(report) {
     ? "cross-origin isolated"
     : "not isolated";
 
-  return `### Accuracy against Chrome\n\n${report.frames} frames in Chromium ${report.environment.browser}, ${isolation}. Absolute differences in milliseconds; \`e2e/accuracy.spec.ts\` sets the limits.\n\n${table(["", "Median", "p95", "Max"], differences)}\n\n${table(["Long frame", "Long-animation-frame", "Chrome trace", "jank.js cost"], longFrames)}\n`;
+  return `### Accuracy against Chrome\n\n${report.frames} frames in Chromium ${report.environment.browser}, ${isolation}. Absolute differences in milliseconds, reported rather than gated: the build fails only on gross disagreement, and jank.js's own invariants gate in every browser (\`e2e/accuracy.spec.ts\`).\n\n${table(["", "Median", "p95", "Max"], differences)}\n\n${table(["Long frame", "Long-animation-frame", "Chrome trace", "jank.js cost"], longFrames)}\n`;
 }

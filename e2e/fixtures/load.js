@@ -409,10 +409,17 @@ function frame(at) {
 
   drawing.end(token);
 
+  // The sort's own time, read inside its scope, so jank.js must report at least this much.
+  let spikeMs = 0;
+
   if (spiking) {
     token = sorting.begin();
 
+    const spikeStart = performance.now();
+
     spike();
+
+    spikeMs = performance.now() - spikeStart;
 
     sorting.end(token);
   }
@@ -467,6 +474,7 @@ function frame(at) {
       workStart,
       workEnd,
       work: update + render,
+      spikeMs,
       statsGl: statsGl.getData(),
     });
 
