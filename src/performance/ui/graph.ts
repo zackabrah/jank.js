@@ -122,7 +122,7 @@ export function prepareCanvas(
 }
 
 /** Text on an ink plate so labels stay legible over bars and guides. */
-export function plate(
+function plate(
   context: CanvasRenderingContext2D,
   theme: GraphTheme,
   text: string,

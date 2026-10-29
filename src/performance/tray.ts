@@ -505,7 +505,7 @@ export function scopeAverages(
 
 export type PerformanceTrayMode = "line" | "mini" | "full";
 
-export type PerformanceTrayCorner =
+type PerformanceTrayCorner =
   | "top-right"
   | "top-left"
   | "bottom-right"

@@ -25,15 +25,11 @@
   --jank-track-label: 0.12em;
   --jank-track-wordmark: 0.18em;
 
-  --jank-pad-x: 10px;
-  --jank-pad-y: 8px;
   --jank-header-h: 28px;
   --jank-tabs-h: 24px;
-  --jank-button-h: 20px;
   --jank-panel-w: 360px;
   --jank-mini-w: 240px;
   --jank-line-h: 28px;
-  --jank-bar-pitch: 3px; /* 4px in the viewer */
   --jank-radius: 0;
   --jank-inset: 20px; /* distance from the docked corner */
 }
