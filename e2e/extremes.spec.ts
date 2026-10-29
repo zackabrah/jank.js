@@ -150,7 +150,6 @@ test("the panel keeps its shape and its readouts under extreme input", async ({
       }[] = [];
 
       // Each step changes what the panel shows, so they run one after another.
-      /* oxlint-disable no-await-in-loop */
       for (const view of ["live", "loading", "capture"]) {
         await page
           .locator(`.jank-tab[data-tab="${view}"]`)
@@ -168,7 +167,6 @@ test("the panel keeps its shape and its readouts under extreme input", async ({
 
         states.push({ state: size, ...(await problems(page)) });
       }
-      /* oxlint-enable no-await-in-loop */
 
       expect({
         broken: states.filter(

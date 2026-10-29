@@ -99,6 +99,7 @@ test("full panel reads a running game, freezes the display and exports the recor
     page.getByRole("button", { name: "Resume display" }),
   ).toHaveAttribute("aria-pressed", "true");
 
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright reads the visible label to compare after freezing the display.
   const held = await slot(page, "avg").innerText();
 
   const recorded = await page.evaluate(

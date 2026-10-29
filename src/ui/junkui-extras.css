@@ -85,8 +85,9 @@
 .jl .jl-kv dt::after {
   content: "";
   flex: 1;
-  background: radial-gradient(circle, var(--jl-faint) 0.8px, transparent 1px) 0
-    0 / 5px 20px;
+  background:
+    radial-gradient(circle, var(--jl-faint) 0.8px, transparent 1px) 0 0 / 5px
+    20px;
 }
 .jl .jl-table {
   width: 100%;

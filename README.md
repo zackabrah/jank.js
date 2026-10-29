@@ -12,21 +12,49 @@
 ```
 
 <p>
-  <img alt="Measured, not simulated" src="docs/readme/badge-measured.svg" height="22">
-  <img alt="Zero dependencies" src="docs/readme/badge-deps.svg" height="22">
-  <img alt="~4.3 KB core" src="docs/readme/badge-core.svg" height="22">
-  <img alt="~23 KB with the live panel" src="docs/readme/badge-panel.svg" height="22">
-  <img alt="MIT" src="docs/readme/badge-mit.svg" height="22">
-  <img alt="Current version" src="docs/readme/badge-version.svg" height="22">
-  <img alt="A Junklab production" src="docs/readme/badge-junklab.svg" height="22">
+  <img
+    alt="Measured, not simulated"
+    src="docs/readme/badge-measured.svg"
+    height="22"
+  />
+  <img alt="Zero dependencies" src="docs/readme/badge-deps.svg" height="22" />
+  <img alt="~4.3 KB core" src="docs/readme/badge-core.svg" height="22" />
+  <img
+    alt="~23 KB with the live panel"
+    src="docs/readme/badge-panel.svg"
+    height="22"
+  />
+  <img alt="MIT" src="docs/readme/badge-mit.svg" height="22" />
+  <img alt="Current version" src="docs/readme/badge-version.svg" height="22" />
+  <img
+    alt="A Junklab production"
+    src="docs/readme/badge-junklab.svg"
+    height="22"
+  />
 </p>
 
 <p>
-  <img alt="Unit tests passing" src="docs/readme/badge-unit.svg" height="22">
-  <img alt="Chromium tests passing" src="docs/readme/badge-chromium.svg" height="22">
-  <img alt="Firefox tests passing" src="docs/readme/badge-firefox.svg" height="22">
-  <img alt="WebKit tests passing" src="docs/readme/badge-webkit.svg" height="22">
-  <img alt="Unit test line coverage" src="docs/readme/badge-coverage.svg" height="22">
+  <img alt="Unit tests passing" src="docs/readme/badge-unit.svg" height="22" />
+  <img
+    alt="Chromium tests passing"
+    src="docs/readme/badge-chromium.svg"
+    height="22"
+  />
+  <img
+    alt="Firefox tests passing"
+    src="docs/readme/badge-firefox.svg"
+    height="22"
+  />
+  <img
+    alt="WebKit tests passing"
+    src="docs/readme/badge-webkit.svg"
+    height="22"
+  />
+  <img
+    alt="Unit test line coverage"
+    src="docs/readme/badge-coverage.svg"
+    height="22"
+  />
 </p>
 
 # jank.js
@@ -36,7 +64,11 @@ A performance monitor that runs inside your browser game. It shows frame pacing,
 Zero runtime dependencies. ~4.3 KB core, ~23 KB with the panel, gzipped. Nothing is uploaded, estimated or smoothed.
 
 <p align="center">
-  <img alt="The full jank.js panel running on the fixture game, LIVE tab, recording. The frame graph glides left as frames arrive, a 33.3 ms spike enters in orange and becomes the worst frame, and a load chunk 14 event tick follows it. FPS holds at 60 with its range, 59 to 61, beside it; five CPU systems with unattributed time, GPU passes from the fixture source, counters, and the panel's own overhead under everything." src="docs/readme/panel-running.gif" width="400">
+  <img
+    alt="The full jank.js panel running on the fixture game, LIVE tab, recording. The frame graph glides left as frames arrive, a 33.3 ms spike enters in orange and becomes the worst frame, and a load chunk 14 event tick follows it. FPS holds at 60 with its range, 59 to 61, beside it; five CPU systems with unattributed time, GPU passes from the fixture source, counters, and the panel's own overhead under everything."
+    src="docs/readme/panel-running.gif"
+    width="400"
+  />
 </p>
 
 ## Install
@@ -83,28 +115,52 @@ Mark moments with `monitor.event("Scene changed")`. Only what your app supplies 
 ## The panel
 
 <p align="center">
-  <img alt="The full LIVE panel with callouts on its left. FPS 59, with 59 and 61 beside it: frames in the last second, beside the slowest and fastest second. Worst 33.4 ms at frame 195, 2 missed: the slowest frame and when it came, ▲ means over budget. The graph with two orange spikes and three event ticks: each frame against the budget line, with events below. CPU, five rows ending in unattributed 12.0 ms: time in the systems you named, the rest is unattributed. GPU shadow, opaque and post passes from the fixture source: gpu time per render pass, from timer queries. Counters from objects to textures: counts your systems report, by source. FREEZE, STOP REC, CLEAR and EXPORT JSON: freeze the display, record, export for the offline viewer. Overhead, 0.03 ms collection and 0.09 ms panel refresh: what jank.js costs, collecting frames and redrawing this panel. The footer: timer precision here, and the jank.js build." src="docs/readme/panel-annotated.png" width="694">
+  <img
+    alt="The full LIVE panel with callouts on its left. FPS 59, with 59 and 61 beside it: frames in the last second, beside the slowest and fastest second. Worst 33.4 ms at frame 195, 2 missed: the slowest frame and when it came, ▲ means over budget. The graph with two orange spikes and three event ticks: each frame against the budget line, with events below. CPU, five rows ending in unattributed 12.0 ms: time in the systems you named, the rest is unattributed. GPU shadow, opaque and post passes from the fixture source: gpu time per render pass, from timer queries. Counters from objects to textures: counts your systems report, by source. FREEZE, STOP REC, CLEAR and EXPORT JSON: freeze the display, record, export for the offline viewer. Overhead, 0.03 ms collection and 0.09 ms panel refresh: what jank.js costs, collecting frames and redrawing this panel. The footer: timer precision here, and the jank.js build."
+    src="docs/readme/panel-annotated.png"
+    width="694"
+  />
 </p>
 
 Three sizes, all collecting: one line for a playtest, a mini HUD, the full panel when something stutters.
 
 <p>
-  <img alt="One line: JANK.JS, 59 fps, 16.8 ms, a 33.4 ms worst frame in orange, REC, and a plus to open the panel." src="docs/readme/panel-line.png" width="400" align="top">
-  <img alt="The mini corner HUD while recording: 59 fps, 16.8 ms, 16.7 p95, a rolling frame graph with one orange bar, the worst frame 33.4 ms at frame 92, and the heaviest scope, scene at 1.5 ms." src="docs/readme/panel-mini.png" width="280" align="top">
+  <img
+    alt="One line: JANK.JS, 59 fps, 16.8 ms, a 33.4 ms worst frame in orange, REC, and a plus to open the panel."
+    src="docs/readme/panel-line.png"
+    width="400"
+    align="top"
+  />
+  <img
+    alt="The mini corner HUD while recording: 59 fps, 16.8 ms, 16.7 p95, a rolling frame graph with one orange bar, the worst frame 33.4 ms at frame 92, and the heaviest scope, scene at 1.5 ms."
+    src="docs/readme/panel-mini.png"
+    width="280"
+    align="top"
+  />
 </p>
 
 **LOADING** puts load stages on one axis, this session against the cold start. **CAPTURE** keeps the frames before and after each spike.
 
 <p>
-  <img alt="The LOADING tab: total 301.3 ms against a 602.9 ms cold start, 94 percent cache hits, five stages on one axis with the cold run behind them and decode textures the heaviest, 212 hits and 14 misses, and four sessions listed." src="docs/readme/panel-loading.png" width="400" align="top">
-  <img alt="The CAPTURE tab in cooldown: budget 60 fps, auto capture on with a 33.3 ms threshold, 120 frames before and after and a 5 second cooldown, what recordings contain, and one capture kept: frame 97 at 50.0 ms near the wave 3 and spawn ×184 events." src="docs/readme/panel-capture.png" width="400" align="top">
+  <img
+    alt="The LOADING tab: total 301.3 ms against a 602.9 ms cold start, 94 percent cache hits, five stages on one axis with the cold run behind them and decode textures the heaviest, 212 hits and 14 misses, and four sessions listed."
+    src="docs/readme/panel-loading.png"
+    width="400"
+    align="top"
+  />
+  <img
+    alt="The CAPTURE tab in cooldown: budget 60 fps, auto capture on with a 33.3 ms threshold, 120 frames before and after and a 5 second cooldown, what recordings contain, and one capture kept: frame 97 at 50.0 ms near the wave 3 and spawn ×184 events."
+    src="docs/readme/panel-capture.png"
+    width="400"
+    align="top"
+  />
 </p>
 
 ## The viewer
 
 `jank.js/viewer.html` is one self-contained file. Drop a recording on it to step through every frame, its CPU and GPU lanes, and a labelled guess at the culprit. No server, no network.
 
-<img alt="The recording viewer: the environment line, the session strip with two captures marked, the timeline at 4 px per frame with frame 185 selected at 50.0 ms, 3.0 times the budget, LIKELY scene update at plus 40.0 ms against its median, the exact CPU lanes, the GPU and counter lanes, and the two captures listed." src="docs/readme/viewer.png" width="100%">
+<img alt="The recording viewer: the environment line, the session strip with two captures marked, the timeline at 4 px per frame with frame 185 selected at 50.0 ms, 3.0 times the budget, LIKELY scene update at plus 40.0 ms against its median, the exact CPU lanes, the GPU and counter lanes, and the two captures listed." src="docs/readme/viewer.png" width="100%" />
 
 ## Adapters
 

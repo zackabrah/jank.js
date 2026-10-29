@@ -254,7 +254,7 @@ function overlayHost() {
     context,
     canvas,
     viewport,
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The overlay reads only client dimensions and calls append on this minimal DOM fixture.
+    // The overlay reads only client dimensions and calls append on this minimal DOM fixture.
     overlay: createCullingBoundsOverlay(viewport as unknown as HTMLElement),
   };
 }

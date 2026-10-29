@@ -12,6 +12,6 @@
     "/index.js",
     "./index.js",
     "./adapters/webgl2.js",
-    "./stats-gl/main.js",
-  ],
+    "./stats-gl/main.js"
+  ]
 }

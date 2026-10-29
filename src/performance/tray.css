@@ -450,15 +450,17 @@
   position: relative;
   flex: 1;
   align-self: stretch;
-  background: radial-gradient(circle, var(--jank-graph) 0.8px, transparent 1px)
-    0 0 / 5px 20px;
+  background:
+    radial-gradient(circle, var(--jank-graph) 0.8px, transparent 1px) 0 0 / 5px
+    20px;
 }
 .jank .jank-lead i {
   position: absolute;
   inset: 0 auto 0 0;
   width: 0;
-  background: radial-gradient(circle, var(--jank-soft) 0.9px, transparent 1.1px)
-    0 0 / 5px 20px;
+  background:
+    radial-gradient(circle, var(--jank-soft) 0.9px, transparent 1.1px) 0 0 / 5px
+    20px;
 }
 .jank [data-tone="heavy"] .jank-k,
 .jank [data-tone="now"] .jank-k {
@@ -496,12 +498,14 @@
 }
 /* Dashed: periodic or delayed samples, never exact per frame */
 .jank .jank-dashed .jank-lead {
-  background: linear-gradient(90deg, var(--jank-line-strong) 3px, transparent 0)
-    0 50% / 5px 1px repeat-x;
+  background:
+    linear-gradient(90deg, var(--jank-line-strong) 3px, transparent 0) 0 50% /
+    5px 1px repeat-x;
 }
 .jank .jank-dashed .jank-lead i {
-  background: linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 50%
-    / 5px 1px repeat-x;
+  background:
+    linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 50% / 5px 1px
+    repeat-x;
 }
 .jank .jank-kv {
   height: 20px;
@@ -581,8 +585,9 @@
   position: relative;
   flex: 1;
   align-self: stretch;
-  background: radial-gradient(circle, var(--jank-line) 0.8px, transparent 1px) 0
-    0 / 5px 20px;
+  background:
+    radial-gradient(circle, var(--jank-line) 0.8px, transparent 1px) 0 0 / 5px
+    20px;
 }
 .jank .jank-track i {
   position: absolute;
@@ -606,8 +611,9 @@
 .jank .jank-stage[data-tone="overlap"] .jank-bar {
   top: 9px;
   height: 2px;
-  background: linear-gradient(90deg, var(--jank-muted) 3px, transparent 0) 0 0 /
-    5px 2px repeat-x;
+  background:
+    linear-gradient(90deg, var(--jank-muted) 3px, transparent 0) 0 0 / 5px 2px
+    repeat-x;
 }
 
 /* CAPTURE */
@@ -653,8 +659,9 @@
   width: 60px;
   height: 24px;
   flex: none;
-  background: radial-gradient(circle, var(--jank-line) 0.8px, transparent 1px) 0
-    0 / 5px 8px;
+  background:
+    radial-gradient(circle, var(--jank-line) 0.8px, transparent 1px) 0 0 / 5px
+    8px;
 }
 .jank .jank-cap-text {
   min-width: 0;

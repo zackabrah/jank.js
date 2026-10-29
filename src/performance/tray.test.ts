@@ -472,7 +472,7 @@ function trayDom() {
 
   const shell = new TrayElement();
 
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This fixture supplies only the tray's borrowed DOM surface.
+  // This fixture supplies only the tray's borrowed DOM surface.
   const host = shell as unknown as HTMLElement;
 
   return { shell, host, stored: values };

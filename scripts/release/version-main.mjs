@@ -125,11 +125,11 @@ if (process.argv[2] === step.plan) {
 
   manifest.version = plan.version;
 
-  writeFileSync("package.json", JSON.stringify(manifest, null, 2) + "\n");
+  writeFileSync("package.json", `${JSON.stringify(manifest, null, 2)}\n`);
 
   writeFileSync(
     ".release-state.json",
-    JSON.stringify({ lastSourceCommit: expected }, null, 2) + "\n",
+    `${JSON.stringify({ lastSourceCommit: expected }, null, 2)}\n`,
   );
 
   const previous = readFileSync("VERSION_HISTORY.md", "utf8");

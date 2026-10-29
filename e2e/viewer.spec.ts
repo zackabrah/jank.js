@@ -173,7 +173,6 @@ test("the panel hands its recording to the viewer, which inspects captures frame
   await page.evaluate(() => window.fixture.monitor.startRecording());
 
   // Three slow frames between ordinary ones, with events around them, in order.
-  /* oxlint-disable no-await-in-loop */
   for (const [wait, step] of [
     [700, "wave 3"],
     [500, "spike 45"],
@@ -218,7 +217,6 @@ test("the panel hands its recording to the viewer, which inspects captures frame
     }
   }
 
-  /* oxlint-enable no-await-in-loop */
   await page.evaluate(() => window.fixture.monitor.stopRecording());
 
   await page.getByRole("tab", { name: "CAPTURE" }).click();
@@ -281,11 +279,9 @@ test("the panel hands its recording to the viewer, which inspects captures frame
 
   await playhead.focus();
 
-  /* oxlint-disable no-await-in-loop */
   for (let i = 0; i < Math.abs(heavy - opened); i++)
     await viewer.keyboard.press(heavy > opened ? "ArrowRight" : "ArrowLeft");
 
-  /* oxlint-enable no-await-in-loop */
   await expect.poll(shownFrame).toBe(heavy);
 
   await expect(viewer.locator('[data-k="i-likely"]')).toHaveText(

@@ -303,8 +303,9 @@
   background: var(--jank-soft);
 }
 .jank-viewer-dashed {
-  background: linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 0 /
-    5px 1px repeat-x;
+  background:
+    linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 0 / 5px 1px
+    repeat-x;
 }
 .jank-viewer-row-k {
   height: 20px;
@@ -328,14 +329,16 @@
   position: relative;
   flex: 1;
   align-self: stretch;
-  background: radial-gradient(circle, var(--jank-graph) 0.8px, transparent 1px)
-    0 0 / 5px 20px;
+  background:
+    radial-gradient(circle, var(--jank-graph) 0.8px, transparent 1px) 0 0 / 5px
+    20px;
 }
 .jank-viewer-lead i {
   position: absolute;
   inset: 0 auto 0 0;
-  background: radial-gradient(circle, var(--jank-soft) 0.9px, transparent 1.1px)
-    0 0 / 5px 20px;
+  background:
+    radial-gradient(circle, var(--jank-soft) 0.9px, transparent 1.1px) 0 0 / 5px
+    20px;
 }
 .jank-viewer-hl {
   background: var(--jank-row);
@@ -366,12 +369,14 @@
   );
 }
 .jank-viewer-dash .jank-viewer-lead {
-  background: linear-gradient(90deg, var(--jank-line-strong) 3px, transparent 0)
-    0 50% / 5px 1px repeat-x;
+  background:
+    linear-gradient(90deg, var(--jank-line-strong) 3px, transparent 0) 0 50% /
+    5px 1px repeat-x;
 }
 .jank-viewer-dash .jank-viewer-lead i {
-  background: linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 50%
-    / 5px 1px repeat-x;
+  background:
+    linear-gradient(90deg, var(--jank-soft) 3px, transparent 0) 0 50% / 5px 1px
+    repeat-x;
 }
 .jank-viewer-grid {
   display: grid;

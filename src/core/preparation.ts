@@ -305,7 +305,7 @@ export function createPreparationProfiler(
             "then" in value &&
             typeof value.then === "function"
           ) {
-            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This promise branch preserves the callback's fulfillment type; synchronous values return unchanged.
+            // This promise branch preserves the callback's fulfillment type; synchronous values return unchanged.
             return Promise.resolve(value).then(
               (resolved) => {
                 end();

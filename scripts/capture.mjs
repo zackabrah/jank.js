@@ -254,13 +254,11 @@ async function film(name, steps) {
 
   // Screenshots, not Chrome's screencast, which sends CSS pixels. Each waits for the last,
   // and the steps clear the flag while the loop awaits.
-  /* oxlint-disable no-await-in-loop, no-unmodified-loop-condition */
   while (filming)
     shots.push({
       data: await page.screenshot(),
       at: performance.now() / msPerSecond,
     });
-  /* oxlint-enable no-await-in-loop, no-unmodified-loop-condition */
 
   await done;
 

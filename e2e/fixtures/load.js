@@ -284,6 +284,7 @@ const statsJsReadings = { FPS: [], MS: [] };
 
 const BasePanel = window.Stats.Panel;
 
+// biome-ignore lint/complexity/useArrowFunction: Stats constructs panels with new, so this wrapper must be constructible.
 window.Stats.Panel = function (name, foreground, background) {
   const panel = BasePanel(name, foreground, background);
 

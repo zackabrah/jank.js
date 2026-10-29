@@ -67,7 +67,6 @@ try {
   const runs = [];
 
   // Sequential runs prevent the benchmark competing with itself for CPU time.
-  /* oxlint-disable no-await-in-loop */
   for (let repetition = 0; repetition < repetitions; repetition++) {
     for (const state of states) {
       await page.goto(url);
@@ -92,8 +91,9 @@ try {
           totalFrames = 150,
           p95Rank = 0.95;
 
-        const { createDiagnostics, createPerformanceTray } =
-          await import("/index.js");
+        const { createDiagnostics, createPerformanceTray } = await import(
+          "/index.js"
+        );
 
         // The panel remembers its size per origin; every state starts from the default.
         localStorage.clear();
@@ -198,7 +198,7 @@ try {
         });
 
         /** Mean, p95 and max of one series. */
-        // oxlint-disable-next-line unicorn/consistent-function-scoping -- Playwright serializes this callback into the browser; helpers must live inside it.
+        // Playwright serializes this callback into the browser; helpers must live inside it.
         const summarize = (values) => {
           const sorted = values.toSorted((a, b) => a - b);
 
@@ -229,7 +229,6 @@ try {
     }
   }
 
-  /* oxlint-enable no-await-in-loop */
   const report = {
     measuredAt: new Date().toISOString(),
     browser: browser.version(),
@@ -245,7 +244,7 @@ try {
 
   await mkdir(dirname(destination), { recursive: true });
 
-  await writeFile(destination, JSON.stringify(report, null, 2) + "\n");
+  await writeFile(destination, `${JSON.stringify(report, null, 2)}\n`);
 
   for (const state of states) {
     const selected = runs.filter((run) => run.state === state);
