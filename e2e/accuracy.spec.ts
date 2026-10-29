@@ -130,11 +130,15 @@ function measure(run: SceneRun) {
 
   // jank.js's frame model: frame i spans its rAF timestamp to the next one. Scope time
   // that runs past the next timestamp belongs to the next frame, so a frame's scopes are
-  // whatever work ran inside its window, whichever callback did it.
-  const scopesVsWork = rows.map(
-    (row, i) =>
-      row.jankScopesMs - workBetween(row.at, rows[i + 1]?.at ?? run.stopAt),
-  );
+  // whatever work ran inside its window, whichever callback did it. The first frame is left
+  // out: its window can also hold the tail of the scene's last callback before the run, which
+  // jank.js rightly counts but the scene does not log.
+  const scopesVsWork = rows
+    .map(
+      (row, i) =>
+        row.jankScopesMs - workBetween(row.at, rows[i + 1]?.at ?? run.stopAt),
+    )
+    .slice(1);
 
   // The spike sort's CPU row over the whole recording, so a sort carried into the next frame
   // still counts once.
