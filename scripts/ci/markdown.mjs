@@ -9,7 +9,7 @@ const msDigits = 3;
 const listedTests = 20;
 
 /** Playwright's final outcome for a test, after retries. */
-const outcome = {
+export const outcome = {
   passed: "expected",
   flaky: "flaky",
   failed: "unexpected",
@@ -68,12 +68,13 @@ export function packageFiles(files, tarballs) {
 }
 
 /** Every test in a Playwright JSON report, with its browser and where it lives. */
-function testsIn(suites) {
+export function testsIn(suites) {
   return suites.flatMap((suite) => [
     ...(suite.specs ?? []).flatMap((spec) =>
       spec.tests.map((test) => ({
         browser: test.projectName,
         status: test.status,
+        file: spec.file,
         title: `${spec.file} › ${spec.title}`,
       })),
     ),

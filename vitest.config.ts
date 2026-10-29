@@ -15,6 +15,13 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     testTimeout: process.env["CI"] ? ciTestTimeoutMs : localTestTimeoutMs,
+    // json counts the tests for the README's chip (scripts/readme/update.mjs). Naming reporters
+    // replaces Vitest's defaults, so GitHub's annotations are named again for CI.
+    reporters: [
+      "default",
+      ["json", { outputFile: "artifacts/unit/results.json" }],
+      ...(process.env["GITHUB_ACTIONS"] ? ["github-actions"] : []),
+    ],
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],

@@ -17,8 +17,16 @@
   <img alt="~4.3 KB core" src="docs/readme/badge-core.svg" height="22">
   <img alt="~23 KB with the live panel" src="docs/readme/badge-panel.svg" height="22">
   <img alt="MIT" src="docs/readme/badge-mit.svg" height="22">
-  <img alt="v0.1.0" src="docs/readme/badge-version.svg" height="22">
+  <img alt="Current version" src="docs/readme/badge-version.svg" height="22">
   <img alt="A Junklab production" src="docs/readme/badge-junklab.svg" height="22">
+</p>
+
+<p>
+  <img alt="Unit tests passing" src="docs/readme/badge-unit.svg" height="22">
+  <img alt="Chromium tests passing" src="docs/readme/badge-chromium.svg" height="22">
+  <img alt="Firefox tests passing" src="docs/readme/badge-firefox.svg" height="22">
+  <img alt="WebKit tests passing" src="docs/readme/badge-webkit.svg" height="22">
+  <img alt="Unit test line coverage" src="docs/readme/badge-coverage.svg" height="22">
 </p>
 
 # jank.js
