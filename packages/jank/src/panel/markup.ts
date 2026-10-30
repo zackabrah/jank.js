@@ -47,7 +47,7 @@ export function panelMarkup(): string {
             </details>
             <details class="jank-section" data-section="gpu" open>
               <summary><h2>GPU <span>ASYNCHRONOUS</span></h2></summary>
-              <div><div data-list="gpu" class="jank-list"></div><p class="jank-note" data-value="gpu-note"></p>
+              <div><div data-list="gpu" class="jank-list"></div><p class="jank-note" data-value="gpu-note"></p><p class="jank-note" data-value="gpu-rows-note" hidden></p>
                 <details data-gpu-explanation hidden><summary>About GPU measurements</summary><p class="jank-note">Pass sums count overlapping work more than once. Busy time is the union of measured intervals. Elapsed span includes gaps between the first and last pass. All values are milliseconds on the GPU clock, separate from CPU time. Incomplete frames have no complete totals; their measured passes remain visible.</p></details></div>
             </details>
             <details class="jank-section" data-section="counters" open>

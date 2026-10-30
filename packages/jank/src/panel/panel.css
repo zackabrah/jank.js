@@ -361,3 +361,8 @@
     grid-template-columns: 1fr;
   }
 }
+
+.jank .jank-gpu-pass[data-observation="not-observed"],
+.jank .jank-gpu-pass[data-observation="unavailable"] {
+  color: var(--jl-muted);
+}

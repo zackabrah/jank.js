@@ -33,7 +33,7 @@ test("GPU intervals show distinct sums, busy union, span, repeated passes and co
   await expect(gpu).toContainText("8.00");
   await expect(gpu).toContainText("9.00");
   await expect(gpu).toContainText("Ocean FFT · compute · water · #1");
-  await expect(gpu).toContainText("Ocean FFT · compute · water · #3");
+  await expect(gpu).toContainText("Ocean FFT · compute · water · #2");
   await expect(page.locator('[data-value="gpu-note"]')).toContainText("stale");
   await expect(page.locator('[data-value="gpu-note"]')).toContainText("age 4 application frames");
   await page.evaluate((sample) => {

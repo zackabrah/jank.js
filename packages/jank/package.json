@@ -1,6 +1,6 @@
 {
   "name": "jank.js",
-  "version": "0.2.1-rewrite.3",
+  "version": "0.2.1-rewrite.4",
   "private": true,
   "type": "module",
   "description": "Local test preview: host-owned profiling, live panel, capture and validated recording files.",

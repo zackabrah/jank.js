@@ -2,7 +2,6 @@ import { summarizeFrames, summarizeScopes } from "../analysis/statistics.ts";
 import { drawFrameChart } from "../charts/frame-chart.ts";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import { element, milliseconds, rows, write } from "./dom.ts";
-import { renderGpu } from "./gpu-view.ts";
 import type { PanelMode } from "./panel.ts";
 
 export function renderLive(root: HTMLElement, snapshot: ProfilerSnapshot, mode: PanelMode): void {
@@ -62,7 +61,6 @@ export function renderLive(root: HTMLElement, snapshot: ProfilerSnapshot, mode: 
     "coverage",
     `${scopes.measuredFrames} complete frames · ${scopes.excludedFrames} excluded. Unattributed includes browser wait and idle time; channel timings may overlap.`,
   );
-  renderGpu(root, snapshot.gpu);
   renderCounters(root, snapshot);
   rows(
     element(root, '[data-list="events"]'),

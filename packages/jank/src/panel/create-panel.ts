@@ -9,6 +9,7 @@ import {
 } from "./capture-view.ts";
 import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
+import { createGpuView } from "./gpu-view.ts";
 import { renderLive, renderOverhead } from "./live-view.ts";
 import { renderLoading } from "./loading-view.ts";
 import { panelMarkup } from "./markup.ts";
@@ -41,6 +42,7 @@ export function createPanel(options: PanelOptions): Panel {
   root.setAttribute("aria-label", "jank.js performance");
   root.dataset.corner = options.corner ?? "top-right";
   root.innerHTML = panelMarkup();
+  const gpuView = createGpuView(root, options.gpuPassOrder);
   container.append(root);
   let disposed = false;
   let mode = rememberedMode(window, options.mode ?? "line");
@@ -76,7 +78,11 @@ export function createPanel(options: PanelOptions): Panel {
           return;
         }
       }
-      renderLive(root, frozen ?? current, mode);
+      const displayed = frozen ?? current;
+      renderLive(root, displayed, mode);
+      if (mode === "full") {
+        gpuView.render(displayed.gpu);
+      }
     });
     const costMs = current.overhead.refresh.averageMs;
     if (costMs > 0.25) {
@@ -176,6 +182,7 @@ export function createPanel(options: PanelOptions): Panel {
     },
     clear: () => {
       profiler.clear();
+      gpuView.clear();
       frozen = null;
     },
     export: () => {
@@ -245,6 +252,7 @@ export function createPanel(options: PanelOptions): Panel {
         tabs.dispose();
         root.removeEventListener("click", click);
         download.dispose();
+        gpuView.clear();
         root.remove();
       }
     },

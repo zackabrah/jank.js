@@ -16,6 +16,26 @@ state through refreshes, tab switches and panel-size changes for that mounted pa
 a section hides its presentation only; collection, recording and edited settings continue.
 The LIVE recording controls remain available even when every detail section is collapsed.
 
+GPU pass rows retain their first-seen order and metadata for the mounted panel. Set
+`gpuPassOrder: ["cloud-panorama", "cloud-shadows", "ocean-fft", "scene", "bloom"]`
+on `createPanel` to order known pass IDs explicitly; unlisted passes follow in first-seen order.
+Rows appear when first observed and stay present when absent from later samples. Missing rows
+are dimmed with a dash, an explanatory tooltip and screen-reader text; old timings are never
+presented as current or replaced with zero. Rejected timestamps retain their rejection reason.
+Pending/disabled/error states keep known rows but mark their timing unavailable.
+
+Repeated passes are identified by stable ID, type and occurrence within that ID/type, rather
+than the frame-wide invocation number, which shifts when earlier work is skipped. Displayed
+`#1`, `#2`, etc. are those per-pass occurrences; recordings retain their original invocation
+numbers. Hosts should give semantically distinct work distinct IDs: indistinguishable repeated
+invocations cannot be matched across frames if an earlier invocation of that same ID is skipped.
+Duration-only sources use label and occurrence because they supply no IDs.
+
+At most 256 pass rows are remembered. Once full, the panel reports additional current passes
+it cannot display and preserves established rows. CLEAR, changing measurement format or
+remounting resets the catalogue. Tab changes, freezing and collapsing sections do not.
+This is display state only: collection and exported measurements are unchanged.
+
 ```ts
 import { createPanel, createProfiler } from "jank.js";
 import "jank.js/styles.css";
@@ -116,3 +136,10 @@ content. CAPTURE adds reason counts and the shared GPU pool's remaining sample/p
 Saved cards show their own coverage. Progress uses current collection even while the live
 readout is frozen. Missing interval evidence remains explicitly unexplained; deliberately
 sampled-out frames are separate from incomplete measurements. See [GPU semantics](gpu-adapters.md).
+
+Stable GPU row verification: 219 unit tests, coverage thresholds, package-consumer checks and
+96 focused browser/visual cases passed across Chromium, Firefox and WebKit. Regressions exercise
+configured order, first-seen fallback, changing invocation numbers, missing/rejected samples,
+restoration, pending state, freezing, clearing, row height and DOM identity. The 256-row bound and
+measurement-format reset are covered separately. The required collection benchmark completed;
+it excludes panel layout and is not evidence of a UI performance improvement.

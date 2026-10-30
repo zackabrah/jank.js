@@ -10,6 +10,8 @@ export interface PanelOptions {
   readonly corner?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   readonly viewerUrl?: string;
   readonly gpu?: GpuSource;
+  /** Stable GPU pass-ID order; unlisted passes follow in first-seen order. */
+  readonly gpuPassOrder?: readonly string[];
   readonly visibility?: VisibilitySource;
   readonly temporal?: TemporalSource;
   readonly loading?: LoadingSource;
