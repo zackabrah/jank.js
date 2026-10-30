@@ -30,3 +30,16 @@ test("@visual panel retains LINE, MINI, FULL and capture layouts", async ({ page
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await expect(panel).toHaveScreenshot("panel-full-narrow.png", costs);
 });
+
+test("@visual LIVE summary stays pinned above scrolled details", async ({ page }) => {
+  await page.setViewportSize({ width: 960, height: 560 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate(() => window.panelFixture.advance(70));
+  await page.getByRole("region", { name: "Performance details" }).evaluate((region) => {
+    region.scrollTop = 100;
+  });
+  await expect(page.locator(".jank")).toHaveScreenshot("panel-full-scrolled.png", {
+    mask: [page.locator('[data-value="collection-cost"], [data-value="refresh-cost"]')],
+    maskColor: "#0a0a0a",
+  });
+});

@@ -35,23 +35,25 @@ export function panelMarkup(): string {
         <button type="button" class="jl-tab" data-tab="loading">LOADING</button>
         <button type="button" class="jl-tab" data-tab="capture">CAPTURE</button>
       </div>
-      <div class="jank-scroll">
-        <section data-tabpanel="live">
+      <div class="jank-views">
+        <section data-tabpanel="live" class="jank-live">
           <div class="jank-metrics">${metric("fps", "FPS")}${metric("average", "AVG MS")}${metric("p95", "P95 MS")}${metric("worst", "WORST MS")}${metric("frame", "AT FRAME")}${metric("missed", "MISSED")}</div>
           <div class="jank-chart"><canvas data-chart="full" role="img" aria-label="Recent frame durations"></canvas><div class="jank-chart-labels"><span data-value="range">–</span><span data-value="budget">–</span></div></div>
-          <h2>CPU SCOPES <span>MS / FRAME</span></h2><div data-list="scopes" class="jank-list"></div><p class="jank-note" data-value="coverage"></p>
-          <h2>GPU <span>ASYNCHRONOUS</span></h2><div data-list="gpu" class="jank-list"></div><p class="jank-note" data-value="gpu-note"></p>
-          <h2>COUNTERS</h2><div data-list="counters" class="jank-list jank-counters"></div>
-          <h2>EVENTS</h2><div data-list="events" class="jank-list"></div>
-          <div class="jank-actions">
-            <button type="button" class="jl-btn" data-action="freeze" aria-pressed="false">FREEZE</button>
-            <button type="button" class="jl-btn" data-action="record">REC</button>
-            <button type="button" class="jl-btn" data-action="clear">CLEAR</button>
-            <button type="button" class="jl-btn jl-primary" data-action="export">EXPORT JSON</button>
+          <div class="jank-scroll" role="region" aria-label="Performance details" tabindex="0">
+            <h2>CPU SCOPES <span>MS / FRAME</span></h2><div data-list="scopes" class="jank-list"></div><p class="jank-note" data-value="coverage"></p>
+            <h2>GPU <span>ASYNCHRONOUS</span></h2><div data-list="gpu" class="jank-list"></div><p class="jank-note" data-value="gpu-note"></p>
+            <h2>COUNTERS</h2><div data-list="counters" class="jank-list jank-counters"></div>
+            <h2>EVENTS</h2><div data-list="events" class="jank-list"></div>
+            <div class="jank-actions">
+              <button type="button" class="jl-btn" data-action="freeze" aria-pressed="false">FREEZE</button>
+              <button type="button" class="jl-btn" data-action="record">REC</button>
+              <button type="button" class="jl-btn" data-action="clear">CLEAR</button>
+              <button type="button" class="jl-btn jl-primary" data-action="export">EXPORT JSON</button>
+            </div>
           </div>
         </section>
-        <section data-tabpanel="loading"><h2>LOADING</h2><p class="jank-note" data-value="loading-state">No loading source connected.</p><div data-list="loading" class="jank-list"></div></section>
-        <section data-tabpanel="capture">
+        <section data-tabpanel="loading" class="jank-scroll"><h2>LOADING</h2><p class="jank-note" data-value="loading-state">No loading source connected.</p><div data-list="loading" class="jank-list"></div></section>
+        <section data-tabpanel="capture" class="jank-scroll">
           <h2>FRAME BUDGET</h2>
           <div class="jank-settings"><label>Target FPS <input class="jl-input" data-input="fps" type="number" min="1" step="1"></label><button type="button" class="jl-btn jl-small" data-action="budget">APPLY</button></div>
           <h2>AUTOMATIC CAPTURE <span data-value="capture-state">IDLE</span></h2>

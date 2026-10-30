@@ -200,9 +200,7 @@ function renderReadout(): void {
   profilerToggle.textContent = instrumentation ? "Stop profiler" : "Start profiler";
   panelToggle.disabled = instrumentation === null;
   element<HTMLButtonElement>("add-event").disabled = instrumentation === null;
-  element("profiler-state").textContent = instrumentation
-    ? "Profiler running"
-    : "Profiler stopped; scene still running";
+  element("profiler-state").textContent = instrumentation ? "Running" : "Stopped";
 }
 
 // Event delegation keeps teardown to one listener; each action still calls the public API directly.
@@ -218,7 +216,7 @@ function click(event: MouseEvent): void {
     },
     hitch: () => {
       pendingHitch = true;
-      status.textContent = "An 80 ms hitch is queued for the next frame.";
+      status.textContent = "80 ms hitch queued.";
     },
     "capture-hitch": () => {
       if (!instrumentation) {
@@ -233,18 +231,18 @@ function click(event: MouseEvent): void {
         cooldownMs: 5000,
       });
       pendingHitch = true;
-      status.textContent = "Armed: 50 ms threshold, 30 before / 10 after. Inspect the CAPTURE tab.";
+      status.textContent = "Capture armed; hitch queued.";
     },
     "add-event": () => {
       instrumentation?.profiler.addEvent(
         element<HTMLInputElement>("event-label").value.trim() || "Demo marker",
       );
-      status.textContent = "Marker added to recent history.";
+      status.textContent = "Marker added.";
     },
     loading: () => {
       loading.start(() => scene?.setCount(Number(objectCount.value)));
       loadingButton.disabled = true;
-      status.textContent = "Open LOADING to inspect the host task.";
+      status.textContent = "Loading example started.";
     },
     "clear-trace": () => trace.clear(),
     "panel-line": () => panel?.setMode("line"),
@@ -296,7 +294,7 @@ const unbindFile = bindRecordingFile(
   element("recording-summary"),
   element("import-error"),
 );
-const controls = element("scene-controls").closest("main");
+const controls = element("scene-controls").closest("section");
 controls?.addEventListener("click", click);
 controls?.addEventListener("change", change);
 pauseButton.textContent = paused ? "Resume motion" : "Pause motion";

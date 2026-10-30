@@ -19,17 +19,18 @@ cubes share geometry and two materials. This example is outside both shipped pac
 3. On **LIVE**, try REC, FREEZE, RESUME, STOP REC and EXPORT JSON. Freeze affects presentation,
    not collection. CLEAR clears the profiler's history and capture archive.
 4. Edit the event label and add a marker. Events appear on LIVE and in recordings.
-5. Open **Optional sources and recording files**. Exercise GPU states, run the loading example,
+5. Open **Sources & files**. Exercise GPU states, run the loading example,
    enable TRACE in CAPTURE, or deliberately fail and recover the counter provider.
 6. Validate an exported JSON file using the labelled file picker. The summary shows schema,
    frame, counter and GPU counts. Invalid input keeps the last successful summary; nothing uploads.
-7. Under **Panel and profiler lifecycle**, switch sizes, request scopes independently, detach
+7. Under **Panel controls**, switch sizes, request scopes independently, detach
    and reattach the panel, or stop and recreate the profiler. The scene keeps running. A new
    profiler starts with an empty archive; merely replacing the panel preserves it.
 
 The panel itself provides frame budget, threshold, before/after and cooldown controls, saved
-capture thumbnails, exports, scope/tracing status and refresh/collection overhead. At widths
-below 900px the example docks the panel below its controls to keep both reachable.
+capture thumbnails, exports, scope/tracing status and refresh/collection overhead. The scene
+fills the viewport, with compact controls at bottom-left and the profiler at top-right. On
+narrow screens the controls sit below the profiler; each scrolls independently over the scene.
 
 ## Real measurements and example data
 

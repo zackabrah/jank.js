@@ -9,21 +9,13 @@
   </head>
   <body>
     <main class="demo jl">
-      <header class="intro">
-        <p class="eyebrow">JANK.JS / BASIC DEMO</p>
-        <h1>A small scene.<br />Real measurements.</h1>
-        <p>A few cubes, one host-owned loop, and a profiler you can poke at.</p>
-      </header>
-      <div class="scene-wrap">
-        <canvas id="scene" role="img" aria-label="A grid of rotating cubes"></canvas>
-        <div class="scene-caption">
-          <span>THREE.JS · WEBGL</span>
-          <span><output id="host-frames" aria-live="off">0</output> HOST FRAMES</span>
-        </div>
-      </div>
-      <p id="demo-error" role="alert" hidden></p>
-      <section aria-labelledby="scene-controls">
-        <h2 id="scene-controls">01 / Change the workload</h2>
+      <canvas id="scene" role="img" aria-label="A grid of rotating cubes"></canvas>
+      <section class="demo-controls" aria-labelledby="scene-controls">
+        <header>
+          <h1 id="scene-controls">Jank demo</h1>
+          <span><output id="host-frames" aria-live="off">0</output> frames</span>
+        </header>
+        <p id="demo-error" role="alert" hidden></p>
         <div class="controls">
           <label>Objects
             <select id="objects" class="jl-select">
@@ -41,103 +33,72 @@
               <option value="6">6 ms</option>
             </select>
           </label>
+        </div>
+        <div class="controls">
           <button id="pause" type="button" class="jl-btn">Pause motion</button>
           <button id="hitch" type="button" class="jl-btn">Trigger 80 ms hitch</button>
         </div>
-        <p class="hint">
-          Animation and render submission are real CPU timings. CPU load and hitches deliberately
-          block this tab; render submission is not GPU time.
-        </p>
-      </section>
-      <section aria-labelledby="capture-controls">
-        <h2 id="capture-controls">02 / Record a problem</h2>
         <div class="controls">
           <button id="capture-hitch" type="button" class="jl-btn jl-primary">Capture next hitch</button>
-          <span><output id="archive-count">0</output> saved captures</span>
+          <span><output id="archive-count">0</output> captures</span>
         </div>
-        <p class="hint">
-          Or use REC → STOP REC in the panel. FREEZE holds the display while recording continues.
-          Export JSON saves the latest capture, or recent history if none exists.
-        </p>
         <div class="controls">
-          <label>Event label
+          <label class="marker">Event label
             <input id="event-label" class="jl-input" value="Demo marker" maxlength="240" />
           </label>
           <button id="add-event" type="button" class="jl-btn">Add marker</button>
         </div>
-        <p id="action-status" role="status">Ready. Try a hitch, then inspect the CAPTURE tab.</p>
-      </section>
-      <details id="optional">
-        <summary>Optional sources and recording files</summary>
-        <div class="controls">
-          <label>GPU example
-            <select id="gpu-example" class="jl-select">
-              <option value="disabled">Disabled</option>
-              <option value="synthetic">Synthetic pass timings</option>
-              <option value="pending">Pending</option>
-              <option value="unsupported">Unsupported</option>
-              <option value="error">Error</option>
-            </select>
+        <p id="action-status" role="status"></p>
+        <details>
+          <summary>Sources &amp; files</summary>
+          <div class="controls">
+            <label>GPU example
+              <select id="gpu-example" class="jl-select">
+                <option value="disabled">Disabled</option>
+                <option value="synthetic">SIMULATED pass timings</option>
+                <option value="pending">Pending</option>
+                <option value="unsupported">Unsupported</option>
+                <option value="error">Error</option>
+              </select>
+            </label>
+          </div>
+          <div class="controls">
+            <button id="loading" type="button" class="jl-btn">Run loading example</button>
+            <span id="loading-status">No run yet</span>
+          </div>
+          <div class="controls">
+            <button id="clear-trace" type="button" class="jl-btn">Clear trace entries</button>
+            <span><output id="trace-count" aria-live="off">0</output> entries</span>
+          </div>
+          <div class="controls">
+            <label><input id="counter-error" type="checkbox" /> Simulate counter error</label>
+          </div>
+          <label class="file-label">Validate a recording
+            <input id="recording-file" type="file" accept=".json,application/json" />
           </label>
-        </div>
-        <p class="hint">
-          GPU samples are <strong>SIMULATED</strong>, never measured from this renderer.
-          Their pass labels also identify them in exports. Real GPU adapters come later.
-        </p>
-        <div class="controls">
-          <button id="loading" type="button" class="jl-btn">Run loading example</button>
-          <span id="loading-status">No run yet</span>
-        </div>
-        <p class="hint">
-          The LOADING tab reads host-supplied timings for resetting the cubes and waiting for
-          200 ms. Elapsed wait is not CPU execution time.
-        </p>
-        <div class="controls">
-          <span><output id="trace-count" aria-live="off">0</output> retained trace entries</span>
-          <button id="clear-trace" type="button" class="jl-btn">Clear trace entries</button>
-        </div>
-        <p class="hint">
-          Enable TRACE in the CAPTURE tab to write scopes and markers into your browser’s
-          User Timing timeline. The demo retains at most 200 entries.
-        </p>
-        <div class="controls">
-          <label><input id="counter-error" type="checkbox" /> Make the renderer counter provider fail</label>
-        </div>
-        <label class="file-label">Validate a recording
-          <input id="recording-file" type="file" accept=".json,application/json" />
-        </label>
-        <p id="recording-summary" role="status">
-          Choose a jank recording exported above. Files stay in this browser.
-        </p>
-        <p id="import-error" role="alert" hidden></p>
-      </details>
-      <details>
-        <summary>Panel and profiler lifecycle</summary>
-        <fieldset class="controls">
-          <legend>Panel size</legend>
-          <button id="panel-line" type="button" class="jl-btn">Show LINE</button>
-          <button id="panel-mini" type="button" class="jl-btn">Show MINI</button>
-          <button id="panel-full" type="button" class="jl-btn">Show FULL</button>
-          <button id="panel-toggle" type="button" class="jl-btn">Detach panel</button>
-        </fieldset>
-        <div class="controls">
-          <label><input id="scope-demand" type="checkbox" /> Keep scopes enabled independently of the panel</label>
-        </div>
-        <div class="controls">
-          <button id="profiler-toggle" type="button" class="jl-btn">Stop profiler</button>
-          <span id="profiler-state">Profiler running</span>
-        </div>
-        <p class="hint">
-          Detaching the panel preserves recordings. Stopping the profiler clears its data;
-          starting creates a fresh instance. The scene’s loop keeps running through both.
-        </p>
-      </details>
-      <footer class="hint">
-        LINE / MINI / FULL, frame budget, freeze, clear and capture settings live in the panel.
-        No external models, textures, audio or services.
-      </footer>
+          <p id="recording-summary" role="status"></p>
+          <p id="import-error" role="alert" hidden></p>
+        </details>
+        <details>
+          <summary>Panel controls</summary>
+          <fieldset class="controls">
+            <legend>Panel size</legend>
+            <button id="panel-line" type="button" class="jl-btn">Show LINE</button>
+            <button id="panel-mini" type="button" class="jl-btn">Show MINI</button>
+            <button id="panel-full" type="button" class="jl-btn">Show FULL</button>
+          </fieldset>
+          <div class="controls">
+            <button id="panel-toggle" type="button" class="jl-btn">Detach panel</button>
+            <label><input id="scope-demand" type="checkbox" /> Keep scopes on</label>
+          </div>
+          <div class="controls">
+            <button id="profiler-toggle" type="button" class="jl-btn">Stop profiler</button>
+            <span id="profiler-state">Running</span>
+          </div>
+        </details>
+      </section>
+      <div id="panel-mount"></div>
     </main>
-    <div id="panel-mount"></div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

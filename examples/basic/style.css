@@ -7,129 +7,136 @@
 body {
   margin: 0;
 }
-.demo.jl {
-  --jl-ink: #080b0e;
-  width: min(860px, calc(100% - 420px));
-  margin: 0 auto 0 0;
-  padding: 40px;
-  font-size: 12px;
-}
-.demo .intro {
-  margin-bottom: 28px;
-}
-.demo .eyebrow {
-  color: #8ba6b6;
-  font-size: 10px;
-  letter-spacing: 0.18em;
-}
-.demo h1 {
-  font: 500 clamp(24px, 3vw, 38px) / 1.2 var(--jl-font);
-  letter-spacing: -0.05em;
-  margin: 16px 0;
-}
-.demo .intro > p:last-child {
-  color: var(--jl-muted);
-  max-width: 46ch;
-}
-.demo .scene-wrap {
-  position: relative;
-  border: 1px solid #253039;
-  background: #0b1015;
-}
-.demo canvas {
+#scene {
+  position: fixed;
+  inset: 0;
   display: block;
   width: 100%;
-  height: 300px;
+  height: 100dvh;
 }
-.demo .scene-caption {
+.demo-controls {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  width: 350px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100dvh - 40px);
+  padding: 12px;
+  border: 1px solid var(--jl-line-strong);
+  background: var(--jl-ink);
+  font: 11px / 1.5 var(--jl-font);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--jl-faint) transparent;
+}
+.demo-controls header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
-  border-top: 1px solid #253039;
-  color: #a3b3be;
-  font-size: 9px;
-  letter-spacing: 0.05em;
+  margin-bottom: 12px;
 }
-.demo section {
-  border-bottom: 1px solid #253039;
-  padding-block: 16px;
+.demo-controls h1 {
+  margin: 0;
+  font: 600 12px / 1.5 var(--jl-font);
 }
-.demo h2 {
-  font: 500 11px / 20px var(--jl-font);
-  letter-spacing: 0.08em;
-  margin: 0 0 12px;
+.demo-controls span,
+.demo-controls [role="status"] {
+  color: var(--jl-muted);
 }
-.demo .controls {
+.demo-controls .controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 16px;
-  margin: 12px 0;
+  gap: 8px;
+  margin: 8px 0;
 }
-.demo label {
+.demo-controls label {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
-.demo .jl-select,
-.demo .jl-input {
+.demo-controls .jl-select,
+.demo-controls .jl-input {
   width: auto;
   max-width: 100%;
 }
-.demo .hint,
-.demo [role="status"] {
-  color: var(--jl-muted);
-  font-size: 11px;
-  line-height: 1.7;
+.demo-controls .marker {
+  flex: 1;
+  min-width: 0;
 }
-.demo details {
-  padding: 16px 0;
-  border-bottom: 1px solid #253039;
+.demo-controls .marker input {
+  width: 100%;
 }
-.demo summary {
+.demo-controls p {
+  margin: 8px 0;
+}
+.demo-controls [role="status"]:empty {
+  display: none;
+}
+.demo-controls details {
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--jl-line-strong);
+}
+.demo-controls summary {
   cursor: pointer;
-  color: var(--jl-text);
-  font-size: 11px;
 }
-.demo fieldset {
+.demo-controls fieldset {
   border: 0;
   padding: 0;
   min-width: 0;
 }
-.demo legend {
-  font-size: 11px;
+.demo-controls legend {
+  margin-top: 8px;
   color: var(--jl-muted);
 }
-.demo .file-label {
+.demo-controls .file-label {
   display: flex;
   align-items: start;
-  margin-top: 20px;
 }
-.demo input[type="file"] {
+.demo-controls input[type="file"] {
   max-width: 100%;
   min-width: 0;
   font: inherit;
 }
-.demo [role="alert"] {
+.demo-controls [role="alert"] {
   color: #ffba9e;
   overflow-wrap: anywhere;
 }
-.demo footer {
-  padding-top: 20px;
-}
-@media (max-width: 900px) {
-  .demo.jl {
-    width: 100%;
-    padding: 24px;
+@media (max-width: 780px) {
+  .demo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100dvh;
+    padding: 12px;
   }
-  #panel-mount {
-    padding: 0 24px 24px;
-  }
-  #panel-mount .jank {
+  .demo-controls {
     position: relative;
     inset: auto;
+    order: 1;
+    flex-shrink: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 40%;
+  }
+  #panel-mount {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+  #panel-mount .jank {
+    position: absolute;
+    inset: 0 auto auto 0;
     max-width: 100%;
+    max-height: 100%;
+  }
+  #panel-mount .jank[data-mode="full"] {
+    height: 100%;
+  }
+  #panel-mount [data-view="full"] {
+    max-height: 100%;
   }
 }

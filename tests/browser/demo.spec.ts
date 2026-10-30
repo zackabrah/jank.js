@@ -5,9 +5,7 @@ import { parseRecording } from "../../packages/jank/src/index.ts";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/examples/basic/");
-  await expect(
-    page.getByRole("heading", { name: "A small scene. Real measurements." }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Jank demo" })).toBeVisible();
   await expect(page.locator("#host-frames")).not.toHaveText("0");
 });
 
@@ -38,12 +36,12 @@ test("the real host loop renders objects, exposes counters and keeps running whe
       .evaluate((canvas) => canvas instanceof HTMLCanvasElement && canvas.width > 0),
   ).toBe(true);
   await expect(page.locator("#demo-error")).toBeHidden();
-  await page.getByText("Optional sources and recording files", { exact: true }).click();
-  await page.getByLabel("Make the renderer counter provider fail").check();
+  await page.getByText("Sources & files", { exact: true }).click();
+  await page.getByLabel("Simulate counter error").check();
   await expect(page.locator('[data-list="counters"]')).toContainText(
     "Intentional demo counter failure",
   );
-  await page.getByLabel("Make the renderer counter provider fail").uncheck();
+  await page.getByLabel("Simulate counter error").uncheck();
   await expect(page.locator('[data-list="counters"]')).toContainText("64");
 });
 
@@ -76,7 +74,7 @@ test("panel removal preserves manual capture and profiler disposal preserves the
   page,
 }) => {
   await page.getByRole("button", { name: "REC", exact: true }).click();
-  await page.getByText("Panel and profiler lifecycle", { exact: true }).click();
+  await page.getByText("Panel controls", { exact: true }).click();
   await page.getByRole("button", { name: "Detach panel" }).click();
   await expect(page.locator(".jank")).toHaveCount(0);
   const before = Number(await page.locator("#host-frames").textContent());
@@ -99,7 +97,7 @@ test("panel removal preserves manual capture and profiler disposal preserves the
 test("borrowed GPU, loading and trace sources are explicit and recording validation preserves the last valid result", async ({
   page,
 }) => {
-  await page.getByText("Optional sources and recording files", { exact: true }).click();
+  await page.getByText("Sources & files", { exact: true }).click();
   await page.getByRole("combobox", { name: "GPU example", exact: true }).selectOption("synthetic");
   await expect(page.locator('[data-list="gpu"]')).toContainText("SIMULATED");
   await page.getByRole("button", { name: "Run loading example" }).click();
@@ -142,9 +140,21 @@ test("borrowed GPU, loading and trace sources are explicit and recording validat
 });
 
 test("controls stay accessible on desktop and narrow screens", async ({ page }) => {
-  await page.getByText("Optional sources and recording files", { exact: true }).click();
+  expect(await page.locator("#scene").boundingBox()).toEqual({
+    x: 0,
+    y: 0,
+    width: 1280,
+    height: 720,
+  });
+  await page.getByText("Sources & files", { exact: true }).click();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.locator("#scene").boundingBox()).toEqual({
+    x: 0,
+    y: 0,
+    width: 390,
+    height: 844,
+  });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

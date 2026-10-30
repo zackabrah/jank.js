@@ -58,6 +58,13 @@
 .jank b {
   font-weight: 600;
 }
+.jank .jank-header,
+.jank .jl-tabs,
+.jank .jank-metrics,
+.jank .jank-chart,
+.jank .jank-overhead {
+  flex-shrink: 0;
+}
 .jank .jank-header {
   display: flex;
   align-items: center;
@@ -92,10 +99,36 @@
   padding: 0 8px;
   border-block: 1px solid var(--jl-line);
 }
+.jank [data-view="full"] {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 42px);
+}
+.jank .jank-views,
+.jank .jank-live {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .jank .jank-scroll {
-  max-height: calc(100dvh - 152px);
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
+  scrollbar-color: var(--jl-faint) transparent;
+}
+.jank .jank-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.jank .jank-scroll::-webkit-scrollbar-thumb {
+  background: var(--jl-faint);
+}
+.jank .jank-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.jank .jank-scroll::-webkit-scrollbar-button {
+  display: none;
 }
 .jank .jank-metrics {
   display: grid;

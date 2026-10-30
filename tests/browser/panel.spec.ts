@@ -3,6 +3,35 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { parseRecording } from "../../packages/jank/src/index.ts";
 
+test("LIVE keeps its summary pinned while details scroll from CPU scopes", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 560 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate(() => window.panelFixture.advance(70));
+  const metrics = page.locator(".jank-metrics");
+  const chart = page.locator(".jank-chart");
+  const scopes = page.getByRole("heading", { name: "CPU SCOPES MS / FRAME" });
+  const metricBefore = await metrics.boundingBox();
+  const chartBefore = await chart.boundingBox();
+  const scopesBefore = await scopes.boundingBox();
+  await scopes.hover();
+  await page.mouse.wheel(0, 300);
+  await expect
+    .poll(async () => (await scopes.boundingBox())?.y ?? Infinity)
+    .toBeLessThan(scopesBefore?.y ?? 0);
+  expect(await metrics.boundingBox()).toEqual(metricBefore);
+  expect(await chart.boundingBox()).toEqual(chartBefore);
+  const scroll = page.getByRole("region", { name: "Performance details" });
+  await expect(scroll).toBeVisible();
+  expect((await scroll.boundingBox())?.y).toBeCloseTo(
+    (chartBefore?.y ?? 0) + (chartBefore?.height ?? 0),
+    0,
+  );
+  await scroll.focus();
+  await page.keyboard.press("Home");
+  await expect.poll(() => scroll.evaluate((node) => node.scrollTop)).toBe(0);
+  await expect(page.locator(".jank-overhead")).toBeInViewport();
+});
+
 test("built JavaScript and CSS mount without loading either package's source files", async ({
   page,
 }) => {

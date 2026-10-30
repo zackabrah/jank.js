@@ -3,7 +3,9 @@
 The rewritten panel mounts through the public package and uses the independent junkui theme
 and native tabs. It preserves the compact 360px LINE/FULL and 240px MINI layouts, neutral
 palette, square controls, frame graph and CPU/counter readouts. At small viewport sizes the
-panel stays within the viewport and FULL scrolls above its overhead footer.
+panel stays within the viewport. LIVE keeps its header, tabs, metrics and graph pinned;
+details scroll from CPU SCOPES above the overhead footer. The focusable details region supports
+keyboard scrolling and uses a thin, neutral scrollbar. LOADING and CAPTURE scroll independently.
 
 ```ts
 import { createPanel, createProfiler } from "jank.js";
@@ -67,7 +69,8 @@ Every visible mode/tab receives an axe check in Chromium, Firefox and WebKit. Th
 consumer checks CSS declarations, self-contained CSS, browser-free imports and importing jank
 after removing junkui from the isolated consumer's installed packages.
 
-Six panel screenshots per engine cover desktop LINE/MINI/FULL/CAPTURE and narrow LINE/FULL.
+Seven panel screenshots per engine cover desktop LINE/MINI/FULL/CAPTURE, narrow LINE/FULL,
+and a short viewport with LIVE details scrolled beneath the fixed summary.
 They were visually reviewed on macOS 26 arm64. Only the two variable overhead values are
 masked; layout and labels remain visible. These are regression baselines for the new
 implementation, not a claim of completed reference parity or remote CI execution.
