@@ -4,8 +4,9 @@ This branch contains the development stack, architecture, contracts, and a worki
 profiler. `createProfiler` connects host frames, scopes, counters, events, GPU observations,
 manual/automatic capture and a bounded archive. `parseRecording`, `serializeRecording` and
 `RecordingError` provide validated version 3 files. `createPanel` provides LINE/MINI/FULL views,
-live statistics, freeze, capture controls and local exports. The viewer, loading runtime and
-renderer adapters remain pending. `junkui` provides scoped native-control styles, neutral
+live statistics, freeze, capture controls and local exports. Optional WebGL2 and Three r186
+WebGPU adapters provide correlated GPU timing. The viewer and loading runtime remain pending.
+`junkui` provides scoped native-control styles, neutral
 theme tokens and accessible tabs. Both packages remain private during the rewrite.
 
 - [Architecture and ownership](docs/architecture.md)
@@ -14,6 +15,7 @@ theme tokens and accessible tabs. Both packages remain private during the rewrit
 - [Implemented collection behavior and verification](docs/collection.md)
 - [Recording format and validation](docs/recordings.md)
 - [Live panel, integration and verification](docs/panel.md)
+- [GPU adapters, ownership and measurement limits](docs/gpu-adapters.md)
 - [Basic interactive demo and feature walkthrough](examples/basic/README.md)
 - [Independent UI package and gallery](packages/junkui/README.md)
 - [jank.js public type contracts](packages/jank/src/index.ts)
@@ -68,8 +70,9 @@ its host buttons advance simulated frames without adding a panel-owned animation
 Run `pnpm dev:demo` for the [basic Three.js scene](examples/basic/README.md) at
 `http://127.0.0.1:4187/examples/basic/`. It uses real frame/CPU timings and renderer counters,
 with controls for workload, deliberate hitches, recording, markers, errors and lifecycle.
-Optional GPU examples are explicitly synthetic; the loading and trace sources belong to the host.
+The WebGL2 timer is connected by default; unsupported devices report unavailable timing.
+Selectable simulated GPU states remain labelled examples. Loading and trace sources belong to the host.
 
 The pinned development stack is retained. No old runtime code, UI CSS, screenshots or demo
-assets were copied. Complete feature/visual parity, optional adapter exports and release gates arrive with
+assets were copied. Complete feature/visual parity and release gates arrive with
 their implementation slices.

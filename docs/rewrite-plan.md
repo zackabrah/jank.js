@@ -52,9 +52,11 @@ available until the complete parity matrix and release checks pass.
    New visual baselines do not constitute final reference-feature acceptance.
 6. **Analysis and offline viewer.** Add pure inspection/lanes, shared chart geometry, selection,
    navigation, import/export, and safe handoff. Verify a single HTML artifact works offline.
-7. **Loading and optional integrations.** Implement loading handles and adapter-specific resource
-   ownership; add visibility/temporal controls and the bounded overlay. Keep each renderer
-   optional and preserve limitations in the readout.
+7. **Loading and optional integrations, partly implemented.** WebGL2 and Three r186 WebGPU
+   timing were brought forward for the standalone preview. Their optional exports, delayed
+   frame association and resource ownership are implemented with TDD; see [GPU evidence](gpu-adapters.md).
+   Loading handles, renderer counter helpers, visibility/temporal controls and the bounded
+   overlay remain pending. Keep each renderer optional and preserve limitations in the readout.
 8. **Acceptance and packaging.** Complete all retained-feature tests, independent package builds,
    exports, docs, visual comparisons and overhead benchmarks. Review package size and dependency
    boundaries. Only then consider making the rewrite the primary branch or a release candidate.

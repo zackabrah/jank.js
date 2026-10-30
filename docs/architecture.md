@@ -4,7 +4,8 @@ Status: architecture and contracts established; collection, capture, validated f
 profiler composition are implemented. See [collection behavior](collection.md) and
 [recording behavior](recordings.md) for verified semantics. The independent junkui theme,
 native controls and tabs are also implemented. Frame/scope statistics and the core live panel
-are implemented; offline analysis/viewer, loading runtime and adapters remain pending.
+are implemented, as are optional [WebGL2 and Three r186 WebGPU timers](gpu-adapters.md).
+Offline analysis/viewer, loading runtime and the remaining integrations are pending.
 
 ## Decisions already made
 
@@ -188,7 +189,8 @@ file import   → parse unknown input → validate schema   → replace viewer s
 
 CPU scopes may overlap; total attributed time uses their interval union. Per-system timings
 remain inclusive. GPU results arrive asynchronously and need an explicit diagnostics frame
-ID. A Three render-pass sum and a WebGL elapsed span carry different measurement labels.
+ID. Both current adapters report pass sums, excluding gaps between measured passes. The
+recording contract distinguishes these from a future adapter measuring an elapsed span.
 Loading measurements include waiting and overlap; they are not GPU or CPU execution time.
 Tool overhead covers synchronous collection and refresh, excluding deferred layout/paint/GPU.
 

@@ -88,3 +88,22 @@ channel.dispose();
 profiler.dispose();
 viewer.dispose();
 loading.dispose();
+
+// Optional adapters accept actual renderer/context types without importing a renderer at runtime.
+import type { WebGPURenderer } from "three/webgpu";
+import { createThreeWebGpuSource } from "../../packages/jank/src/adapters/three-webgpu.ts";
+import { createWebGl2GpuSource } from "../../packages/jank/src/adapters/webgl2.ts";
+
+declare const webglContext: WebGL2RenderingContext;
+declare const webgpuRenderer: WebGPURenderer;
+const glTimer = createWebGl2GpuSource(webglContext, { onSample: profiler.observeGpu });
+const gpuTimer = createThreeWebGpuSource(webgpuRenderer, {
+  revision: "186",
+  onSample: profiler.observeGpu,
+});
+glTimer.beginPass("render");
+glTimer.endPass();
+glTimer.captureFrame(null);
+gpuTimer.captureFrame(null);
+glTimer.dispose();
+gpuTimer.dispose();

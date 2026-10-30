@@ -3,6 +3,11 @@ import * as THREE from "three";
 /** The scene owns its renderer/resources. Profiling and scheduling belong to the host. */
 export function createScene(canvas: HTMLCanvasElement) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const context = renderer.getContext();
+  if (!("beginQuery" in context)) {
+    renderer.dispose();
+    throw new Error("The demo requires WebGL2");
+  }
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b1015);
@@ -53,6 +58,7 @@ export function createScene(canvas: HTMLCanvasElement) {
   resize.observe(canvas);
   setCount(36);
   return {
+    context,
     setCount,
     update: (deltaSeconds: number) => {
       elapsedSeconds += deltaSeconds;

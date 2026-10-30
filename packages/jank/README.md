@@ -1,7 +1,7 @@
 # jank.js test preview
 
-Version **0.2.1-rewrite.1** is a local test build of the readability rewrite. It includes the
-profiler, live panel, recording capture/export, bundled UI styles and TypeScript declarations.
+Version **0.2.1-rewrite.2** is a local test build of the readability rewrite. It includes the
+profiler, live panel, recording capture/export, optional GPU timers, bundled UI styles and TypeScript declarations.
 It has zero runtime dependencies. The package contains no demo scene, Three.js, private assets
 or development tooling. It is ESM and targets modern browsers.
 
@@ -10,7 +10,7 @@ or development tooling. It is ESM and targets modern browsers.
 From the application where you want to test it:
 
 ```sh
-pnpm add /path/to/jank.js-0.2.1-rewrite.1.tgz
+pnpm add /path/to/jank.js-0.2.1-rewrite.2.tgz
 ```
 
 Use the actual downloaded archive path. npm and other package managers can also install this
@@ -81,15 +81,71 @@ produces validated JSON; `parseRecording(json)` returns an explicit success/erro
 Recent history retains 600 frames, manual captures hold up to 6,000 frames, and the archive
 retains ten completed captures.
 
+## Optional GPU timers
+
+Import only the adapter your renderer uses. For WebGL2, wrap sequential render passes in
+timer queries and submit their profiler frame ID after rendering:
+
+```js
+import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
+
+const gpu = createWebGl2GpuSource(gl, { onSample: profiler.observeGpu });
+const panel = createPanel({ container: document.body, profiler, gpu, mode: "full" });
+
+function onFrame(timestampMs) {
+  const frameId = profiler.beginFrame(timestampMs);
+  gpu.beginPass("scene");
+  renderer.render(scene, camera);
+  gpu.endPass();
+  gpu.captureFrame(frameId > 0 ? frameId : null);
+  profiler.observeGpu(gpu.read());
+  panel.refresh(timestampMs);
+}
+```
+
+`gl` is your renderer's WebGL2 context. The `EXT_disjoint_timer_query_webgl2` extension must
+be available; otherwise the panel reports unsupported timing. Passes cannot overlap or nest.
+The adapter owns its queries and polls results without waiting for the GPU.
+
+For **Three.js r186 WebGPURenderer**, use its render timestamp pool instead:
+
+```js
+import { REVISION } from "three";
+import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
+
+await renderer.init();
+const gpu = createThreeWebGpuSource(renderer, {
+  revision: REVISION,
+  onSample: profiler.observeGpu,
+});
+```
+
+Use the same frame-loop integration, omitting `beginPass` and `endPass`. Call `captureFrame`
+after each renderer frame. The renderer must use its WebGPU backend with `timestamp-query`
+support. Other Three revisions are rejected; the adapter relies on r186's timestamp/frame
+association. Let this adapter exclusively call `resolveTimestampsAsync("render")` for that
+renderer. Three remains a dependency of your application, not of jank.
+
+Both adapters report a **sum of measured passes**, excluding gaps between passes. Results
+arrive later and remain linked to their original frame. Missing readings are never fabricated
+as zero. `onSample` forwards every completed sample to recordings; the per-frame `read` keeps
+status and sample age current. A capture stopped before readback completes can lack its last
+GPU samples. WebGL2 retains up to 64 pending frames and 32 passes per frame; the WebGPU adapter
+retains up to 600 frame associations. Omitted WebGL passes make the frame total unavailable.
+
+Dispose in order: `panel.dispose()`, `gpu.dispose()`, `profiler.dispose()`. Your renderer remains
+usable. Recreate the adapter when replacing the profiler. WebGL context restoration is handled
+on subsequent host calls; a lost WebGPU device requires a new renderer and adapter.
+
 ## Preview limits
 
 - The API and recording schema may still change. This preview writes schema version 3 and
   does not import older recording formats.
 - The offline viewer and panel-to-viewer handoff are not implemented yet.
-- Loading runtime, renderer timing adapters, visibility/temporal controls and debug bounds
+- Loading runtime, visibility/temporal controls and debug bounds
   overlay are not implemented yet. Their draft types are not working runtime factories.
-- Host-provided loading/GPU sources and a trace sink can be connected. GPU timings remain
-  unavailable unless your host supplies actual measurements; no simulated samples ship here.
+- Host-provided loading/GPU sources and a trace sink can be connected. GPU timing requires a
+  connected adapter or actual host measurements; no simulated samples ship here.
 - “Unattributed” is frame time outside recorded scope intervals, including browser wait and
   idle time. It is not a measurement of unexplained CPU work.
 - Overhead readouts measure synchronous collection and refresh; they exclude deferred paint

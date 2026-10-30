@@ -40,10 +40,15 @@ scope; those inclusive numbers must not be added together. `render submit` measu
 call to Three.js, not GPU execution. Counters come from the active scene and `renderer.info`.
 Actual results vary by browser, hardware, visibility and other workloads. No fixed FPS is promised.
 
-GPU samples are **synthetic**, disabled by default. Their pass labels and recording application
-metadata explicitly identify them. The example delays correlation by two host frames to show
-the existing asynchronous GPU readout; it performs no GPU timer queries. Pending, unsupported
-and error states are selectable without pretending that missing data is zero.
+**GPU timing** defaults to the real WebGL2 timer around scene rendering. Results arrive
+asynchronously and are correlated with their original profiler frame. Browsers without the
+timer extension report unsupported timing. Stopping the profiler releases its queries while
+the scene continues; restarting creates a new adapter for the new profiler.
+
+The same selector offers explicitly **SIMULATED** pass labels and pending, unsupported and
+error examples. Simulated measurements are opt-in and retain their labels in exported files.
+They delay correlation by two host frames. Missing real timings are never replaced with these
+examples or invented zeros. See [GPU measurement limits](../../docs/gpu-adapters.md).
 
 Loading is a small **host-provided source**, not the pending loading-profiler implementation.
 It measures a synchronous cube reset and an elapsed wait of at least 200ms. There is no asset
@@ -53,13 +58,14 @@ The host-provided trace sink converts profiler-relative times to navigation-rela
 Timing entries. It keeps at most 200 entries and only clears its own names. The dedicated
 clear button and profiler restart remove them; unrelated browser/host entries remain intact.
 
-The offline viewer, renderer timing adapters and visibility/temporal integrations remain
+The offline viewer and visibility/temporal integrations remain
 pending and are not represented by fake controls here.
 
 ## Read the integration
 
 - `main.ts`: creates the profiler/channels/panel, owns the single loop, and wires native controls.
 - `scene.ts`: owns the Three.js scene, resize observer and GPU resource cleanup. No profiler imports.
+- `gpu-source.ts`: selects the real timer or labelled examples and owns adapter replacement/disposal.
 - `example-sources.ts`: explicit GPU sample generator, host loading source and bounded trace sink.
 - `recording-file.ts`: file reading, validation and stale-result protection.
 
@@ -72,11 +78,12 @@ listeners and releases the scene's renderer, geometry, materials and observer.
 
 ## Verification
 
-The initial browser test failed before the demo existed. Five integration scenarios run in
+The initial browser test failed before the demo existed. Six integration scenarios run in
 Chromium, Firefox and WebKit: actual scene/counter updates, deliberate-hitch capture and
 validated download, panel/profiler lifecycle, optional sources and file validation, and axe
 checks on desktop and narrow viewports. These exercise real browser rendering, with no mocked
-profiler or fabricated CPU/frame results. Core coverage and package-consumer checks remain
+profiler or fabricated CPU/frame results. The sixth covers the default real timer and profiler
+restart. Core coverage and package-consumer checks remain
 separate from the demo's browser tests.
 
 The real renderer counter labels exposed a panel layout bug: short numeric values could wrap

@@ -1,6 +1,6 @@
 {
   "name": "jank.js",
-  "version": "0.2.1-rewrite.1",
+  "version": "0.2.1-rewrite.2",
   "private": true,
   "type": "module",
   "description": "Local test preview: host-owned profiling, live panel, capture and validated recording files.",
@@ -16,6 +16,14 @@
     "./styles.css": {
       "types": "./dist/styles.d.ts",
       "default": "./dist/styles.css"
+    },
+    "./adapters/webgl2": {
+      "types": "./dist/adapters/webgl2.d.ts",
+      "import": "./dist/adapters/webgl2.js"
+    },
+    "./adapters/three-webgpu": {
+      "types": "./dist/adapters/three-webgpu.d.ts",
+      "import": "./dist/adapters/three-webgpu.js"
     }
   },
   "files": [

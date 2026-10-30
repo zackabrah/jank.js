@@ -9,6 +9,21 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator("#host-frames")).not.toHaveText("0");
 });
 
+test("the default GPU source uses the renderer timer and survives profiler restart", async ({
+  page,
+}) => {
+  await page.getByText("Sources & files", { exact: true }).click();
+  const source = page.getByRole("combobox", { name: "GPU timing", exact: true });
+  await expect(source).toHaveValue("webgl2");
+  await expect(page.locator('[data-list="gpu"]')).not.toContainText("SIMULATED");
+  await page.getByText("Panel controls", { exact: true }).click();
+  await page.getByRole("button", { name: "Stop profiler" }).click();
+  await page.getByRole("button", { name: "Start profiler" }).click();
+  await expect(source).toHaveValue("webgl2");
+  await expect(page.locator('[data-value="gpu-note"]')).not.toHaveText("disabled");
+  await expect(page.locator("#demo-error")).toBeHidden();
+});
+
 test("the real host loop renders objects, exposes counters and keeps running when motion pauses", async ({
   page,
 }) => {
@@ -98,7 +113,7 @@ test("borrowed GPU, loading and trace sources are explicit and recording validat
   page,
 }) => {
   await page.getByText("Sources & files", { exact: true }).click();
-  await page.getByRole("combobox", { name: "GPU example", exact: true }).selectOption("synthetic");
+  await page.getByRole("combobox", { name: "GPU timing", exact: true }).selectOption("synthetic");
   await expect(page.locator('[data-list="gpu"]')).toContainText("SIMULATED");
   await page.getByRole("button", { name: "Run loading example" }).click();
   await page.getByRole("tab", { name: "LOADING", exact: true }).click();

@@ -4,12 +4,8 @@ import {
   type Panel,
   type PanelMode,
 } from "../../packages/jank/src/index.ts";
-import {
-  createGpuExample,
-  createLoadingExample,
-  createTraceExample,
-  type GpuExample,
-} from "./example-sources.ts";
+import { createLoadingExample, createTraceExample } from "./example-sources.ts";
+import { createDemoGpu, type DemoGpuMode } from "./gpu-source.ts";
 import { bindRecordingFile } from "./recording-file.ts";
 import { createScene } from "./scene.ts";
 
@@ -33,7 +29,6 @@ const profilerToggle = element<HTMLButtonElement>("profiler-toggle");
 const loadingButton = element<HTMLButtonElement>("loading");
 const pauseButton = element<HTMLButtonElement>("pause");
 const status = element("action-status");
-const gpu = createGpuExample();
 const loading = createLoadingExample();
 let traceOriginMs = 0;
 const trace = createTraceExample(() => traceOriginMs);
@@ -63,11 +58,14 @@ function startScene() {
 }
 
 const scene = startScene();
+const gpu = createDemoGpu(scene?.context ?? null, (state) =>
+  instrumentation?.profiler.observeGpu(state),
+);
 
 function startProfiler() {
   let firstClockRead = true;
   const profiler = createProfiler({
-    application: { name: "jank.js basic demo (GPU examples are SIMULATED)" },
+    application: { name: "jank.js basic demo" },
     now: () => {
       const nowMs = performance.now();
       if (firstClockRead) {
@@ -130,6 +128,7 @@ function stopProfiler(): void {
   detachPanel();
   releaseScopes?.();
   releaseScopes = null;
+  gpu.dispose();
   instrumentation?.profiler.dispose();
   instrumentation = null;
   trace.clear();
@@ -169,7 +168,9 @@ function frame(atMs: number): void {
   }
   const renderStartMs = performance.now();
   const renderToken = current?.render.begin();
+  gpu.beginPass();
   scene?.render();
+  gpu.endPass();
   if (current && renderToken !== undefined) {
     current.render.end(renderToken);
     current.profiler.endFrame({
@@ -280,7 +281,7 @@ function change(event: Event): void {
   if (target === objectCount) {
     scene?.setCount(Number(objectCount.value));
   } else if (target === gpuControl) {
-    gpu.select(gpuControl.value as GpuExample);
+    gpu.select(gpuControl.value as DemoGpuMode);
   } else if (target === scopeDemand) {
     releaseScopes?.();
     releaseScopes = scopeDemand.checked

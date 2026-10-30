@@ -43,6 +43,18 @@ test("built profiler and both declaration packages work without workspace source
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
 import { createPanel, createProfiler } from "jank.js";
+import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
+import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
+declare const gl: WebGL2RenderingContext;
+declare const renderer: ThreeTimestampRenderer;
+const webgl = createWebGl2GpuSource(gl);
+const webgpu = createThreeWebGpuSource(renderer, { revision: "186" });
+webgl.beginPass("render");
+webgl.endPass();
+webgl.captureFrame(null);
+webgl.dispose();
+webgpu.captureFrame(null);
+webgpu.dispose();
 import "jank.js/styles.css";
 import { createTabs, type CreateTabs } from "junkui";
 import "junkui/styles.css";
@@ -82,6 +94,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createPanel, createProfiler, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
+import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
+import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
+assert.equal(typeof createWebGl2GpuSource, "function");
+assert.equal(typeof createThreeWebGpuSource, "function");
 assert.equal(typeof createTabs, "function");
 assert.equal(typeof createPanel, "function");
 const css = readFileSync(new URL(import.meta.resolve("junkui/styles.css")), "utf8");
@@ -124,7 +140,15 @@ profiler.dispose();
       [
         "--input-type=module",
         "-e",
-        'import { createPanel } from "jank.js"; if (typeof createPanel !== "function") process.exit(1);',
+        `import assert from "node:assert/strict";
+import { createPanel } from "jank.js";
+import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
+import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
+for (const factory of [createPanel, createWebGl2GpuSource, createThreeWebGpuSource]) {
+  assert.equal(typeof factory, "function");
+}
+assert.throws(() => import.meta.resolve("junkui"));
+assert.throws(() => import.meta.resolve("three"));`,
       ],
       { cwd: directory, encoding: "utf8" },
     );
