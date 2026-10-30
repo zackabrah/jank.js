@@ -39,6 +39,13 @@ and the [Firefox timer-coarsening issue](https://bugzilla.mozilla.org/show_bug.c
 
 ## Test-driven verification
 
+The shared panel statistics now live in `analysis/statistics.ts`. FPS counts endings within
+a fully observed second, with no invented rate across gaps. Percentiles use the reference's
+floor rank. Budget classification permits two estimated timer ticks; an interval-step estimate
+is not a calibrated timer resolution. Scope averages include only complete frames, union
+overlapping intervals within each channel, and compute unattributed time from the overall
+union. That remainder includes waiting, scheduling and idle time, not just uninstrumented CPU.
+
 Tests preceded the collector implementation. Subsequent red/green cycles covered channel
 identity and label limits, stale clocks, Firefox's rounded scope clock, and pre-creation frame
 boundaries. Refactoring keeps clock validation in the collector, interval retention in the
