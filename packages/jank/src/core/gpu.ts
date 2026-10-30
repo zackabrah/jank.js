@@ -74,6 +74,20 @@ export interface GpuIntervalSample {
 
 export type GpuSample = GpuDurationSample | GpuIntervalSample;
 
+export interface GpuFrameResolution {
+  readonly status: "settled" | "timeout" | "cancelled" | "unavailable";
+  readonly samples: readonly GpuIntervalSample[];
+  readonly pendingFrameIds: readonly number[];
+}
+
+export interface GpuFrameResolver {
+  /** Resolves only the requested application frames; never waits in the host's frame path. */
+  resolveFrames(
+    frameIds: readonly number[],
+    options: { readonly timeoutMs: number },
+  ): Promise<GpuFrameResolution>;
+}
+
 export type GpuState =
   | { readonly status: "unsupported"; readonly reason: string }
   | { readonly status: "disabled" }
@@ -88,6 +102,9 @@ export type GpuState =
       readonly pendingFrames?: number;
     };
 
+export function copyGpuSample(sample: GpuIntervalSample): GpuIntervalSample;
+export function copyGpuSample(sample: GpuDurationSample): GpuDurationSample;
+export function copyGpuSample(sample: GpuSample): GpuSample;
 export function copyGpuSample(sample: GpuSample): GpuSample {
   if (sample.measurement === "intervals") {
     return {

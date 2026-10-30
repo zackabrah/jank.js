@@ -189,8 +189,8 @@ file import   → parse unknown input → validate schema   → replace viewer s
 
 CPU scopes may overlap; total attributed time uses their interval union. Per-system timings
 remain inclusive. GPU results arrive asynchronously and need an explicit diagnostics frame
-ID. Both current adapters report pass sums, excluding gaps between measured passes. The
-recording contract distinguishes these from a future adapter measuring an elapsed span.
+ID. WebGL2 reports pass sums. The Three WebGPU adapter retains compute/render intervals and
+separately derives sums, interval-union busy time and elapsed span; partial frames have no totals.
 Loading measurements include waiting and overlap; they are not GPU or CPU execution time.
 Tool overhead covers synchronous collection and refresh, excluding deferred layout/paint/GPU.
 

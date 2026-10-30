@@ -3,6 +3,28 @@ import { gpuIntervalFixture } from "../../../../tests/fixtures/gpu-sample.ts";
 import { recordingFixture } from "../../../../tests/fixtures/recording.ts";
 import { ObservationHistory } from "./observations.ts";
 
+it("keeps the latest interval sequence across pending and error states", () => {
+  const history = new ObservationHistory();
+  const sample = gpuIntervalFixture();
+  history.observeGpu(
+    {
+      status: "ready",
+      currentRendererFrameId: 8,
+      droppedSamples: 0,
+      sample: { ...sample, sequence: 3 },
+    },
+    120,
+    () => true,
+  );
+  history.observeGpu({ status: "error", message: "Read failed" }, 120, () => true);
+  history.observeGpu(
+    { status: "ready", currentRendererFrameId: 8, droppedSamples: 0, sample },
+    120,
+    () => true,
+  );
+  expect(history.snapshot().gpu).toEqual({ status: "error", message: "Read failed" });
+});
+
 it("retains out-of-order GPU frames once without moving the live sample backwards", () => {
   const history = new ObservationHistory();
   const sample = gpuIntervalFixture();

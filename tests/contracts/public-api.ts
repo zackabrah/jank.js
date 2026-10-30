@@ -99,11 +99,14 @@ declare const webgpuRenderer: WebGPURenderer;
 const glTimer = createWebGl2GpuSource(webglContext, { onSample: profiler.observeGpu });
 const gpuTimer = createThreeWebGpuSource(webgpuRenderer, {
   revision: "186",
+  enabled: true,
   onSample: profiler.observeGpu,
 });
 glTimer.beginPass("render");
 glTimer.endPass();
 glTimer.captureFrame(null);
-gpuTimer.captureFrame(null);
+gpuTimer.beginFrame(null);
+gpuTimer.withPass({ id: "compute", label: "Compute", category: "simulation" }, () => {});
+gpuTimer.endFrame();
 glTimer.dispose();
 gpuTimer.dispose();

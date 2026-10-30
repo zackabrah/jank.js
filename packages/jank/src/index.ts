@@ -12,6 +12,8 @@ export type {
 } from "./core/frames.ts";
 export type {
   GpuDurationSample,
+  GpuFrameResolution,
+  GpuFrameResolver,
   GpuIncompleteReason,
   GpuIntervalPass,
   GpuIntervalSample,

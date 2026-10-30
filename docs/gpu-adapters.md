@@ -5,13 +5,11 @@ The package exports `createWebGl2GpuSource` from `jank.js/adapters/webgl2` and
 starts a loop. The root profiler entry does not import either adapter. See the
 [package integration examples](../packages/jank/README.md#optional-gpu-timers).
 
-The host owns the renderer and the adapter. Supply `onSample: profiler.observeGpu`, call
-`captureFrame(frameId)` after rendering, then call `profiler.observeGpu(gpu.read())` each host
-frame. The callback preserves every completed result when several resolve at once. Reading
-each frame updates the displayed status and age even when no new sample arrives. Pass `null`
-when there is no profiler frame; an unknown association stays unknown. Recreate the adapter
-when replacing the profiler. Clearing the same profiler is safe because its frame IDs do not
-repeat. An open panel is not required for recording GPU samples.
+The host owns the renderer and adapter. Supply `onSample: profiler.observeGpu` to retain every
+completed result, including out-of-order completions. Also call `profiler.observeGpu(gpu.read())`
+each host frame to update status and age. Use `null` for an unknown profiler frame association.
+Replace the adapter when replacing the profiler; IDs from the same profiler never repeat.
+An open panel is not required for recording.
 
 ## WebGL2 ownership and limits
 
@@ -32,67 +30,117 @@ At most 32 passes are measured per frame and 64 frames await readback. Excess pa
 evicts the oldest pending frame, deletes its queries and increments `droppedSamples`. Invalid
 results become an error; finite zero is a valid measurement.
 
-## Three r186 WebGPU ownership and limits
+## Three r186 WebGPU
 
-Await `renderer.init()` before creating this adapter and pass `revision: THREE.REVISION`.
-The adapter validates revision 186, WebGPU backend shape and `timestamp-query` support. A
-WebGL fallback reports unsupported timing. Three is a host dependency only. The adapter uses
-the initialized [Three renderer](https://threejs.org/docs/pages/Renderer.html) and the pinned
-r186 timestamp pool's frame IDs, not a guessed correspondence between CPU and GPU frames.
+Verified against **Three.js 0.186.1**. Await `renderer.init()` and initialize compute nodes and
+render pipelines before the normal frame loop. Pass `revision: THREE.REVISION`; other revisions
+are rejected. A WebGL fallback or absent `timestamp-query` feature reports unsupported timing.
+Three is a host dependency; Jank does not import or bundle it.
 
-Give this adapter exclusive ownership of render timestamp resolution for that renderer; do
-not also call `resolveTimestampsAsync("render")` from another integration. It permits only one
-readback in flight. The r186 pool returns the sum for the **last frame in its resolved frame
-list**; earlier frames in a batch do not have separately returned durations. The adapter counts
-their lost associations as dropped instead of assigning the aggregate to the current frame.
-Its label makes clear that Three supplies an aggregate, not individual named passes.
+```js
+import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
+import { REVISION } from "three";
 
-Call `captureFrame` after each renderer frame, passing the associated profiler frame ID. More
-than one renderer frame may belong to one profiler frame. At most 600 associations are retained;
-an evicted association is reported as `null`. Cached timestamp results are ignored. Toggles
-invalidate previous async work; an old completion cannot publish into a newly enabled session.
-Device loss reports an error and requires a new renderer and adapter.
+await renderer.init();
+const gpu = createThreeWebGpuSource(renderer, {
+  revision: REVISION,
+  enabled: true, // default is false
+  onSample: profiler.observeGpu,
+});
 
-Three owns its timestamp buffers and queries. The adapter changes `backend.trackTimestamp`
-while enabled/disabled and restores its original value on disposal only if the host has not
-changed it since the adapter's last write. It never disposes the renderer or replaces the host's
-device-loss callback. Disposal releases its notification callback from the device-loss promise.
+function onFrame(timestampMs) {
+  const frameId = profiler.beginFrame(timestampMs);
+  gpu.beginFrame(frameId > 0 ? frameId : null);
+  try {
+    gpu.withPass({ id: "ocean-fft", label: "Ocean FFT", category: "water" }, () => {
+      renderer.compute(oceanFft);
+      renderer.compute(oceanFft); // both invocations are retained
+    });
+    gpu.withPass({ id: "scene", label: "Main Scene", category: "graphics" }, () => {
+      renderer.render(scene, camera);
+    });
+  } finally {
+    gpu.endFrame(); // queues asynchronous readback; never await in this callback
+  }
+  profiler.observeGpu(gpu.read());
+  panel.refresh(timestampMs);
+}
+```
 
-## Interpretation and verification
+`beginFrame` must precede **all** compute/render encoding and `endFrame` must follow the final
+submission. Multiple renderer calls and repeated native passes belong to that single application
+frame. Work outside the bracket is excluded. Deferred command buffers and async submission
+callbacks are unsupported; do not carry encoded passes across the bracket. `withPass` rejects
+thenables and marks the frame incomplete, but cannot cancel host asynchronous work.
 
-Both adapters report `measurement: "pass-sum"`. They exclude gaps between passes and do not
-measure CPU render submission, presentation latency or the entire frame interval. Asynchronous
-readback means a recording stopped immediately can lack its final GPU results. Missing timing
-is shown as unsupported, disabled, pending or error, never as an invented zero.
+`captureFrame(id)` remains an alias for closing a matching **already-open** bracket; the old
+end-only rewrite.2 integration must change. Application IDs must increase independently of
+simulation time. `beginFrame(null)` collects explicitly unassociated work. A separate adapter
+sequence measures sample age even if Three's counter repeats or the simulation pauses.
 
-Behavioral tests were written and observed failing before implementation. They cover delayed
-correlation, stale/cached completions, finite zero, bounds, disjoint/context/device loss,
-ownership, observer reentrancy, toggles and repeat disposal. Public contracts compile against
-native WebGL2 and the pinned Three types. Isolated package consumers import both optional
-entries without Three or junkui installed at runtime.
+A label applies to every native pass in its synchronous callback, including nested renderer
+utility passes. Nested labels restore the outer label. Each invocation gets an ordered number;
+identical IDs never overwrite one another. IDs, labels and optional categories accept 1–240
+characters. Supply stable IDs yourself: automatic Three context labels are only session-local
+fallbacks. No scene traversal or additional animation loop is installed.
 
-The real-render test waits for the measured frame to be sealed before stopping capture.
-GPU readback can finish during the first open frame; stopping at that point correctly exports
-no completed frame. This race was observed during the full browser run and fixed in the test.
+### Ownership and lifecycle
 
-The real-render fixtures run in Chromium, Firefox and WebKit. In the local headless run,
-WebKit produced WebGPU timings linked to recorded frames. Chromium and Firefox WebGPU, and
-all three WebGL2 runs, reported unsupported timing. Those paths verify truthful fallback and
-host rendering after disposal, not hardware timing. WebGL2 timing, disjoint events and device
-loss remain covered by controlled unit tests rather than real hardware fault injection.
+The adapter exclusively owns **both** timestamp paths for the renderer and its GPU device while
+attached. Do not attach a second profiler, change `backend.trackTimestamp`, replace its timestamp
+methods/device encoder factory, or call Three's `resolveTimestampsAsync` while attached. Finish
+any existing Three resolver before attaching. Ownership changes become explicit errors.
 
-`pnpm bench` measures the unchanged collection/capture paths; it does not measure driver query
-cost, GPU readback latency or adapter overhead. Browser integration success is not a GPU
-performance benchmark or a claim of support on every browser/device.
+It intercepts native `beginRenderPass` / `beginComputePass` on encoders created by that device,
+rather than trusting one Three initializer to equal one native pass. Layered rendering can
+reuse a descriptor; renderer utility passes can bypass Three's initializer. Every native pass
+gets its own query pair. Existing foreign `timestampWrites` are preserved and make the frame
+incomplete. Device work encoded by another renderer inside the bracket is included too.
 
-The completed slice passes `pnpm check` (154 unit cases), coverage floors, `pnpm test:package`
-and 117 browser cases. The exported `0.2.1-rewrite.2` tarball also passed offline installation,
-isolated types/imports and mounted-panel/export/disposal checks in all three engines. The
-[collection benchmark](verification/gpu-adapters-collection.json) records fifteen 5,000-frame
-samples per workload on an Apple M3 Max. Median incremental cost was 0.274µs for frame-only
-collection and 2.339µs with eight scopes per frame; these are batch means, not tail latency.
+Jank allocates and resolves its own query sets and buffers; existing Three pools are untouched.
+It temporarily replaces the backend initializer/resolver and the device's encoder factory,
+without patching global prototypes. Disposal restores original property descriptors and prior
+tracking state when the host has not replaced them. Only Jank resources are destroyed. Device
+loss cancels pending reads and requires a new renderer/adapter. Disabled/disposed generations
+cannot deliver late samples to the old profiler; the device-loss subscription releases its
+callback on disposal. `setEnabled(false)` destroys pending resources; re-enabling starts fresh.
 
-The optional Knip diagnostic still reports HTML-driven fixtures/demo/gallery as unused, plus
-existing development tools, draft exported types and the benchmark's Vite-served source URL.
-Those entrypoints need explicit Knip configuration; this diagnostic is not a passing release
-gate, and this adapter change does not remove unrelated tooling or draft contracts.
+### Metrics, precision and limits
+
+Each sample carries a decimal uint64 GPU origin and integer nanosecond offsets. The adapter
+subtracts BigInt origins **before** converting offsets to numbers. This is a GPU clock, unrelated
+to `performance.now()`. Timestamp resolution/quantization is browser and device dependent.
+A nonzero equal start/end is a valid zero duration; an all-zero unwritten pair is unavailable.
+
+- Render sum: sum of render pass durations.
+- Compute sum: sum of compute pass durations.
+- Combined sum: render plus compute sums, potentially double-counting overlap.
+- GPU busy: union of all observed compute/render intervals, counting overlap once.
+- GPU elapsed span: earliest start through latest end, including gaps.
+
+These cover the bracket's observed passes, not global device utilization, presentation latency,
+or CPU work. Never add CPU and GPU timings into a frame total. Complete empty brackets have
+known zero metrics; partial brackets retain valid intervals but expose `metrics: null`.
+
+Default limits are 256 passes/frame, four simultaneous slots, a 2,000ms readback timeout and
+128 retained resolved samples. Options allow 1–256 passes, 1–8 slots and 1–10,000ms timeout.
+The default maximum is four query sets, eight buffers and 32,768 buffer bytes (driver query-set
+storage excluded). Slots are lazy and reused only after mapping ends. `diagnostics()` exposes
+live slot, buffer-byte, pending-frame and retained-sample counts.
+
+Excess passes are counted as omissions (`query-capacity`); full slots produce an incomplete
+`queue-pressure` frame without waiting. Invalid/missing timestamps, read failures/timeouts,
+submission failures, unclosed frames, ownership changes and lifecycle cancellation have named
+reasons. A frame's representable timestamp span is at most 60 seconds. Incomplete published
+frames increment dropped-sample counts. The latest display never moves back when an older
+frame resolves, while `onSample` still forwards every result. Retention eviction affects later
+finalization, not results already delivered to recording history.
+
+`resolveFrames(ids, { timeoutMs })` waits only for requested pending frames outside the host loop,
+returns detached retained samples and explicit pending IDs, and accepts at most 6,000 IDs and
+0–10,000ms. Only one drain may be pending. Close requested brackets first. A settled drain may
+still lack evicted/unobserved frames; it does not claim capture completeness.
+
+Schema 4 stores intervals, associations, metrics and omissions with strict validation. Versions
+1–3 are rejected, not converted. See [recording semantics](recordings.md) and the verification
+report for actual browser evidence and measurement limits.

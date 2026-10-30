@@ -29,6 +29,7 @@ export class ObservationHistory {
   private readonly gpu = new Map<string, ReceivedGpu>();
   private gpuPassCount = 0;
   private gpuState: GpuState | null = null;
+  private latestGpuInterval: { clockId: string; sequence: number } | null = null;
   private sampledAtMs = -Infinity;
   private droppedAtMs = -Infinity;
   private droppedGpuFrameId = 0;
@@ -108,8 +109,7 @@ export class ObservationHistory {
       state.sample.frameId !== null && !knowsFrame(state.sample.frameId)
         ? { ...state.sample, frameId: null }
         : state.sample;
-    const latest = this.gpuState?.status === "ready" ? this.gpuState.sample : null;
-    if (!isOlderGpuSample(sample, latest)) {
+    if (this.acceptLatestGpu(sample)) {
       this.gpuState = { ...state, sample };
     }
     const key =
@@ -119,6 +119,18 @@ export class ObservationHistory {
     this.gpuPassCount += sample.passes.length - (this.gpu.get(key)?.sample.passes.length ?? 0);
     this.gpu.set(key, { atMs, sample });
     this.trimGpu();
+  }
+
+  private acceptLatestGpu(sample: GpuSample): boolean {
+    if (sample.measurement !== "intervals") {
+      return true;
+    }
+    const latest = this.latestGpuInterval;
+    if (latest?.clockId === sample.clock.id && sample.sequence < latest.sequence) {
+      return false;
+    }
+    this.latestGpuInterval = { clockId: sample.clock.id, sequence: sample.sequence };
+    return true;
   }
 
   private trimGpu(): void {
@@ -186,6 +198,7 @@ export class ObservationHistory {
     this.gpu.clear();
     this.gpuPassCount = 0;
     this.gpuState = null;
+    this.latestGpuInterval = null;
     this.sampledAtMs = -Infinity;
     this.droppedAtMs = -Infinity;
     this.droppedGpuFrameId = 0;
@@ -242,13 +255,4 @@ function validateGpuState(state: GpuState): GpuState {
     default:
       throw new Error("Unknown GPU status");
   }
-}
-
-function isOlderGpuSample(sample: GpuSample, latest: GpuSample | null): boolean {
-  return (
-    sample.measurement === "intervals" &&
-    latest?.measurement === "intervals" &&
-    sample.clock.id === latest.clock.id &&
-    sample.sequence < latest.sequence
-  );
 }

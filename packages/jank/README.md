@@ -107,7 +107,8 @@ function onFrame(timestampMs) {
 be available; otherwise the panel reports unsupported timing. Passes cannot overlap or nest.
 The adapter owns its queries and polls results without waiting for the GPU.
 
-For **Three.js r186 WebGPURenderer**, use its render timestamp pool instead:
+For **Three.js r186 WebGPURenderer** (verified with 0.186.1), explicitly bracket all compute and
+render work. Initialize resources before this synchronous frame path:
 
 ```js
 import { REVISION } from "three";
@@ -116,30 +117,54 @@ import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
 await renderer.init();
 const gpu = createThreeWebGpuSource(renderer, {
   revision: REVISION,
+  enabled: true, // disabled by default
   onSample: profiler.observeGpu,
 });
+
+function onFrame(timestampMs) {
+  const frameId = profiler.beginFrame(timestampMs);
+  gpu.beginFrame(frameId > 0 ? frameId : null);
+  try {
+    gpu.withPass({ id: "fft", label: "Ocean FFT", category: "water" }, () => {
+      renderer.compute(oceanFft);
+    });
+    gpu.withPass({ id: "scene", label: "Main Scene" }, () => {
+      renderer.render(scene, camera);
+    });
+  } finally {
+    gpu.endFrame();
+  }
+  profiler.observeGpu(gpu.read());
+  panel.refresh(timestampMs);
+}
 ```
 
-Use the same frame-loop integration, omitting `beginPass` and `endPass`. Call `captureFrame`
-after each renderer frame. The renderer must use its WebGPU backend with `timestamp-query`
-support. Other Three revisions are rejected; the adapter relies on r186's timestamp/frame
-association. Let this adapter exclusively call `resolveTimestampsAsync("render")` for that
-renderer. Three remains a dependency of your application, not of jank.
+Multiple calls and repeated native passes remain associated with one application frame. Submit
+all command buffers before `endFrame`; do not await readbacks in your loop. `withPass` callbacks
+must be synchronous. Work outside the bracket is excluded. The old end-only `captureFrame`
+integration is insufficient; that method now closes a matching `beginFrame` bracket.
 
-Both adapters report a **sum of measured passes**, excluding gaps between passes. Results
-arrive later and remain linked to their original frame. Missing readings are never fabricated
-as zero. `onSample` forwards every completed sample to recordings; the per-frame `read` keeps
-status and sample age current. A capture stopped before readback completes can lack its last
-GPU samples. WebGL2 retains up to 64 pending frames and 32 passes per frame; the WebGPU adapter
-retains up to 600 frame associations. Omitted WebGL passes make the frame total unavailable.
+Jank exclusively owns both timestamp paths for the renderer/device while attached. Do not call
+Three's timestamp resolver or attach another timer to that device. It retains raw compute/render
+intervals and reports render sum, compute sum, combined sum, interval-union busy time and elapsed
+span separately. GPU origins are decimal uint64 nanoseconds; offsets are exact integers. The GPU
+clock is unrelated to the profiler's CPU clock. Partial frames have no complete totals.
 
-Dispose in order: `panel.dispose()`, `gpu.dispose()`, `profiler.dispose()`. Your renderer remains
-usable. Recreate the adapter when replacing the profiler. WebGL context restoration is handled
-on subsequent host calls; a lost WebGPU device requires a new renderer and adapter.
+Defaults: 256 passes/frame, four readback slots (eight buffers/32,768 bytes), 2s readback timeout,
+128 retained results. Options `maxPasses`, `maxPendingFrames`, `readbackTimeoutMs` allow maxima of
+256, eight and 10s. Capacity/queue pressure produces explicit omissions. Pass IDs/labels/categories
+are bounded to 240 characters. All available results reach `onSample`, including out-of-order
+completions. `read()` keeps the newest result and current age. An unsupported feature or WebGL
+fallback is shown explicitly. Other Three revisions are rejected.
+
+WebGL2 continues reporting pass sums. Both adapters preserve unknown timing rather than inventing
+zero. Dispose in order: `panel.dispose()`, `gpu.dispose()`, `profiler.dispose()`. Host rendering
+remains usable. Recreate the adapter when replacing the profiler or recovering a WebGPU device.
+The adapter restores prior timestamp settings and destroys only its own resources.
 
 ## Preview limits
 
-- The API and recording schema may still change. This preview writes schema version 3 and
+- The API and recording schema may still change. This preview writes schema version 4 and
   does not import older recording formats.
 - The offline viewer and panel-to-viewer handoff are not implemented yet.
 - Loading runtime, visibility/temporal controls and debug bounds
