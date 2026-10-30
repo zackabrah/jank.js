@@ -8,13 +8,7 @@ export function renderGpu(root: HTMLElement, gpu: GpuState | null): void {
   if (gpu?.status === "ready") {
     if (gpu.sample.measurement === "intervals") {
       rows(list, intervalRows(gpu.sample));
-      const age = (gpu.currentFrameSequence ?? gpu.sample.sequence) - gpu.sample.sequence;
-      const freshness = age > 2 ? "stale" : "ready";
-      write(
-        root,
-        "gpu-note",
-        `${freshness} · ${gpu.sample.completeness}; application frame ${gpu.sample.frameId ?? "unassociated"}; age ${age} application frames. ${gpu.pendingFrames ?? 0} pending; ${gpu.droppedSamples} dropped samples; ${gpu.sample.omittedPasses} omitted passes. ${gpu.sample.issues.join(", ")}`,
-      );
+      write(root, "gpu-note", intervalStatus(gpu, gpu.sample));
     } else {
       rows(list, [
         [gpu.sample.measurement, milliseconds(gpu.sample.durationMs, 2)],
@@ -39,6 +33,19 @@ export function renderGpu(root: HTMLElement, gpu: GpuState | null): void {
     description = `error · ${gpu.message}`;
   }
   write(root, "gpu-note", description);
+}
+
+function intervalStatus(
+  gpu: Extract<GpuState, { status: "ready" }>,
+  sample: GpuIntervalSample,
+): string {
+  const age =
+    gpu.currentFrameSequence === undefined ? null : gpu.currentFrameSequence - sample.sequence;
+  const freshness = age !== null && age > 2 ? "stale" : "ready";
+  const ageText = age === null ? "age unavailable" : `age ${age} application frames`;
+  const pendingText =
+    gpu.pendingFrames === undefined ? "pending count unavailable" : `${gpu.pendingFrames} pending`;
+  return `${freshness} · ${sample.completeness}; application frame ${sample.frameId ?? "unassociated"}; ${ageText}. ${pendingText}; ${gpu.droppedSamples} dropped samples; ${sample.omittedPasses} omitted passes. ${sample.issues.join(", ")}`;
 }
 
 function intervalRows(sample: GpuIntervalSample): [string, string][] {

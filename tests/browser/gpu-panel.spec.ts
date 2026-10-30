@@ -59,3 +59,49 @@ test("GPU intervals show distinct sums, busy union, span, repeated passes and co
   await expect(gpu).not.toContainText("10.00");
   await expect(gpu).toContainText("Ocean FFT");
 });
+
+test("custom interval sources report unknown age and pending count explicitly", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate((sample) => {
+    window.panelFixture.profiler.observeGpu({
+      status: "ready",
+      currentRendererFrameId: 8,
+      droppedSamples: 0,
+      sample,
+    });
+    window.panelFixture.refresh();
+  }, gpuIntervalFixture());
+  await expect(page.locator('[data-value="gpu-note"]')).toContainText("age unavailable");
+  await expect(page.locator('[data-value="gpu-note"]')).toContainText("pending count unavailable");
+});
+
+test("@visual compute and render GPU measurements remain readable at narrow width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 1100 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate((sample) => {
+    window.panelFixture.advance(3);
+    window.panelFixture.profiler.observeGpu({
+      status: "ready",
+      currentRendererFrameId: 8,
+      currentFrameSequence: 2,
+      pendingFrames: 1,
+      droppedSamples: 0,
+      sample,
+    });
+    window.panelFixture.refresh();
+  }, gpuIntervalFixture());
+  const explanation = page.locator("[data-gpu-explanation]");
+  await explanation.locator("summary").click();
+  await page.getByRole("region", { name: "Performance details" }).evaluate((region) => {
+    region.scrollTop = region.scrollHeight;
+  });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await expect(page.locator(".jank")).toHaveScreenshot("gpu-intervals-narrow.png", {
+    mask: [page.locator('[data-value="collection-cost"], [data-value="refresh-cost"]')],
+    maskColor: "#0a0a0a",
+  });
+});
