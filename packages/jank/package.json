@@ -1,9 +1,9 @@
 {
   "name": "jank.js",
-  "version": "0.2.1",
+  "version": "0.2.1-rewrite.1",
   "private": true,
   "type": "module",
-  "description": "Private rewrite: host-owned profiling, capture and validated recording files.",
+  "description": "Local test preview: host-owned profiling, live panel, capture and validated recording files.",
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly && node scripts/build-css.mjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly"
