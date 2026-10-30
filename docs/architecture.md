@@ -2,8 +2,9 @@
 
 Status: architecture and contracts established; collection, capture, validated files and public
 profiler composition are implemented. See [collection behavior](collection.md) and
-[recording behavior](recordings.md) for verified semantics. UI, analysis, loading and adapter
-implementations are pending.
+[recording behavior](recordings.md) for verified semantics. The independent junkui theme,
+native controls and tabs are also implemented; panel/viewer, analysis, loading and adapters
+remain pending.
 
 ## Decisions already made
 

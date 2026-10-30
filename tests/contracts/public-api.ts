@@ -5,14 +5,14 @@ import type {
   GpuState,
 } from "../../packages/jank/src/index.ts";
 import { createProfiler, parseRecording } from "../../packages/jank/src/index.ts";
-import type { CreateTabs } from "../../packages/junkui/src/index.ts";
+import { createTabs } from "../../packages/junkui/src/index.ts";
 
 // These declarations are compile-time consumers, not placeholder implementations.
 declare const createPanel: CreatePanel;
 declare const createViewer: CreateViewer;
 declare const createLoadingProfiler: CreateLoadingProfiler;
-declare const createTabs: CreateTabs;
 declare const container: HTMLElement;
+declare const tablist: HTMLElement;
 declare const firstTab: HTMLButtonElement;
 declare const firstPanel: HTMLElement;
 
@@ -78,6 +78,7 @@ if (result.ok) {
 }
 
 const tabs = createTabs({
+  tablist,
   tabs: [{ id: "one", button: firstTab, panel: firstPanel }],
   selectedId: "one",
 });

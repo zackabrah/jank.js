@@ -32,6 +32,7 @@ test("built profiler and both declaration packages work without workspace source
           lib: ["ES2025"],
           types: ["@types/web"],
           strict: true,
+          noUncheckedSideEffectImports: true,
           noEmit: true,
         },
         include: ["consumer.ts"],
@@ -42,9 +43,13 @@ test("built profiler and both declaration packages work without workspace source
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
 import { createProfiler } from "jank.js";
-import type { CreateTabs } from "junkui";
+import { createTabs, type CreateTabs } from "junkui";
+import "junkui/styles.css";
 const factory: CreateProfiler = createProfiler;
-declare const createTabs: CreateTabs;
+const tabsFactory: CreateTabs = createTabs;
+declare const tablist: HTMLElement;
+declare const button: HTMLButtonElement;
+declare const panel: HTMLElement;
 const profiler = factory({ targetFps: 60 });
 const channel: Channel = profiler.createChannel({ id: "physics", label: "Physics" });
 const token: ScopeToken = channel.begin();
@@ -55,7 +60,7 @@ snapshot.frames.forEach(frame => frame.scopes.forEach(scope => scope.channelId))
 channel.end(100);
 // @ts-expect-error Public nested snapshots are readonly.
 snapshot.frames[0].cpu.updateMs = 123;
-const tabs = createTabs({ tabs: [], selectedId: "main" });
+const tabs = tabsFactory({ tablist, tabs: [{ id: "main", button, panel }], selectedId: "main" });
 tabs.dispose();
 `,
     );
@@ -72,6 +77,11 @@ tabs.dispose();
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createProfiler, parseRecording, serializeRecording } from "jank.js";
+import { createTabs } from "junkui";
+assert.equal(typeof createTabs, "function");
+const css = readFileSync(new URL(import.meta.resolve("junkui/styles.css")), "utf8");
+assert.ok(css.includes(".jl") && css.includes("--jl-ink") && css.includes(":focus-visible"));
+assert.doesNotMatch(css, /@import|url\\(/u, "Shipped CSS must be self-contained");
 let timeMs = 0;
 const profiler = createProfiler({ now: () => timeMs });
 const channel = profiler.createChannel({ id: "physics", label: "Physics", readCounters: () => ({ bodies: 10 }) });

@@ -3,6 +3,7 @@
   "compilerOptions": { "types": ["node", "@types/web"] },
   "include": [
     "packages/*/src/**/*.test.ts",
+    "packages/*/gallery/**/*.ts",
     "tests/fixtures/**/*.ts",
     "tests/browser/**/*.ts",
     "vitest.config.ts",

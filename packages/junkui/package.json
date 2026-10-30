@@ -3,14 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Proposed contracts for the readability rewrite; no runtime implementation.",
+  "description": "Scoped native controls, a neutral theme and accessible tabs without runtime dependencies.",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "build:types": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json && node scripts/build-css.mjs",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly && node scripts/build-css.mjs"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": {
+      "types": "./dist/styles.d.ts",
+      "default": "./dist/styles.css"
     }
   },
   "files": [

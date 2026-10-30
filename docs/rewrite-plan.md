@@ -40,8 +40,11 @@ available until the complete parity matrix and release checks pass.
    tests, isolated runtime/type consumers and real browser downloads verify the path. Defaults
    remain in the policy owner. Counter/error retention, event/GPU ownership and borrowed tracing
    are covered; see [recording evidence](recordings.md).
-4. **junkui foundation.** Rebuild tokens and scoped native controls against the current look.
-   Add an independent gallery and accessible tabs. Check focused interactions and host styles.
+4. **Complete: junkui foundation.** Independent neutral tokens, scoped native controls and
+   accessible horizontal tabs are implemented. The gallery verifies keyboard/focus behavior,
+   disposal, host-style interference, axe results and desktop/narrow visual baselines in three
+   engines. The built package exposes JavaScript, declarations and standalone CSS without
+   profiler imports or runtime dependencies. See [UI evidence](junkui.md).
 5. **The live panel.** Build LINE first, then MINI and FULL. Separate live/loading/capture views,
    their view models and local interaction state. Add real accessibility and visual checks at
    each size. Capture ownership stays outside the panel.

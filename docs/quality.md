@@ -20,10 +20,15 @@ claim that one universal "industry standard" specifies every detail.
 
 Collection, capture, files and public composition have deterministic Vitest tests, seeded
 fast-check properties, real host-loop/download tests in Chromium/Firefox/WebKit, and isolated
-package runtime/type consumers. Coverage floors are 90% per implemented file for statements,
+package runtime/type consumers. Coverage floors are 90% per implemented profiler file for statements,
 branches, functions and lines. These floors support behavioral tests; they do not replace
 reviewing their assertions. `pnpm bench` measures public collection, capture and serialization
 workloads and records their limits.
+
+Junkui behavior is tested against real DOM and native controls in Chromium, Firefox and
+WebKit. Each enabled gallery panel receives an axe check. Separate visual comparisons cover
+desktop and narrow screens on macOS 26 arm64; Linux CI retains all interaction/accessibility
+checks. No DOM mocks or empty Node coverage gate stand in for those browser tests.
 
 Implementation follows test-driven development: first reproduce behavior with a failing test,
 then implement it, then simplify while retaining the passing tests. Browser-discovered failures

@@ -1,0 +1,216 @@
+.jl,
+.jl * {
+  box-sizing: border-box;
+}
+
+.jl {
+  color-scheme: dark;
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  font: 400 var(--jl-size-body) / 20px var(--jl-font);
+  font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+
+.jl :where(button, input, select, textarea) {
+  margin: 0;
+  border-radius: var(--jl-radius);
+  box-shadow: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+}
+
+.jl [hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: Hidden panels must stay hidden when host layout rules set display. */
+  display: none !important;
+}
+
+.jl :focus-visible {
+  outline: 1px dotted var(--jl-text);
+  outline-offset: -3px;
+}
+
+.jl .jl-muted {
+  color: var(--jl-muted);
+}
+
+.jl .jl-dim {
+  color: var(--jl-dim);
+}
+
+.jl :is(.jl-btn, .jl-icon, .jl-toggle, .jl-tab) {
+  min-height: 0;
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-control);
+  border-radius: var(--jl-radius);
+  font-size: var(--jl-size-label);
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.jl .jl-btn {
+  height: var(--jl-button-height);
+  padding: 2px calc(10px - var(--jl-track-label) / 2) 0 calc(10px + var(--jl-track-label) / 2);
+  letter-spacing: var(--jl-track-label);
+}
+
+.jl .jl-btn.jl-small {
+  height: 20px;
+  padding: 0 6px;
+  color: var(--jl-muted);
+  letter-spacing: 0.1em;
+}
+
+.jl .jl-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  color: var(--jl-muted);
+}
+
+.jl .jl-toggle {
+  min-width: calc(3ch + 3 * 0.08em + 14px);
+  height: 18px;
+  padding: 0 6px;
+  color: var(--jl-muted);
+  letter-spacing: 0.08em;
+}
+
+.jl .jl-tabs {
+  display: flex;
+  flex: none;
+  min-height: var(--jl-tab-height);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--jl-line);
+}
+
+.jl .jl-tab {
+  flex: none;
+  height: calc(var(--jl-tab-height) - 1px);
+  padding: 0 10px;
+  border: 0;
+  color: var(--jl-muted);
+  letter-spacing: var(--jl-track-label);
+}
+
+.jl :is(.jl-btn, .jl-icon, .jl-toggle, .jl-tab):not(:disabled):hover {
+  color: var(--jl-bright);
+}
+
+.jl :is(.jl-primary, [aria-pressed="true"], .jl-tab[aria-selected="true"], .jl-chip) {
+  color: var(--jl-ink);
+  background: var(--jl-text);
+  border-color: var(--jl-text);
+  font-weight: 600;
+}
+
+.jl :is(.jl-primary, [aria-pressed="true"], .jl-tab[aria-selected="true"]):focus-visible {
+  outline-color: var(--jl-ink);
+}
+
+.jl :is(.jl-primary, [aria-pressed="true"], .jl-tab[aria-selected="true"]):not(:disabled):hover {
+  color: var(--jl-ink);
+  background: var(--jl-bright);
+}
+
+.jl :is(.jl-btn, .jl-icon, .jl-toggle, .jl-tab):disabled {
+  color: var(--jl-faint);
+  background: var(--jl-ink);
+  border-color: var(--jl-line-strong);
+  font-weight: 400;
+  cursor: default;
+}
+
+.jl .jl-chip {
+  display: inline-block;
+  padding: 0 6px;
+  font-size: var(--jl-size-label);
+  line-height: 18px;
+  letter-spacing: 0.08em;
+}
+
+.jl :is(.jl-input, .jl-select) {
+  height: var(--jl-input-height);
+  min-width: 0;
+  padding: 0 4px;
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  border: 1px solid var(--jl-line-strong);
+  font-size: var(--jl-size-body);
+}
+
+.jl .jl-input[type="number"] {
+  width: 72px;
+  text-align: right;
+  appearance: textfield;
+}
+
+.jl .jl-input::-webkit-inner-spin-button,
+.jl .jl-input::-webkit-outer-spin-button {
+  appearance: none;
+}
+
+.jl textarea.jl-input {
+  height: auto;
+  min-height: 40px;
+  resize: vertical;
+}
+
+.jl :is(.jl-input, .jl-select):disabled {
+  color: var(--jl-faint);
+  opacity: 1;
+}
+
+.jl [aria-invalid="true"] {
+  border-color: var(--jl-text);
+}
+
+.jl .jl-select {
+  padding-right: 18px;
+  font-size: var(--jl-size-label);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--jl-muted) 50%),
+    linear-gradient(135deg, var(--jl-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 10px) 50%,
+    calc(100% - 6px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+}
+
+.jl input[type="checkbox"],
+.jl input[type="radio"] {
+  accent-color: var(--jl-text);
+}
+
+.jl summary {
+  display: list-item;
+  list-style: disclosure-closed inside;
+  cursor: pointer;
+}
+
+.jl details[open] > summary {
+  list-style-type: disclosure-open;
+}
+
+.jl .jl-sr,
+.jl .jl-skip:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

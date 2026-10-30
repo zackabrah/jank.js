@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>junkui — native controls</title>
+    <link rel="stylesheet" href="../src/junkui.css" />
+    <link rel="stylesheet" href="./gallery.css" />
+  </head>
+  <body class="gallery-page">
+    <main class="jl gallery" id="gallery">
+      <header class="gallery-heading">
+        <p class="gallery-eyebrow">JUNKUI / COMPONENT GALLERY</p>
+        <h1>Plain HTML. Shared theme.</h1>
+        <p>Native controls, compact monospace type, and keyboard access.</p>
+      </header>
+      <section class="gallery-example" aria-label="Interactive controls">
+        <div class="jl-tabs" id="examples" role="tablist" aria-label="Control examples">
+          <button class="jl-tab" id="controls-tab" type="button">CONTROLS</button>
+          <button class="jl-tab" id="fields-tab" type="button">FIELDS</button>
+          <button class="jl-tab" id="unavailable-tab" type="button" disabled>UNAVAILABLE</button>
+          <button class="jl-tab" id="details-tab" type="button">DETAILS</button>
+        </div>
+        <section class="gallery-panel" id="controls-panel">
+          <h2>Buttons and states</h2>
+          <p class="jl-muted">Native buttons keep their labels, focus and disabled behavior.</p>
+          <div class="gallery-row">
+            <button class="jl-btn" type="button">SECONDARY</button>
+            <button class="jl-btn jl-primary" type="button">PRIMARY</button>
+            <button class="jl-btn jl-small" type="button">SMALL</button>
+            <button class="jl-icon" type="button" aria-label="Add item">+</button>
+          </div>
+          <div class="gallery-row">
+            <button class="jl-btn" type="button" disabled>DISABLED</button>
+            <button class="jl-btn jl-primary" type="button" disabled>DISABLED PRIMARY</button>
+            <button class="jl-toggle" id="toggle" type="button" aria-label="Preview guides" aria-pressed="false">OFF</button>
+            <span class="jl-chip">READY</span>
+          </div>
+        </section>
+        <section class="gallery-panel" id="fields-panel" hidden>
+          <h2>Labelled fields</h2>
+          <form id="example-form" class="gallery-fields">
+            <label for="title">Title</label>
+            <input class="jl-input" id="title" name="title" type="text" value="Untitled" required />
+            <label for="count">Count</label>
+            <input class="jl-input" id="count" name="count" type="number" min="1" max="100" value="12" />
+            <label for="density">Density</label>
+            <select class="jl-select" id="density" name="density"><option>Compact</option><option>Comfortable</option></select>
+            <label for="notes">Notes</label>
+            <textarea class="jl-input" id="notes" name="notes" rows="2">A native multiline field.</textarea>
+            <label for="locked">Locked field</label>
+            <input class="jl-input" id="locked" type="text" value="Unavailable" disabled />
+            <label class="gallery-check"><input id="hints" type="checkbox" checked /> Show hints</label>
+            <button class="jl-btn" type="submit">VALIDATE</button>
+            <output id="validation" aria-live="polite"></output>
+          </form>
+        </section>
+        <section class="gallery-panel" id="unavailable-panel" hidden><h2>Unavailable example</h2></section>
+        <section class="gallery-panel" id="details-panel" hidden>
+          <h2>Native disclosure</h2>
+          <details><summary>About this theme</summary><p>Colors and sizing come from scoped CSS custom properties. No fonts or assets are downloaded.</p></details>
+          <p class="jl-muted">Use Tab to leave the tabs. Left/Right and Home/End change the selected example.</p>
+        </section>
+      </section>
+      <section class="gallery-section" aria-labelledby="lifecycle-title">
+        <h2 id="lifecycle-title">Control lifecycle</h2>
+        <div class="gallery-row">
+          <button class="jl-btn jl-small" id="select-fields" type="button">SELECT FIELDS</button>
+          <button class="jl-btn jl-small" id="dispose-tabs" type="button">DISPOSE TABS</button>
+          <button class="jl-btn jl-small" id="mount-tabs" type="button">MOUNT TABS</button>
+        </div>
+        <p>Selected: <output id="selected">controls</output> · Changes: <output id="changes">0</output> · <output id="lifecycle">mounted</output></p>
+      </section>
+      <footer class="gallery-footer">Independent of jank.js. No runtime dependencies.</footer>
+    </main>
+    <section class="host-example" aria-label="Outside the theme">
+      <p>This native control is outside the theme.</p><button id="host-button" type="button">Host button</button>
+    </section>
+    <script type="module" src="./gallery.ts"></script>
+  </body>
+</html>
