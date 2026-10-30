@@ -26,7 +26,8 @@
     "build": "pnpm -r build",
     "build:types": "pnpm -r build:types",
     "test:tooling": "node --test tests/tooling/*.test.mjs",
-    "prepare": "git config core.hooksPath .githooks && pnpm --filter junkui build"
+    "prepare": "git config core.hooksPath .githooks && pnpm --filter junkui build",
+    "check:full": "pnpm check && pnpm test:coverage && pnpm test:package && pnpm test:browser && pnpm test:visual"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

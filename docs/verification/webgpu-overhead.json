@@ -1,0 +1,236 @@
+{
+  "batches": [
+    {
+      "mode": "none",
+      "durationsMs": [
+        3, 2, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 5, 0, 0, 1, 2, 2, 2, 2, 1, 2, 1, 1, 1, 1, 2, 1, 2, 2, 1,
+        1, 2, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1,
+        2, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 2,
+        "createdQueries": 1
+      },
+      "after": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 2,
+        "createdQueries": 1
+      }
+    },
+    {
+      "mode": "disabled",
+      "durationsMs": [
+        1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1,
+        1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1,
+        2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 2,
+        "createdQueries": 1
+      },
+      "after": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 2,
+        "createdQueries": 1
+      },
+      "diagnostics": {
+        "pendingFrames": 0,
+        "retainedFrames": 0,
+        "allocatedSlots": 0,
+        "bufferBytes": 0
+      }
+    },
+    {
+      "mode": "enabled",
+      "durationsMs": [
+        1, 1, 1, 2, 1, 2, 2, 2, 1, 2, 1, 1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 2, 3, 2, 1, 1, 2, 2, 1,
+        1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0, 2, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2, 3, 0, 5, 1, 5, 2, 2, 1, 1, 1, 0, 0, 1, 2, 1,
+        1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 2,
+        "liveQueries": 1,
+        "createdBuffers": 4,
+        "createdQueries": 2
+      },
+      "after": {
+        "liveBuffers": 2,
+        "liveQueries": 1,
+        "createdBuffers": 4,
+        "createdQueries": 2
+      },
+      "diagnostics": {
+        "pendingFrames": 1,
+        "retainedFrames": 128,
+        "allocatedSlots": 1,
+        "bufferBytes": 8192
+      }
+    },
+    {
+      "mode": "enabled",
+      "durationsMs": [
+        0, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 0, 2, 2, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 1, 1, 1, 1, 1, 0, 2, 2,
+        2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 2,
+        "liveQueries": 1,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "after": {
+        "liveBuffers": 2,
+        "liveQueries": 1,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "diagnostics": {
+        "pendingFrames": 1,
+        "retainedFrames": 128,
+        "allocatedSlots": 1,
+        "bufferBytes": 8192
+      }
+    },
+    {
+      "mode": "none",
+      "durationsMs": [
+        0, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+        1, 0, 0, 1, 1, 1, 1, 1, 1, 2, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 2, 2, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0,
+        1, 2, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0
+      ],
+      "before": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "after": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      }
+    },
+    {
+      "mode": "disabled",
+      "durationsMs": [
+        1, 1, 1, 1, 2, 1, 1, 1, 0, 1, 0, 2, 2, 2, 1, 1, 1, 1, 1, 0, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 0, 2, 1, 1, 2, 1, 1, 0, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 2, 2, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "after": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "diagnostics": {
+        "pendingFrames": 0,
+        "retainedFrames": 0,
+        "allocatedSlots": 0,
+        "bufferBytes": 0
+      }
+    },
+    {
+      "mode": "disabled",
+      "durationsMs": [
+        0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+        1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 0, 0, 1, 0, 2, 1, 1, 2, 1, 0, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "after": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 6,
+        "createdQueries": 3
+      },
+      "diagnostics": {
+        "pendingFrames": 0,
+        "retainedFrames": 0,
+        "allocatedSlots": 0,
+        "bufferBytes": 0
+      }
+    },
+    {
+      "mode": "enabled",
+      "durationsMs": [
+        1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 3, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 2, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1,
+        2, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 2, 1, 1, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 2,
+        "liveQueries": 1,
+        "createdBuffers": 8,
+        "createdQueries": 4
+      },
+      "after": {
+        "liveBuffers": 2,
+        "liveQueries": 1,
+        "createdBuffers": 8,
+        "createdQueries": 4
+      },
+      "diagnostics": {
+        "pendingFrames": 1,
+        "retainedFrames": 128,
+        "allocatedSlots": 1,
+        "bufferBytes": 8192
+      }
+    },
+    {
+      "mode": "none",
+      "durationsMs": [
+        1, 1, 1, 1, 1, 0, 0, 2, 1, 2, 2, 1, 1, 1, 0, 1, 1, 1, 1, 2, 1, 1, 1, 1, 0, 1, 2, 2, 1, 1, 1,
+        0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 2, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1,
+        1, 2, 1, 1, 0, 0, 1, 1, 2, 2, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1
+      ],
+      "before": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 8,
+        "createdQueries": 4
+      },
+      "after": {
+        "liveBuffers": 0,
+        "liveQueries": 0,
+        "createdBuffers": 8,
+        "createdQueries": 4
+      }
+    }
+  ],
+  "afterDispose": {
+    "liveBuffers": 0,
+    "liveQueries": 0,
+    "createdBuffers": 8,
+    "createdQueries": 4
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15"
+}

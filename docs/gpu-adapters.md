@@ -142,5 +142,5 @@ returns detached retained samples and explicit pending IDs, and accepts at most 
 still lack evicted/unobserved frames; it does not claim capture completeness.
 
 Schema 4 stores intervals, associations, metrics and omissions with strict validation. Versions
-1–3 are rejected, not converted. See [recording semantics](recordings.md) and the verification
-report for actual browser evidence and measurement limits.
+1–3 are rejected, not converted. See [recording semantics](recordings.md) and the [verification
+report](verification/webgpu.md) for actual browser evidence and measurement limits.

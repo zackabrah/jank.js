@@ -1,6 +1,6 @@
 # jank.js test preview
 
-Version **0.2.1-rewrite.2** is a local test build of the readability rewrite. It includes the
+Version **0.2.1-rewrite.3** is a local test build of the readability rewrite. It includes the
 profiler, live panel, recording capture/export, optional GPU timers, bundled UI styles and TypeScript declarations.
 It has zero runtime dependencies. The package contains no demo scene, Three.js, private assets
 or development tooling. It is ESM and targets modern browsers.
@@ -10,7 +10,7 @@ or development tooling. It is ESM and targets modern browsers.
 From the application where you want to test it:
 
 ```sh
-pnpm add /path/to/jank.js-0.2.1-rewrite.2.tgz
+pnpm add /path/to/jank.js-0.2.1-rewrite.3.tgz
 ```
 
 Use the actual downloaded archive path. npm and other package managers can also install this

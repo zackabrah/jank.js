@@ -3,9 +3,10 @@
 This branch contains the development stack, architecture, contracts, and a working public
 profiler. `createProfiler` connects host frames, scopes, counters, events, GPU observations,
 manual/automatic capture and a bounded archive. `parseRecording`, `serializeRecording` and
-`RecordingError` provide validated version 3 files. `createPanel` provides LINE/MINI/FULL views,
+`RecordingError` provide validated version 4 files. `createPanel` provides LINE/MINI/FULL views,
 live statistics, freeze, capture controls and local exports. Optional WebGL2 and Three r186
-WebGPU adapters provide correlated GPU timing. The viewer and loading runtime remain pending.
+WebGPU adapters provide correlated GPU timing. WebGPU retains labelled compute/render intervals,
+separate sums, union busy time and elapsed span; `finalizeRecording` collects late results with a bounded wait. The viewer and loading runtime remain pending.
 `junkui` provides scoped native-control styles, neutral
 theme tokens and accessible tabs. Both packages remain private during the rewrite.
 
@@ -33,7 +34,7 @@ The UI package does not know that a profiler exists.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm check
+pnpm check:full
 pnpm test:coverage
 pnpm test:package
 pnpm test:browser
@@ -41,6 +42,9 @@ pnpm test:visual
 pnpm bench
 pnpm bench:panel
 ```
+
+`check:full` runs check, coverage, package, browser and visual gates in sequence. The opt-in
+GPU hardware benchmark is run separately as documented in [GPU verification](docs/verification/webgpu.md).
 
 `check` validates formatting, lint rules, types, browser-free core contracts, consumer examples,
 tooling policy and unit/property tests. `test:package` builds the profiler and both packages'

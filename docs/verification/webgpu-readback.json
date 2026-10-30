@@ -1,0 +1,135 @@
+{
+  "evidence": {
+    "frameId": 5,
+    "raw": [
+      {
+        "type": "compute",
+        "startNs": "893688191582583",
+        "endNs": "893688191594958"
+      },
+      {
+        "type": "compute",
+        "startNs": "893688191595833",
+        "endNs": "893688191604958"
+      },
+      {
+        "type": "render",
+        "startNs": "893688191635250",
+        "endNs": "893688191662250"
+      },
+      {
+        "type": "render",
+        "startNs": "893688191650750",
+        "endNs": "893688191685833"
+      },
+      {
+        "type": "render",
+        "startNs": "893688191818083",
+        "endNs": "893688191842166"
+      },
+      {
+        "type": "render",
+        "startNs": "893688191831041",
+        "endNs": "893688191862083"
+      }
+    ],
+    "result": {
+      "status": "settled",
+      "samples": [
+        {
+          "measurement": "intervals",
+          "frameId": 5,
+          "rendererFrameId": 17,
+          "sequence": 5,
+          "clock": {
+            "id": "58e27ead-09d9-4957-981a-a152a432195b",
+            "domain": "webgpu-timestamp",
+            "unit": "nanoseconds",
+            "originNs": "893688191582583"
+          },
+          "passes": [
+            {
+              "id": "fill",
+              "label": "Compute fill",
+              "category": "simulation",
+              "type": "compute",
+              "invocation": 1,
+              "rendererFrameId": 17,
+              "startNs": 0,
+              "endNs": 12375
+            },
+            {
+              "id": "fill",
+              "label": "Compute fill",
+              "category": "simulation",
+              "type": "compute",
+              "invocation": 2,
+              "rendererFrameId": 17,
+              "startNs": 13250,
+              "endNs": 22375
+            },
+            {
+              "id": "scene",
+              "label": "Main scene",
+              "category": "graphics",
+              "type": "render",
+              "invocation": 3,
+              "rendererFrameId": 17,
+              "startNs": 52667,
+              "endNs": 79667
+            },
+            {
+              "id": "scene",
+              "label": "Main scene",
+              "category": "graphics",
+              "type": "render",
+              "invocation": 4,
+              "rendererFrameId": 17,
+              "startNs": 68167,
+              "endNs": 103250
+            },
+            {
+              "id": "scene",
+              "label": "Main scene",
+              "category": "graphics",
+              "type": "render",
+              "invocation": 5,
+              "rendererFrameId": 17,
+              "startNs": 235500,
+              "endNs": 259583
+            },
+            {
+              "id": "scene",
+              "label": "Main scene",
+              "category": "graphics",
+              "type": "render",
+              "invocation": 6,
+              "rendererFrameId": 17,
+              "startNs": 248458,
+              "endNs": 279500
+            }
+          ],
+          "expectedPasses": 6,
+          "omittedPasses": 0,
+          "completeness": "complete",
+          "issues": [],
+          "metrics": {
+            "renderSumMs": 0.117208,
+            "computeSumMs": 0.0215,
+            "combinedSumMs": 0.138708,
+            "busyMs": 0.116083,
+            "elapsedSpanMs": 0.2795
+          }
+        }
+      ],
+      "pendingFrameIds": []
+    }
+  },
+  "reference": {
+    "renderSumMs": 0.117208,
+    "computeSumMs": 0.0215,
+    "combinedSumMs": 0.138708,
+    "busyMs": 0.116083,
+    "elapsedSpanMs": 0.2795
+  }
+}
