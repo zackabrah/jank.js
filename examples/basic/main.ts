@@ -6,6 +6,7 @@ import {
 } from "../../packages/jank/src/index.ts";
 import { createLoadingExample, createTraceExample } from "./example-sources.ts";
 import { createDemoGpu, type DemoGpuMode } from "./gpu-source.ts";
+import { createHeadroomTest } from "./headroom.ts";
 import { bindRecordingFile } from "./recording-file.ts";
 import { createScene } from "./scene.ts";
 
@@ -58,9 +59,10 @@ function startScene() {
 }
 
 const scene = startScene();
-const gpu = createDemoGpu(scene?.context ?? null, (state) =>
-  instrumentation?.profiler.observeGpu(state),
-);
+const gpu = createDemoGpu(scene?.context ?? null, (state) => {
+  instrumentation?.profiler.observeGpu(state);
+  headroom.gpu(state);
+});
 
 function startProfiler() {
   let firstClockRead = true;
@@ -80,7 +82,10 @@ function startProfiler() {
   const animation = profiler.createChannel({
     id: "animation",
     label: "animation",
-    readCounters: () => ({ paused, extraMs: Number(cpuLoad.value) }),
+    readCounters: () => ({
+      paused: paused && !headroom.active(),
+      extraMs: headroom.active() ? 0 : Number(cpuLoad.value),
+    }),
   });
   const workload = profiler.createChannel({ id: "workload", label: "deliberate CPU work" });
   const render = profiler.createChannel({
@@ -100,6 +105,13 @@ function startProfiler() {
 }
 
 let instrumentation: ReturnType<typeof startProfiler> | null = startProfiler();
+const headroom = createHeadroomTest({
+  scene,
+  gpu,
+  canvas,
+  profiler: () => instrumentation?.profiler ?? null,
+  canStart: () => loading.source.snapshot()?.status !== "loading",
+});
 
 function attachPanel(mode?: PanelMode): void {
   if (!instrumentation || panel) {
@@ -125,6 +137,7 @@ function detachPanel(): void {
 }
 
 function stopProfiler(): void {
+  headroom.cancel("Profiler stopped; restart to estimate headroom.");
   detachPanel();
   releaseScopes?.();
   releaseScopes = null;
@@ -147,19 +160,24 @@ function frame(atMs: number): void {
     return;
   }
   hostFrames += 1;
+  headroom.beforeFrame(atMs);
+  const frameMs = atMs - lastFrameMs;
   const deltaSeconds = Math.min(0.05, Math.max(0, (atMs - lastFrameMs) / 1000));
   lastFrameMs = atMs;
   const current = instrumentation;
   const frameId = current?.profiler.beginFrame(atMs) ?? -1;
   const updateStartMs = performance.now();
   const animationToken = current?.animation.begin();
-  scene?.update(paused ? 0 : deltaSeconds);
+  scene?.update(paused && !headroom.active() ? 0 : deltaSeconds);
   const workloadToken = current?.workload.begin();
-  let extraMs = Number(cpuLoad.value);
+  headroom.compute();
+  let extraMs = headroom.active() ? 0 : Number(cpuLoad.value);
   if (pendingHitch) {
     pendingHitch = false;
-    extraMs += 80;
-    current?.profiler.addEvent("Deliberate 80 ms hitch");
+    if (!headroom.active()) {
+      extraMs += 80;
+      current?.profiler.addEvent("Deliberate 80 ms hitch");
+    }
   }
   spendCpuTime(extraMs);
   if (current && workloadToken !== undefined && animationToken !== undefined) {
@@ -171,11 +189,13 @@ function frame(atMs: number): void {
   gpu.beginPass();
   scene?.render();
   gpu.endPass();
+  const renderEndMs = performance.now();
+  headroom.frame({ frameId, atMs, cpuMs: renderEndMs - updateStartMs, frameMs });
   if (current && renderToken !== undefined) {
     current.render.end(renderToken);
     current.profiler.endFrame({
       updateMs: renderStartMs - updateStartMs,
-      renderMs: performance.now() - renderStartMs,
+      renderMs: renderEndMs - renderStartMs,
     });
     current.profiler.observeGpu(gpu.observe(frameId, hostFrames));
   }
@@ -202,6 +222,7 @@ function renderReadout(): void {
   panelToggle.disabled = instrumentation === null;
   element<HTMLButtonElement>("add-event").disabled = instrumentation === null;
   element("profiler-state").textContent = instrumentation ? "Running" : "Stopped";
+  headroom.refresh();
 }
 
 // Event delegation keeps teardown to one listener; each action still calls the public API directly.
@@ -306,6 +327,7 @@ function dispose(): void {
   if (!disposed) {
     disposed = true;
     cancelAnimationFrame(frameRequest);
+    headroom.dispose();
     stopProfiler();
     scene?.dispose();
     unbindFile();

@@ -89,3 +89,43 @@ separate from the demo's browser tests.
 The real renderer counter labels exposed a panel layout bug: short numeric values could wrap
 onto multiple lines. The demo regression checks their rendered height, and the panel now keeps
 space for the value while allowing the label to wrap.
+
+## Quick headroom estimate
+
+Open **Quick headroom test** and choose **Estimate headroom**. The test uses the current
+Jank **Target FPS** setting (`1000 / target FPS` milliseconds independently for CPU and GPU).
+It measures a baseline, doubles fixed CPU computation batches, doubles an offscreen GPU shader's
+iteration count, then doubles the number of animated, individually submitted cubes. The last
+ramp exercises CPU and GPU together. Each CPU batch updates 4,096 retained values; the GPU probe
+runs at the drawing-buffer resolution and writes UV-dependent results to an offscreen target.
+Neither workload is a timer-based wait. These workloads are demo-specific, not universal estimates
+of how many objects or effects a different game can afford.
+
+A step warms up for 600ms, measures for 1,000ms, then allows 300ms at baseline load for pending
+GPU queries. Two halves of each measurement window must each contain at least 12 frames.
+A CPU, GPU or frame-pacing budget breach must occur in both halves' p95 measurements to establish
+a failing step. A breach in just one half stops that ramp as unstable. Presentation timing allows
+1ms or 5% tolerance, whichever is larger; CPU and GPU budget comparisons have no such tolerance.
+GPU results use the exact measured frame IDs, ignore duplicate replies, and require 80% valid
+coverage in each half. Missing timing stays unknown. If baseline GPU timing is unavailable, the
+GPU probe is skipped; CPU and scene observations remain explicitly GPU-unverified.
+
+The report gives baseline remaining CPU/GPU milliseconds separately, the last measured passing
+level, the next failing or inconclusive level, and the largest measured level with 20% spare
+CPU and GPU time. CPU means update plus render submission, excluding browser paint and profiler
+panel refresh. GPU means the timed scene and probe. These times overlap and must not be added.
+A load cap reports a lower bound; an unstable or insufficient window never establishes a ceiling.
+One short run cannot characterize sustained thermal behavior or other workloads.
+
+The run stops after approximately 60 seconds. Each ramp has a workload cap and stops after
+three severe frames (CPU over 100ms or frame interval over 250ms). The time limit is checked between
+frames, so a slow in-flight frame can delay it. **Stop estimate** restores the original object
+count and GPU mode, releases the probe and extra scene objects, and retains completed results.
+Motion runs and manual CPU stalls are ignored during the estimate, then their settings resume.
+Viewport, target-budget, GPU-source/context or visibility changes invalidate and cancel the run.
+The host retains a single animation loop. Nothing is installed into either shipped package.
+
+Headroom regression tests cover sustained budget decisions, sparse and delayed GPU results,
+conservative recommendations, cancellation and bounded execution. Browser checks exercise
+budget changes, Stop/resize restoration, unavailable GPU timing, completion, real additional
+GPU draw work, restored counters, and desktop/narrow accessibility in all three browsers.

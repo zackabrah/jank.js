@@ -49,6 +49,29 @@
           <button id="add-event" type="button" class="jl-btn">Add marker</button>
         </div>
         <p id="action-status" role="status"></p>
+        <details id="headroom">
+          <summary>Quick headroom test</summary>
+          <p>About one minute. Uses Jank’s current frame budget: baseline, CPU computation,
+            GPU shader work, then increasing scene complexity. Motion runs during the test;
+            manual CPU stalls are temporarily ignored.</p>
+          <div class="controls">
+            <button id="headroom-start" type="button" class="jl-btn jl-primary">Estimate headroom</button>
+            <button id="headroom-stop" type="button" class="jl-btn" disabled>Stop estimate</button>
+          </div>
+          <p id="headroom-context"></p>
+          <p id="headroom-status" role="status"></p>
+          <div id="headroom-results" hidden>
+            <p id="headroom-baseline"></p>
+            <dl>
+              <dt>CPU computation</dt><dd id="headroom-cpu"></dd>
+              <dt>GPU shader</dt><dd id="headroom-gpu"></dd>
+              <dt>Scene complexity · CPU + GPU</dt><dd id="headroom-scene"></dd>
+            </dl>
+          </div>
+          <p>Rough, workload-specific estimate at this resolution. CPU measures update and render
+            submission; GPU measures scene plus probe. Times overlap and must not be added.
+            Missing GPU timing stays unknown. A load cap is not a measured ceiling.</p>
+        </details>
         <details>
           <summary>Sources &amp; files</summary>
           <div class="controls">

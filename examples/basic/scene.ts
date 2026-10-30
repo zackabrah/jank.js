@@ -1,8 +1,10 @@
 import * as THREE from "three";
+import { createGpuProbe } from "./headroom-workloads.ts";
 
 /** The scene owns its renderer/resources. Profiling and scheduling belong to the host. */
 export function createScene(canvas: HTMLCanvasElement) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.info.autoReset = false;
   const context = renderer.getContext();
   if (!("beginQuery" in context)) {
     renderer.dispose();
@@ -25,9 +27,14 @@ export function createScene(canvas: HTMLCanvasElement) {
   const accent = new THREE.MeshStandardMaterial({ color: 0xf26032, roughness: 0.6 });
   const cubes: THREE.Mesh[] = [];
   let activeCount = 0;
+  let probe: ReturnType<typeof createGpuProbe> | null = null;
+  let probeIterations = 0;
   let elapsedSeconds = 0;
 
   function setCount(count: number): void {
+    if (count === activeCount) {
+      return;
+    }
     activeCount = count;
     while (cubes.length < count) {
       const cube = new THREE.Mesh(geometry, cubes.length % 9 === 0 ? accent : neutral);
@@ -69,7 +76,26 @@ export function createScene(canvas: HTMLCanvasElement) {
         }
       }
     },
-    render: () => renderer.render(scene, camera),
+    render: () => {
+      renderer.info.reset();
+      renderer.render(scene, camera);
+      if (probeIterations > 0) {
+        probe ??= createGpuProbe(renderer);
+        probe.render(probeIterations);
+      }
+    },
+    stressGpu: (iterations: number) => {
+      probeIterations = iterations;
+    },
+    clearStress: (count: number) => {
+      probeIterations = 0;
+      probe?.dispose();
+      probe = null;
+      setCount(count);
+      for (const cube of cubes.splice(count)) {
+        scene.remove(cube);
+      }
+    },
     counters: () => ({
       objects: activeCount,
       draws: renderer.info.render.calls,
@@ -77,6 +103,7 @@ export function createScene(canvas: HTMLCanvasElement) {
     }),
     dispose: () => {
       resize.disconnect();
+      probe?.dispose();
       geometry.dispose();
       neutral.dispose();
       accent.dispose();

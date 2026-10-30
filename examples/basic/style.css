@@ -140,3 +140,15 @@ body {
     max-height: 100%;
   }
 }
+
+#headroom dt {
+  margin-top: 10px;
+  font-weight: 600;
+}
+#headroom dd {
+  margin: 2px 0 0;
+  color: var(--jl-muted);
+}
+#headroom-context {
+  color: var(--jl-muted);
+}
