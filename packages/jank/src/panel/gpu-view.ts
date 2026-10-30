@@ -60,5 +60,9 @@ function intervalRows(sample: GpuIntervalSample): [string, string][] {
       [pass.label, pass.type, pass.category, `#${pass.invocation}`].filter(Boolean).join(" · "),
       milliseconds((pass.endNs - pass.startNs) / 1e6, 2),
     ]),
+    ...sample.rejectedPasses.map((pass): [string, string] => [
+      `${pass.label} · #${pass.invocation} · ${pass.reason}`,
+      "–",
+    ]),
   ];
 }

@@ -25,4 +25,6 @@ export interface ProfilerSnapshot extends FrameSnapshot {
   readonly counters: readonly CounterSample[];
   readonly events: readonly EventSample[];
   readonly gpu: GpuState | null;
+  /** Shared retention pool, including measurements outside the active capture. */
+  readonly gpuCapacity: { readonly remainingSamples: number; readonly remainingPasses: number };
 }

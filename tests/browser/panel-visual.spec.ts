@@ -1,5 +1,21 @@
 import { expect, test } from "@playwright/test";
 
+test("@visual active capture coverage is readable on narrow screens", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate(() => {
+    window.panelFixture.profiler.capture.start();
+    window.panelFixture.advance(12);
+    window.panelFixture.refresh();
+  });
+  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await expect(page.locator(".jank")).toHaveScreenshot("panel-capture-active-narrow.png", {
+    mask: [page.locator('[data-value="collection-cost"], [data-value="refresh-cost"]')],
+    maskColor: "#0a0a0a",
+  });
+});
+
 test("@visual panel retains LINE, MINI, FULL and capture layouts", async ({ page }) => {
   await page.setViewportSize({ width: 960, height: 1000 });
   await page.goto("/tests/fixtures/panel/?mode=full");

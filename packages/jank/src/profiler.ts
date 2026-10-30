@@ -61,6 +61,7 @@ export function createProfilerRuntime(
   let openedFrameId = -1;
   let releaseTrace: (() => void) | null = null;
   const capture = createCaptureController({
+    gpuCoverage: (frames) => observations.coverage(frames),
     recentFrames: () => collector.recentFrames(),
     requestScopes: () => collector.requestScopes(),
     createRecording: (frames, kind, truncated) => {
@@ -113,6 +114,7 @@ export function createProfilerRuntime(
   return {
     capture: {
       getState: () => capture.getState(),
+      getProgress: () => capture.getProgress(),
       getOptions: () => capture.getOptions(),
       start: () => collector.measureCollection(() => capture.start()),
       stop: () => collector.measureCollection(() => capture.stop()),
@@ -183,6 +185,7 @@ export function createProfilerRuntime(
       collector.measureCollection(() => ({
         ...collector.snapshot(),
         ...observations.snapshot(),
+        gpuCapacity: observations.capacity(),
         traceEnabled: releaseTrace !== null,
       })),
     clear: () => {

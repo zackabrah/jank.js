@@ -23,6 +23,35 @@ export function readCaptureOptions(root: HTMLElement): CaptureOptions {
   };
 }
 
+export function renderCaptureProgress(
+  root: HTMLElement,
+  profiler: Profiler,
+  snapshot: ProfilerSnapshot,
+): void {
+  const progress = profiler.capture.getProgress();
+  const health = element<HTMLElement>(root, '[data-value="capture-health"]');
+  health.hidden = progress.kind === "recent";
+  const coverage = coverageText(progress.gpu);
+  write(root, "capture-health", `${coverage} · ${progress.remainingFrames} frames remaining`);
+  write(
+    root,
+    "capture-progress",
+    `${progress.kind.toUpperCase()} · ${progress.frameCount} sealed frames. ${coverage}`,
+  );
+  write(
+    root,
+    "capture-capacity",
+    `${progress.remainingFrames} frames remaining. GPU retention pool: ${snapshot.gpuCapacity.remainingPasses} pass records and ${snapshot.gpuCapacity.remainingSamples} sample slots remaining. At capacity, oldest details are evicted.`,
+  );
+}
+
+function coverageText(coverage: GpuCoverage): string {
+  const percent =
+    coverage.coveragePercent === null ? "—" : `${coverage.coveragePercent.toFixed(1)}%`;
+  const reasons = coverage.reasons.map((entry) => `${entry.reason}: ${entry.frames}`).join("; ");
+  return `GPU interval coverage ${percent} (${coverage.completeFrames}/${coverage.totalFrames} complete). ${coverage.incompleteFrames} incomplete; ${coverage.sampledFrames} deliberately skipped; ${coverage.missingFrames} without interval evidence.${reasons ? ` ${reasons}.` : ""}`;
+}
+
 /** Cache only DOM for retained IDs; full recordings are read once when adding a thumbnail. */
 export function createCaptureView(
   root: HTMLElement,
@@ -87,6 +116,10 @@ function appendCapture(list: HTMLElement, profiler: Profiler, capture: SavedCapt
   list.append(card);
   const recording = profiler.capture.read(capture.id);
   if (recording) {
+    const coverage = document.createElement("p");
+    coverage.className = "jank-note";
+    coverage.textContent = coverageText(summarizeGpuCoverage(recording));
+    title.after(coverage);
     const stats = summarizeFrames(recording.frames, recording.targetFps);
     drawFrameChart(chart, {
       frames: recording.frames,
@@ -96,3 +129,5 @@ function appendCapture(list: HTMLElement, profiler: Profiler, capture: SavedCapt
   }
   return card;
 }
+
+import { type GpuCoverage, summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";

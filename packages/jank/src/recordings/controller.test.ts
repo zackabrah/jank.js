@@ -13,6 +13,7 @@ function setup() {
   let demands = 0;
   let failExport = false;
   const controller = createCaptureController({
+    gpuCoverage: (frames) => summarizeGpuCoverage({ frames, gpu: [] }),
     recentFrames: () => recent,
     requestScopes: () => {
       demands += 1;
@@ -66,6 +67,33 @@ function setup() {
 }
 
 describe("manual capture", () => {
+  it("reports active capacity and sealed-frame GPU coverage through clear and disposal", () => {
+    const { controller, frame } = setup();
+    expect(controller.getProgress()).toMatchObject({
+      kind: "recent",
+      frameCount: 0,
+      remainingFrames: 600,
+    });
+    controller.start();
+    frame();
+    expect(controller.getProgress()).toMatchObject({
+      kind: "manual",
+      frameCount: 1,
+      remainingFrames: 5999,
+      gpu: { totalFrames: 1, missingFrames: 1, coveragePercent: 0 },
+    });
+    controller.stop();
+    controller.arm(options);
+    frame(40);
+    expect(controller.getProgress()).toMatchObject({ kind: "automatic", remainingFrames: 2 });
+    controller.clear();
+    expect(controller.getProgress().kind).toBe("recent");
+    controller.dispose();
+    expect(controller.getProgress()).toMatchObject({
+      frameCount: 0,
+      gpu: { coveragePercent: null },
+    });
+  });
   it("records only accepted sealed frames and stops without manufacturing a final frame", () => {
     const { controller, frame, demands } = setup();
     frame();
@@ -356,3 +384,5 @@ describe("capture ownership", () => {
     expect(demands()).toBe(0);
   });
 });
+
+import { summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";

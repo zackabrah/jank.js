@@ -5,6 +5,7 @@ import { recordingLimits } from "./limits.ts";
 import type { Recording } from "./recording.ts";
 
 interface CaptureDependencies {
+  readonly gpuCoverage: (frames: readonly FrameSample[]) => GpuCoverage;
   readonly recentFrames: () => readonly FrameSample[];
   readonly requestScopes: () => () => void;
   readonly createRecording: (
@@ -70,6 +71,28 @@ class CaptureSession implements CaptureController {
 
   getOptions(): CaptureOptions {
     return { ...this.options };
+  }
+
+  getProgress(): ReturnType<CaptureController["getProgress"]> {
+    const state = this.state;
+    let kind: "manual" | "automatic" | "recent" = "recent";
+    let frames = this.disposed ? [] : this.dependencies.recentFrames();
+    let remainingFrames = Math.max(0, collectionLimits.recentFrames - frames.length);
+    if (state.status === "manual") {
+      kind = "manual";
+      frames = state.frames;
+      remainingFrames = recordingLimits.frames - frames.length;
+    } else if (state.status === "collecting") {
+      kind = "automatic";
+      frames = state.frames;
+      remainingFrames = state.remainingFrames;
+    }
+    return {
+      kind,
+      frameCount: frames.length,
+      remainingFrames,
+      gpu: this.dependencies.gpuCoverage(frames),
+    };
   }
 
   start(): void {
@@ -289,3 +312,6 @@ function validateOptions(options: CaptureOptions): void {
     throw new RangeError("After window must contain 0–5400 frames");
   }
 }
+
+import type { GpuCoverage } from "../analysis/gpu-coverage.ts";
+import { collectionLimits } from "../core/limits.ts";

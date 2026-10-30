@@ -1,3 +1,4 @@
+import { type GpuCoverage, gpuCoverage } from "../analysis/gpu-coverage.ts";
 import {
   type CounterSample,
   type CounterValue,
@@ -27,6 +28,7 @@ export class ObservationHistory {
   private readonly latestCounters = new Map<string, CounterSample>();
   private events: EventSample[] = [];
   private readonly gpu = new Map<string, ReceivedGpu>();
+  private readonly detailedGpu = new Set<string>();
   private gpuPassCount = 0;
   private gpuState: GpuState | null = null;
   private latestGpuInterval: { clockId: string; sequence: number } | null = null;
@@ -119,6 +121,11 @@ export class ObservationHistory {
     const previous = this.gpu.get(key);
     this.gpuPassCount += gpuPassStorage(sample) - (previous ? gpuPassStorage(previous.sample) : 0);
     this.gpu.set(key, { atMs, sample });
+    if (gpuPassStorage(sample) > 0) {
+      this.detailedGpu.add(key);
+    } else {
+      this.detailedGpu.delete(key);
+    }
     this.trimGpu();
   }
 
@@ -139,16 +146,49 @@ export class ObservationHistory {
       this.gpu.size > recordingLimits.frames ||
       this.gpuPassCount > recordingLimits.gpuIntervals
     ) {
-      const first = this.gpu.entries().next().value;
-      if (!first) {
+      const overSamples = this.gpu.size > recordingLimits.frames;
+      const key = overSamples
+        ? this.gpu.keys().next().value
+        : this.detailedGpu.values().next().value;
+      const dropped = key === undefined ? undefined : this.gpu.get(key);
+      if (!dropped || key === undefined) {
         return;
       }
-      const [key, dropped] = first;
-      this.gpu.delete(key);
       this.gpuPassCount -= gpuPassStorage(dropped.sample);
+      this.detailedGpu.delete(key);
+      if (!overSamples && dropped.sample.measurement === "intervals") {
+        this.gpu.set(key, {
+          ...dropped,
+          sample: {
+            ...dropped.sample,
+            passes: [],
+            rejectedPasses: [],
+            metrics: null,
+            completeness: "incomplete",
+            omittedPasses: dropped.sample.expectedPasses,
+            issues: [...new Set([...dropped.sample.issues, "retention-capacity" as const])],
+          },
+        });
+      } else {
+        this.gpu.delete(key);
+      }
       this.droppedAtMs = Math.max(this.droppedAtMs, dropped.atMs);
       this.droppedGpuFrameId = Math.max(this.droppedGpuFrameId, dropped.sample.frameId ?? 0);
     }
+  }
+
+  capacity(): { remainingSamples: number; remainingPasses: number } {
+    return {
+      remainingSamples: recordingLimits.frames - this.gpu.size,
+      remainingPasses: recordingLimits.gpuIntervals - this.gpuPassCount,
+    };
+  }
+
+  coverage(frames: readonly FrameSample[]): GpuCoverage {
+    return gpuCoverage(
+      frames.map((frame) => frame.id),
+      [...this.gpu.values()].map((entry) => entry.sample),
+    );
   }
 
   snapshot(): { counters: CounterSample[]; events: EventSample[]; gpu: GpuState | null } {
@@ -197,6 +237,7 @@ export class ObservationHistory {
     this.latestCounters.clear();
     this.events = [];
     this.gpu.clear();
+    this.detailedGpu.clear();
     this.gpuPassCount = 0;
     this.gpuState = null;
     this.latestGpuInterval = null;

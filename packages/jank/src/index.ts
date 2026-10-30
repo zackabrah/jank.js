@@ -1,3 +1,4 @@
+export { type GpuCoverage, summarizeGpuCoverage } from "./analysis/gpu-coverage.ts";
 export { type FrameSummary, type InspectFrame, inspectFrame } from "./analysis/summary.ts";
 export { createProfiler } from "./browser/create-profiler.ts";
 export { finalizeRecording, type RecordingFinalization } from "./browser/finalize-recording.ts";
@@ -45,6 +46,7 @@ export type {
 export type {
   CaptureController,
   CaptureOptions,
+  CaptureProgress,
   CaptureState,
   SavedCapture,
 } from "./recordings/capture.ts";

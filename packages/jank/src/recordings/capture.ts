@@ -1,4 +1,12 @@
+import type { GpuCoverage } from "../analysis/gpu-coverage.ts";
 import type { Recording } from "./recording.ts";
+
+export interface CaptureProgress {
+  readonly kind: "manual" | "automatic" | "recent";
+  readonly frameCount: number;
+  readonly remainingFrames: number;
+  readonly gpu: GpuCoverage;
+}
 
 export interface CaptureOptions {
   readonly thresholdMs: number;
@@ -30,6 +38,8 @@ export interface SavedCapture {
 /** Capture storage belongs to the profiler and survives panel removal. */
 export interface CaptureController {
   getState(): CaptureState;
+  /** Active capture, otherwise recent history; excludes the unsealed host frame. */
+  getProgress(): CaptureProgress;
   /** Current settings remain readable while idle, recording or cooling down. */
   getOptions(): CaptureOptions;
   start(): void;

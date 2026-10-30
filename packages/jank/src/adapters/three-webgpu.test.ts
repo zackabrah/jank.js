@@ -49,6 +49,38 @@ function fixture() {
 }
 
 describe("Three WebGPU application-frame intervals", () => {
+  it("samples explicit frame intervals without allocating queries for skipped work", async () => {
+    const host = fixture();
+    expect(() =>
+      createThreeWebGpuSource(host.renderer, { revision: "186", sampleEveryNFrames: 0 }),
+    ).toThrow();
+    const source = createThreeWebGpuSource(host.renderer, {
+      revision: "186",
+      enabled: true,
+      sampleEveryNFrames: 2,
+    });
+    for (let frameId = 1; frameId <= 3; frameId += 1) {
+      source.beginFrame(frameId);
+      const descriptor = host.pass("render", `r:scene:f${frameId}`);
+      expect(descriptor.timestampWrites !== undefined).toBe(frameId !== 2);
+      source.endFrame();
+      if (frameId !== 2) {
+        await host.resolve((frameId - 1) / 2);
+      } else {
+        expect(source.read()).toMatchObject({
+          droppedSamples: 0,
+          sample: { frameId: 2, metrics: null, passes: [], issues: ["sampled-out"] },
+        });
+      }
+    }
+    const resolved = await source.resolveFrames([1, 2, 3], { timeoutMs: 0 });
+    expect(resolved.samples.map((sample) => sample.completeness)).toEqual([
+      "complete",
+      "incomplete",
+      "complete",
+    ]);
+    source.dispose();
+  });
   it("rejects async submission without leaking its rejection into the host loop", async () => {
     const host = fixture();
     const source = createThreeWebGpuSource(host.renderer, { revision: "186", enabled: true });

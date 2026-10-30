@@ -3,6 +3,63 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { parseRecording } from "../../packages/jank/src/index.ts";
 
+test("capture coverage shows known losses, missing frames and capacity without changing on freeze", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate(async () => {
+    const fixturePath = "/tests/fixtures/gpu-sample.ts";
+    const { gpuIntervalFixture }: typeof import("../fixtures/gpu-sample.ts") = await import(
+      fixturePath
+    );
+    const { profiler } = window.panelFixture;
+    profiler.clear();
+    profiler.capture.start();
+    window.panelFixture.advance(3);
+    const frames = profiler.snapshot().frames;
+    for (const [index, frame] of frames.entries()) {
+      if (index > 1) {
+        break;
+      }
+      const sample = { ...gpuIntervalFixture(), sequence: index + 1, frameId: frame.id };
+      profiler.observeGpu({
+        status: "ready",
+        currentRendererFrameId: 8,
+        droppedSamples: 0,
+        sample:
+          index === 0
+            ? sample
+            : {
+                ...sample,
+                passes: [],
+                completeness: "incomplete",
+                metrics: null,
+                omittedPasses: 3,
+                issues: ["retention-capacity"],
+              },
+      });
+    }
+  });
+  await page.getByRole("button", { name: "FREEZE", exact: true }).click();
+  await expect(page.locator('[data-value="capture-health"]')).toContainText(
+    "GPU interval coverage",
+  );
+  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+  await expect(page.locator('[data-value="capture-progress"]')).toContainText(
+    "retention-capacity: 1",
+  );
+  await expect(page.locator('[data-value="capture-capacity"]')).toContainText("GPU retention pool");
+  const progress = await page.evaluate(() => window.panelFixture.profiler.capture.getProgress());
+  expect(progress.gpu.completeFrames).toBe(1);
+  expect(progress.gpu.incompleteFrames).toBe(1);
+  await page.evaluate(() => window.panelFixture.profiler.capture.stop());
+  await page.getByRole("tab", { name: "LIVE", exact: true }).click();
+  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+  await expect(page.locator(".jank-capture")).toContainText("retention-capacity: 1");
+  expect((await new AxeBuilder({ page }).include(".jank").analyze()).violations).toEqual([]);
+});
+
 test("scope rows keep registration order as timing and sample order change", async ({ page }) => {
   await page.goto("/tests/fixtures/panel/?mode=full");
   const orders = await page.evaluate(async () => {

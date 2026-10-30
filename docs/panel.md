@@ -102,3 +102,11 @@ The [local panel run](verification/panel.json) measured median incremental costs
 (LINE), 0.0698ms (MINI) and 0.0756ms (FULL) per host frame. See the report for batch ranges and
 machine/browser versions, and the [collection rerun](verification/panel-collection.json) for
 the separate Node workloads. These are measurement observations, not performance guarantees.
+
+## Capture completeness
+
+Active captures show GPU interval coverage and remaining frame capacity above the full panel's
+content. CAPTURE adds reason counts and the shared GPU pool's remaining sample/pass capacity.
+Saved cards show their own coverage. Progress uses current collection even while the live
+readout is frozen. Missing interval evidence remains explicitly unexplained; deliberately
+sampled-out frames are separate from incomplete measurements. See [GPU semantics](gpu-adapters.md).

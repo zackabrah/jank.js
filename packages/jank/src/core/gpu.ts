@@ -52,6 +52,8 @@ export interface GpuRejectedPass extends Omit<GpuIntervalPass, "startNs" | "endN
 
 export const gpuIncompleteReasons = [
   "query-capacity",
+  "retention-capacity",
+  "sampled-out",
   "queue-pressure",
   "readback-error",
   "readback-timeout",

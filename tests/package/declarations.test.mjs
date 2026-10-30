@@ -42,7 +42,7 @@ test("built profiler and both declaration packages work without workspace source
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
-import { createPanel, createProfiler, finalizeRecording, inspectFrame, type InspectFrame } from "jank.js";
+import { createPanel, createProfiler, finalizeRecording, inspectFrame, summarizeGpuCoverage, type InspectFrame } from "jank.js";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
 declare const gl: WebGL2RenderingContext;
@@ -63,6 +63,7 @@ import "junkui/styles.css";
 declare const stopped: import("jank.js").Recording;
 const inspect: InspectFrame = inspectFrame;
 const inspected = inspect(stopped, 1);
+summarizeGpuCoverage(stopped).coveragePercent?.toFixed(1);
 if (inspected) {
   inspected.coverage.status.toUpperCase();
   inspected.likelyCause?.aboveMedianMs.toFixed(2);
@@ -103,7 +104,7 @@ tabs.dispose();
       `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createPanel, createProfiler, finalizeRecording, inspectFrame, parseRecording, serializeRecording } from "jank.js";
+import { createPanel, createProfiler, finalizeRecording, inspectFrame, summarizeGpuCoverage, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
@@ -139,6 +140,8 @@ assert.equal(inspected.unattributedMs, 11);
 assert.equal(inspected.coverage.status, "complete");
 assert.equal(inspected.likelyCause, null);
 assert.equal(inspectFrame(recording, -1), null);
+assert.equal(summarizeGpuCoverage(recording).missingFrames, 1);
+assert.equal(profiler.capture.getProgress().kind, "recent");
 const manifest = JSON.parse(readFileSync(new URL("node_modules/jank.js/package.json", import.meta.url), "utf8"));
 assert.equal(recording.metadata.toolVersion, manifest.version);
 assert.deepEqual(parseRecording(serializeRecording(recording)), { ok: true, recording });

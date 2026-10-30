@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { gpuIntervalFixture } from "../../../tests/fixtures/gpu-sample.ts";
 import type { GpuState } from "./core/gpu.ts";
 import { createProfiler, parseRecording, serializeRecording } from "./index.ts";
 import type { ProfilerOptions } from "./profiler.ts";
@@ -31,6 +32,36 @@ function gpu(frameId: number): GpuState {
 }
 
 describe("public profiler recording path", () => {
+  it("reports the entire active capture after frames leave recent history, including late GPU arrivals", () => {
+    const { profiler, advanceTo } = setup();
+    profiler.capture.start();
+    for (let index = 0; index <= 601; index += 1) {
+      const atMs = 100 + index * 16;
+      advanceTo(atMs);
+      profiler.beginFrame(atMs);
+    }
+    profiler.observeGpu({
+      status: "ready",
+      currentRendererFrameId: 8,
+      droppedSamples: 0,
+      sample: gpuIntervalFixture(),
+    });
+    const progress = profiler.capture.getProgress();
+    expect(progress).toMatchObject({
+      kind: "manual",
+      frameCount: 601,
+      remainingFrames: 5399,
+      gpu: { totalFrames: 601, completeFrames: 1, missingFrames: 600 },
+    });
+    expect(profiler.snapshot().gpuCapacity).toEqual({
+      remainingSamples: 5999,
+      remainingPasses: 16381,
+    });
+    profiler.clear();
+    expect(profiler.capture.getProgress().gpu.totalFrames).toBe(0);
+    expect(progress.gpu.totalFrames).toBe(601);
+    profiler.dispose();
+  });
   it("exposes lightweight capture summaries, stable archive IDs and current instrumentation demand", () => {
     const { profiler, advanceTo } = setup({
       trace: { writeScope: () => {}, writeEvent: () => {} },

@@ -35,6 +35,7 @@ export function panelMarkup(): string {
         <button type="button" class="jl-tab" data-tab="loading">LOADING</button>
         <button type="button" class="jl-tab" data-tab="capture">CAPTURE</button>
       </div>
+      <p class="jank-note" data-value="capture-health" hidden></p>
       <div class="jank-views">
         <section data-tabpanel="live" class="jank-live">
           <div class="jank-metrics">${metric("fps", "FPS")}${metric("average", "AVG MS")}${metric("p95", "P95 MS")}${metric("worst", "WORST MS")}${metric("frame", "AT FRAME")}${metric("missed", "MISSED")}</div>
@@ -55,6 +56,10 @@ export function panelMarkup(): string {
         </section>
         <section data-tabpanel="loading" class="jank-scroll"><h2>LOADING</h2><p class="jank-note" data-value="loading-state">No loading source connected.</p><div data-list="loading" class="jank-list"></div></section>
         <section data-tabpanel="capture" class="jank-scroll">
+          <h2>CAPTURE COMPLETENESS</h2>
+          <p class="jank-note" data-value="capture-progress"></p>
+          <p class="jank-note" data-value="capture-capacity"></p>
+          <p class="jank-note">Absent intervals may be pending, disabled, unsupported or no longer retained. Coverage is not inferred from CPU timing.</p>
           <h2>FRAME BUDGET</h2>
           <div class="jank-settings"><label>Target FPS <input class="jl-input" data-input="fps" type="number" min="1" step="1"></label><button type="button" class="jl-btn jl-small" data-action="budget">APPLY</button></div>
           <h2>AUTOMATIC CAPTURE <span data-value="capture-state">IDLE</span></h2>

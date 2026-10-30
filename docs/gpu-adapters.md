@@ -132,7 +132,7 @@ Excess passes are counted as omissions (`query-capacity`); full slots produce an
 `queue-pressure` frame without waiting. Invalid/missing timestamps, read failures/timeouts,
 submission failures, unclosed frames, ownership changes and lifecycle cancellation have named
 reasons. A frame's representable timestamp span is at most 60 seconds. Incomplete published
-frames increment dropped-sample counts. The latest display never moves back when an older
+frames increment dropped-sample counts, except deliberately sampled-out frames. The latest display never moves back when an older
 frame resolves, while `onSample` still forwards every result. Retention eviction affects later
 finalization, not results already delivered to recording history.
 
@@ -141,10 +141,11 @@ returns detached retained samples and explicit pending IDs, and accepts at most 
 0–10,000ms. Only one drain may be pending. Close requested brackets first. A settled drain may
 still lack evicted/unobserved frames; it does not claim capture completeness.
 
-Schema 4 stores intervals, associations, metrics and omissions with strict validation. Versions
-1–3 are rejected, not converted. See [recording semantics](recordings.md) and the [verification
+Schema 5 stores intervals, associations, metrics, omissions and rejected timestamp diagnostics
+with strict validation. Versions 1–4 are rejected, not converted. See [recording semantics](recordings.md) and the [verification
 report](verification/webgpu.md) for actual browser evidence and measurement limits.
-# Rejected timestamp diagnostics (schema 5)
+
+## Rejected timestamp diagnostics (schema 5)
 
 Current source builds write schema 5; the archived rewrite.3 preview remains schema 4.
 Rejected native passes retain their ID, label, category, invocation, renderer frame ID and
@@ -163,3 +164,32 @@ The [WebGPU timestamp specification](https://www.w3.org/TR/webgpu/#timestamp-que
 applications to handle arbitrary values and notes that counter resets can produce negative deltas.
 Controlled tests verify each rejection, exact large values, ordered diagnostic identities,
 copying, codec limits and round trips. No hardware fault injection is claimed.
+
+## Coverage, capacity and explicit sampling
+
+`profiler.capture.getProgress()` describes the active manual/automatic capture, or recent history
+when idle. It returns sealed-frame count, remaining frame capacity and GPU interval coverage.
+`summarizeGpuCoverage(recording)` provides the same coverage calculation for a saved file;
+`finalizeRecording` also returns `coverage`. No GPU durations are fabricated.
+
+Coverage counts each CPU frame once: complete interval evidence, incomplete evidence, deliberate
+sampling, or no interval evidence. All brackets associated with a frame must be complete before
+that frame counts as complete. Missing data has no inferred cause; it may be pending, disabled,
+unsupported or evicted. Reason counts may overlap when a frame has multiple issues. Legacy
+WebGL duration samples are not counted as complete WebGPU interval evidence.
+
+The panel shows active coverage above the tabs' content, detailed coverage and capacity in CAPTURE,
+and coverage/reasons on saved cards. Freeze does not freeze capture progress.
+`profiler.snapshot().gpuCapacity` reports remaining space in the shared retention pool, including
+measurements outside the capture: 6,000 sample records and 16,384 accepted/rejected pass records.
+When pass details are evicted, an incomplete `retention-capacity` marker preserves the associated
+frame and omission count until the sample limit itself evicts that marker. These markers are
+retained in exported recordings. Finalization cannot recover details already evicted everywhere.
+
+For longer captures with dense GPU work, set `sampleEveryNFrames` on `createThreeWebGpuSource`:
+1 (default) captures every bracket, 2 every other bracket; the allowed range is 1–6,000. Sampling
+starts with the first enabled bracket. Skipped brackets allocate no timestamp slot and retain a
+`sampled-out` marker. They do not increment dropped-sample counts or become measured zero. They
+reduce overall coverage, and may miss intermittent hitches or alias periodic workloads. CPU
+collection and the 6,000-frame/32 MiB recording limits remain in force; this is explicit sampling,
+not streaming.

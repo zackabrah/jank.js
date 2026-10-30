@@ -76,3 +76,12 @@ not require changing core types. Shared code should reduce concepts, not merely 
 Success requires feature/visual parity, independently usable junkui, validated data boundaries,
 documented lifecycle, passing browser/consumer tests and measured acceptable overhead. A large
 diff, more files, stricter lint settings or a lower line count alone proves none of those.
+
+## Investigation priorities from production runs
+
+Before continuing the offline viewer: capture completeness and precise timestamp diagnostics
+are implemented in source, with bounded retention markers and explicit GPU sampling. Named
+cloud panorama/shadows, ocean FFT, reflection, bloom and temporal-resolve passes are the next
+Red Skies integration slice; labels belong at those actual submission sites. Reusable A/B run
+control and unified stop/finalize/export remain follow-up work. No production integration or
+archived preview has been updated by these source changes.

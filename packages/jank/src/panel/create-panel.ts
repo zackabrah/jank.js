@@ -1,7 +1,12 @@
 import { createTabs } from "junkui";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import type { GpuSource } from "../sources.ts";
-import { createCaptureView, initializeCapture, readCaptureOptions } from "./capture-view.ts";
+import {
+  createCaptureView,
+  initializeCapture,
+  readCaptureOptions,
+  renderCaptureProgress,
+} from "./capture-view.ts";
 import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
 import { renderLive, renderOverhead } from "./live-view.ts";
@@ -60,6 +65,7 @@ export function createPanel(options: PanelOptions): Panel {
       current = profiler.snapshot();
       renderState();
       if (mode === "full") {
+        renderCaptureProgress(root, profiler, current);
         renderOverhead(root, current);
         if (selectedTab === "capture") {
           renderCaptures(current);

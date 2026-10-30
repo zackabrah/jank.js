@@ -12,6 +12,7 @@ import { choice, invalid } from "../recordings/read-values.ts";
 import type { Recording } from "../recordings/recording.ts";
 
 export interface RecordingFinalization {
+  readonly coverage: GpuCoverage;
   readonly recording: Recording;
   readonly status: GpuFrameResolution["status"] | "error";
   /** Every recorded CPU frame has complete interval data, and no merge samples were omitted. */
@@ -144,6 +145,7 @@ function describeFinalization(
   const complete =
     missingFrameIds.length === 0 && incompleteFrameIds.length === 0 && omittedSamples === 0;
   return {
+    coverage: summarizeGpuCoverage(recording),
     recording: { ...recording, truncated: recording.truncated || !complete },
     status,
     complete,
@@ -153,3 +155,5 @@ function describeFinalization(
     error,
   };
 }
+
+import { type GpuCoverage, summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";

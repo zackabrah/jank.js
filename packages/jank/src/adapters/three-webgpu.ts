@@ -37,6 +37,8 @@ export interface ThreeWebGpuOptions extends GpuAdapterOptions {
   readonly maxPasses?: number;
   readonly maxPendingFrames?: number;
   readonly readbackTimeoutMs?: number;
+  /** Collect one bracket in every N; skipped frames remain explicitly marked. Default 1. */
+  readonly sampleEveryNFrames?: number;
 }
 
 export interface ThreeWebGpuSource extends GpuAdapter, GpuFrameResolver {
@@ -81,6 +83,12 @@ export function createThreeWebGpuSource(
     ),
     pending: boundedInteger(options.maxPendingFrames ?? 4, 1, 8, "maxPendingFrames"),
     timeoutMs: boundedInteger(options.readbackTimeoutMs ?? 2000, 1, 10_000, "readbackTimeoutMs"),
+    sampleEveryNFrames: boundedInteger(
+      options.sampleEveryNFrames ?? 1,
+      1,
+      6000,
+      "sampleEveryNFrames",
+    ),
   };
   return new ThreeGpuSession(renderer, options, limits);
 }
@@ -89,7 +97,12 @@ class ThreeGpuSession implements ThreeWebGpuSource {
   readonly label = "Three.js r186 compute and render GPU intervals";
   private readonly renderer: ThreeTimestampRenderer;
   private readonly options: ThreeWebGpuOptions;
-  private readonly limits: { passes: number; pending: number; timeoutMs: number };
+  private readonly limits: {
+    passes: number;
+    pending: number;
+    timeoutMs: number;
+    sampleEveryNFrames: number;
+  };
   private readonly owner: ReturnType<typeof ownThreeTimestamps> | null;
   private readonly clockId = crypto.randomUUID();
   private enabled = false;
@@ -161,6 +174,11 @@ class ThreeGpuSession implements ThreeWebGpuSource {
       issues: new Set(),
     };
     this.rendererFrameId = Math.max(this.rendererFrameId, timing.rendererFrameId);
+    if ((this.sequence - 1) % this.limits.sampleEveryNFrames !== 0) {
+      timing.issues.add("sampled-out");
+      this.active = { timing, slot: null };
+      return;
+    }
     let slot: TimestampSlot | null = null;
     try {
       slot = this.availableSlot();
@@ -320,7 +338,7 @@ class ThreeGpuSession implements ThreeWebGpuSource {
 
   private publish(sample: GpuIntervalSample): void {
     this.retain(sample);
-    if (sample.completeness === "incomplete") {
+    if (sample.issues.some((issue) => issue !== "sampled-out")) {
       this.droppedSamples += 1;
     }
     const state: GpuState = {
