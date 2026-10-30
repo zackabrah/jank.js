@@ -10,6 +10,12 @@ CAPTURE scroll independently. CPU scope rows follow channel registration order, 
 positions stable as samples and timings change. Counters use one label/value pair per row so
 ordinary labels remain readable when the details region scrolls.
 
+Each main section header is a native disclosure: click it, or focus it and press Enter or
+Space, to collapse or expand its contents. Sections start expanded and retain their individual
+state through refreshes, tab switches and panel-size changes for that mounted panel. Collapsing
+a section hides its presentation only; collection, recording and edited settings continue.
+The LIVE recording controls remain available even when every detail section is collapsed.
+
 ```ts
 import { createPanel, createProfiler } from "jank.js";
 import "jank.js/styles.css";

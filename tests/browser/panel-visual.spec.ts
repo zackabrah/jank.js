@@ -1,5 +1,21 @@
 import { expect, test } from "@playwright/test";
 
+test("@visual collapsed LIVE sections keep their headers and recording controls visible", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate(() => window.panelFixture.advance(70));
+  for (const id of ["scopes", "gpu", "counters", "events"]) {
+    await page.locator(`[data-section="${id}"] > summary`).click();
+  }
+  await expect(page.getByRole("button", { name: "REC", exact: true })).toBeInViewport();
+  await expect(page.locator(".jank")).toHaveScreenshot("panel-sections-collapsed.png", {
+    mask: [page.locator('[data-value="collection-cost"], [data-value="refresh-cost"]')],
+    maskColor: "#0a0a0a",
+  });
+});
+
 test("@visual active capture coverage is readable on narrow screens", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/tests/fixtures/panel/?mode=full");
