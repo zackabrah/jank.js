@@ -162,6 +162,26 @@ zero. Dispose in order: `panel.dispose()`, `gpu.dispose()`, `profiler.dispose()`
 remains usable. Recreate the adapter when replacing the profiler or recovering a WebGPU device.
 The adapter restores prior timestamp settings and destroys only its own resources.
 
+For a stopped WebGPU capture, wait outside your animation callback for bounded finalization:
+
+```js
+import { finalizeRecording, serializeRecording } from "jank.js";
+
+const stopped = profiler.capture.stop();
+if (stopped) {
+  const finished = await finalizeRecording(stopped, gpu, { timeoutMs: 2000 });
+  const json = serializeRecording(finished.recording);
+  // Save json with your existing export action.
+}
+```
+
+The loop continues during this wait. Inspect `status` (`settled`, `timeout`, `cancelled`,
+`unavailable`, `error`), `complete`, `missingFrameIds`, `incompleteFrameIds`, `omittedSamples`
+and `error`. Only sealed CPU frames are eligible. The original capture/archive stays unchanged;
+export the returned recording. Missing/partial data marks it truncated. Merge storage is bounded
+to 6,000 samples / 16,384 GPU passes, and the timeout is capped at 10s. Finalize promptly while
+the adapter retains pending results. Panel STOP/EXPORT remain synchronous.
+
 ## Preview limits
 
 - The API and recording schema may still change. This preview writes schema version 4 and

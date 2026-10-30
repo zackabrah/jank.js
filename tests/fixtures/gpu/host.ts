@@ -3,7 +3,13 @@ import type { GpuAdapter } from "../../../packages/jank/src/adapters/gpu-adapter
 import { isTimestampBackend } from "../../../packages/jank/src/adapters/three-timestamp-owner.ts";
 import { createThreeWebGpuSource } from "../../../packages/jank/src/adapters/three-webgpu.ts";
 import { createWebGl2GpuSource } from "../../../packages/jank/src/adapters/webgl2.ts";
-import { createPanel, createProfiler, type Profiler } from "../../../packages/jank/src/index.ts";
+import {
+  createPanel,
+  createProfiler,
+  finalizeRecording,
+  type Profiler,
+  type RecordingFinalization,
+} from "../../../packages/jank/src/index.ts";
 import { observeGpuDevice } from "./evidence.ts";
 
 declare global {
@@ -12,6 +18,12 @@ declare global {
       source: GpuAdapter;
       profiler: Profiler;
       frames(): number;
+      finalize(): Promise<{
+        pendingFrames: number;
+        frameId: number;
+        result: RecordingFinalization;
+      }>;
+
       reference(): ReturnType<NonNullable<Awaited<ReturnType<typeof rendererFor>>["reference"]>>;
       benchmark(): ReturnType<NonNullable<Awaited<ReturnType<typeof rendererFor>>["benchmark"]>>;
     };
@@ -202,6 +214,22 @@ window.gpuFixture = {
   source: host.source,
   profiler,
   frames: () => frameCount,
+  finalize: async () => {
+    if (!("resolveFrames" in host.source)) {
+      throw new Error("WebGPU required");
+    }
+    cancelAnimationFrame(request);
+    const frameId = profiler.beginFrame(performance.now());
+    host.render(frameId);
+    profiler.beginFrame(performance.now() + 0.001);
+    const recording = profiler.capture.stop();
+    if (!recording) {
+      throw new Error("No recording");
+    }
+    const pendingFrames = host.source.diagnostics().pendingFrames;
+    const result = await finalizeRecording(recording, host.source, { timeoutMs: 2000 });
+    return { pendingFrames, frameId, result };
+  },
   reference: () => {
     if (!host.reference) {
       throw new Error("WebGPU required");

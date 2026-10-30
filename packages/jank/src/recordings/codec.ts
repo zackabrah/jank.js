@@ -38,7 +38,7 @@ function checkSize(json: string): void {
   }
 }
 
-function readRecording(value: unknown): Recording {
+export function readRecording(value: unknown): Recording {
   const data = object(value, "$");
   if (data.schemaVersion !== 4) {
     throw new RecordingError({

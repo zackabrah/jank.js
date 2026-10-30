@@ -37,7 +37,51 @@ duplicating it. A saved archive is never patched by a later GPU completion.
 
 Tracing is opt-in through a borrowed sink. A failed sink is disabled and reported as an event.
 Disposal releases profiler-owned state and scope demand; it never disposes the host's sink or
-stops the host loop. Built-in User Timing and renderer adapters belong to later slices.
+stops the host loop. Built-in User Timing remains pending; renderer adapters are optional.
+
+## Bounded GPU finalization
+
+`capture.stop()` remains synchronous and seals only already-completed CPU frames. To collect
+pending WebGPU results, call the exported `finalizeRecording` outside your animation callback:
+
+```js
+import { finalizeRecording, serializeRecording } from "jank.js";
+
+async function stopAndExport() {
+  const stopped = profiler.capture.stop();
+  if (!stopped) return;
+  const finished = await finalizeRecording(stopped, gpu, { timeoutMs: 2000 });
+  // Inspect finished.status and finished.complete in your own labelled capture UI.
+  const json = serializeRecording(finished.recording);
+  // Save json through your application's existing export action.
+}
+```
+
+The host loop continues while this promise waits. Close GPU brackets before finalizing. The
+operation asks only for the recording's sealed frame IDs and returns a detached recording.
+It merges all available requested intervals by clock/sequence, preserves existing complete
+observations and ignores unrelated/future/unassociated additions. It never invents the final
+open CPU frame. The original recording and archive entry remain unchanged: export the returned
+`finished.recording`, not the original archive entry. Panel STOP/EXPORT retain their synchronous
+behavior; hosts that need drained captures use this API.
+
+`status` is `settled`, `timeout`, `cancelled`, `unavailable` or `error`. `complete` means every
+recorded CPU frame has complete interval data and no merge samples were omitted; it is separate
+from whether the drain settled. `missingFrameIds`, `incompleteFrameIds`, `omittedSamples` and
+`error` explain gaps. WebGL2 duration samples are preserved but do not satisfy interval coverage.
+The helper has its own 0–10,000ms timeout (default 2s), so even a resolver that never settles
+cannot hold the operation indefinitely. JavaScript timers remain subject to event-loop delays.
+Late resolver completion cannot mutate the returned capture.
+
+Existing observations take priority at the 6,000-sample / 16,384-pass merge limit. Capacity
+omissions, missing interval frames or partial frames mark the returned recording `truncated`.
+Resolver errors retain the stopped observations and return an error description. Caller input
+and timeout options are validated before waiting; invalid caller recordings throw. The adapter
+retains 128 resolved frames, so finalize promptly and keep `onSample` connected during capture.
+
+The operation status is returned to the caller, not serialized as timing data. Exported files
+retain each observed frame's completeness/reasons and the recording's truncation flag; absent
+GPU samples remain absent, never zero. The helper does not modify legacy pass-sum semantics.
 
 ## File boundary
 

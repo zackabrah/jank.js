@@ -160,3 +160,19 @@ test("WebGPU instrumentation overhead and resource stability", async ({ page }, 
     contentType: "application/json",
   });
 });
+
+test("a stopped capture includes its pending WebGPU frame after bounded finalization", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/gpu/?backend=webgpu");
+  await expect(page.locator("body")).toHaveAttribute("data-ready", "true");
+  const state = await page.evaluate(() => window.gpuFixture.source.read());
+  test.skip(state.status === "unsupported", "Native WebGPU timestamp queries unavailable");
+  const finished = await page.evaluate(() => window.gpuFixture.finalize());
+  expect(finished.pendingFrames).toBeGreaterThan(0);
+  expect(finished.result.status).toBe("settled");
+  expect(finished.result.complete).toBe(true);
+  expect(finished.result.recording.gpu.some((sample) => sample.frameId === finished.frameId)).toBe(
+    true,
+  );
+});

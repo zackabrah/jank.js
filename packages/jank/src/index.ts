@@ -1,5 +1,6 @@
 export type { FrameSummary, InspectFrame } from "./analysis/summary.ts";
 export { createProfiler } from "./browser/create-profiler.ts";
+export { finalizeRecording, type RecordingFinalization } from "./browser/finalize-recording.ts";
 export type { Channel, ScopeToken } from "./core/channels.ts";
 export type {
   ChannelDescription,

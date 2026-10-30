@@ -42,7 +42,7 @@ test("built profiler and both declaration packages work without workspace source
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
-import { createPanel, createProfiler } from "jank.js";
+import { createPanel, createProfiler, finalizeRecording } from "jank.js";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
 declare const gl: WebGL2RenderingContext;
@@ -60,6 +60,9 @@ webgpu.dispose();
 import "jank.js/styles.css";
 import { createTabs, type CreateTabs } from "junkui";
 import "junkui/styles.css";
+declare const stopped: import("jank.js").Recording;
+const finalized: import("jank.js").RecordingFinalization = await finalizeRecording(stopped, webgpu, { timeoutMs: 100 });
+finalized.missingFrameIds.forEach(id => id.toFixed());
 const factory: CreateProfiler = createProfiler;
 const tabsFactory: CreateTabs = createTabs;
 declare const tablist: HTMLElement;
@@ -94,7 +97,7 @@ tabs.dispose();
       `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createPanel, createProfiler, parseRecording, serializeRecording } from "jank.js";
+import { createPanel, createProfiler, finalizeRecording, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
@@ -128,6 +131,13 @@ const manifest = JSON.parse(readFileSync(new URL("node_modules/jank.js/package.j
 assert.equal(recording.metadata.toolVersion, manifest.version);
 assert.deepEqual(parseRecording(serializeRecording(recording)), { ok: true, recording });
 assert.equal(parseRecording('{').problem.code, "invalid-json");
+const finalized = await finalizeRecording(recording, {
+  resolveFrames: async () => ({ status: "unavailable", samples: [], pendingFrameIds: [] }),
+});
+assert.equal(finalized.complete, false);
+assert.equal(finalized.status, "unavailable");
+assert.deepEqual(finalized.missingFrameIds, [recording.frames[0].id]);
+assert.equal(parseRecording(serializeRecording(finalized.recording)).ok, true);
 profiler.dispose();
 `,
     );
