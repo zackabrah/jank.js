@@ -19,6 +19,14 @@ export type CaptureState =
     }
   | { readonly status: "cooldown"; readonly rearmAtMs: number };
 
+export interface SavedCapture {
+  readonly id: number;
+  readonly kind: Recording["capture"]["kind"];
+  readonly frameCount: number;
+  readonly durationMs: number;
+  readonly truncated: boolean;
+}
+
 /** Capture storage belongs to the profiler and survives panel removal. */
 export interface CaptureController {
   getState(): CaptureState;
@@ -30,6 +38,10 @@ export interface CaptureController {
   /** Stops future triggers; an active after-frame window still finishes. */
   disarm(): void;
   recent(): Recording;
+  /** Small detached summaries; IDs never repeat during this profiler's lifetime. */
+  list(): readonly SavedCapture[];
+  /** Copies one retained recording; cleared or evicted IDs return null. */
+  read(id: number): Recording | null;
   /** At most ten completed recordings, oldest first, detached from mutable storage. */
   completed(): readonly Recording[];
 }

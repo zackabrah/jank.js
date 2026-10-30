@@ -4,6 +4,7 @@
   "include": [
     "packages/*/src/**/*.test.ts",
     "packages/*/gallery/**/*.ts",
+    "packages/*/vite.config.ts",
     "tests/fixtures/**/*.ts",
     "tests/browser/**/*.ts",
     "vitest.config.ts",

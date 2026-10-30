@@ -1,5 +1,5 @@
 import type { FrameSample } from "../core/frames.ts";
-import type { CaptureController, CaptureOptions, CaptureState } from "./capture.ts";
+import type { CaptureController, CaptureOptions, CaptureState, SavedCapture } from "./capture.ts";
 import { copyRecording } from "./copy.ts";
 import { recordingLimits } from "./limits.ts";
 import type { Recording } from "./recording.ts";
@@ -43,7 +43,8 @@ class CaptureSession implements CaptureController {
     afterFrames: 120,
     cooldownMs: 5000,
   };
-  private archive: Recording[] = [];
+  private archive: { readonly summary: SavedCapture; readonly recording: Recording }[] = [];
+  private nextCaptureId = 1;
   private releaseScopes: (() => void) | null = null;
   private disposed = false;
 
@@ -206,7 +207,17 @@ class CaptureSession implements CaptureController {
     truncated: boolean,
   ): Recording {
     const recording = copyRecording(this.dependencies.createRecording(frames, capture, truncated));
-    this.archive.push(recording);
+    this.archive.push({
+      recording,
+      summary: {
+        id: this.nextCaptureId++,
+        kind: recording.capture.kind,
+        frameCount: recording.frames.length,
+        durationMs:
+          (recording.frames.at(-1)?.endedAtMs ?? 0) - (recording.frames[0]?.startedAtMs ?? 0),
+        truncated: recording.truncated,
+      },
+    });
     if (this.archive.length > recordingLimits.archive) {
       this.archive.shift();
     }
@@ -228,7 +239,16 @@ class CaptureSession implements CaptureController {
   }
 
   completed(): readonly Recording[] {
-    return this.archive.map(copyRecording);
+    return this.archive.map((entry) => copyRecording(entry.recording));
+  }
+
+  list(): readonly SavedCapture[] {
+    return this.archive.map((entry) => ({ ...entry.summary }));
+  }
+
+  read(id: number): Recording | null {
+    const entry = this.archive.find((entry) => entry.summary.id === id);
+    return entry ? copyRecording(entry.recording) : null;
   }
 
   clear(): void {

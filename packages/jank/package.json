@@ -5,17 +5,24 @@
   "type": "module",
   "description": "Private rewrite: host-owned profiling, capture and validated recording files.",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly && node scripts/build-css.mjs",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./styles.css": {
+      "types": "./dist/styles.d.ts",
+      "default": "./dist/styles.css"
     }
   },
   "files": [
     "dist"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "junkui": "workspace:*"
+  }
 }

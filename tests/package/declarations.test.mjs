@@ -42,7 +42,8 @@ test("built profiler and both declaration packages work without workspace source
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
-import { createProfiler } from "jank.js";
+import { createPanel, createProfiler } from "jank.js";
+import "jank.js/styles.css";
 import { createTabs, type CreateTabs } from "junkui";
 import "junkui/styles.css";
 const factory: CreateProfiler = createProfiler;
@@ -51,6 +52,9 @@ declare const tablist: HTMLElement;
 declare const button: HTMLButtonElement;
 declare const panel: HTMLElement;
 const profiler = factory({ targetFps: 60 });
+const livePanel = createPanel({ container: panel, profiler });
+livePanel.refresh(100);
+livePanel.dispose();
 const channel: Channel = profiler.createChannel({ id: "physics", label: "Physics" });
 const token: ScopeToken = channel.begin();
 channel.end(token);
@@ -76,12 +80,16 @@ tabs.dispose();
       `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createProfiler, parseRecording, serializeRecording } from "jank.js";
+import { createPanel, createProfiler, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
 assert.equal(typeof createTabs, "function");
+assert.equal(typeof createPanel, "function");
 const css = readFileSync(new URL(import.meta.resolve("junkui/styles.css")), "utf8");
 assert.ok(css.includes(".jl") && css.includes("--jl-ink") && css.includes(":focus-visible"));
 assert.doesNotMatch(css, /@import|url\\(/u, "Shipped CSS must be self-contained");
+const panelCss = readFileSync(new URL(import.meta.resolve("jank.js/styles.css")), "utf8");
+assert.ok(panelCss.includes(".jank") && panelCss.includes("--jl-ink"));
+assert.doesNotMatch(panelCss, /@import|url\\(/u);
 let timeMs = 0;
 const profiler = createProfiler({ now: () => timeMs });
 const channel = profiler.createChannel({ id: "physics", label: "Physics", readCounters: () => ({ bodies: 10 }) });
@@ -110,6 +118,18 @@ profiler.dispose();
     });
     assert.ifError(runtime.error);
     assert.equal(runtime.status, 0, runtime.stdout + runtime.stderr);
+    rmSync(join(directory, "node_modules/junkui"), { recursive: true });
+    const standalone = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        'import { createPanel } from "jank.js"; if (typeof createPanel !== "function") process.exit(1);',
+      ],
+      { cwd: directory, encoding: "utf8" },
+    );
+    assert.ifError(standalone.error);
+    assert.equal(standalone.status, 0, standalone.stdout + standalone.stderr);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

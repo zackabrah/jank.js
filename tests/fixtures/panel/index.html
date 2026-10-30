@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>jank.js panel fixture</title>
+    <link rel="stylesheet" href="../../../packages/jank/src/panel/panel.css" />
+    <style>
+      body { margin: 0; min-height: 100vh; background: #080a11; color: #e8e8e8; font-family: monospace; }
+      main { padding: 28px; }
+    </style>
+  </head>
+  <body>
+    <main><h1>Host application</h1><p id="host-content">Host-owned content</p>
+      <p>Deterministic test host · simulated frame durations</p>
+      <button type="button" id="collect">Collect 70 frames</button>
+      <button type="button" id="slow">Add a slow frame</button>
+    </main>
+    <div id="panel-container"></div>
+    <script type="module" src="./host.ts"></script>
+  </body>
+</html>

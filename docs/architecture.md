@@ -3,8 +3,8 @@
 Status: architecture and contracts established; collection, capture, validated files and public
 profiler composition are implemented. See [collection behavior](collection.md) and
 [recording behavior](recordings.md) for verified semantics. The independent junkui theme,
-native controls and tabs are also implemented; panel/viewer, analysis, loading and adapters
-remain pending.
+native controls and tabs are also implemented. Frame/scope statistics and the core live panel
+are implemented; offline analysis/viewer, loading runtime and adapters remain pending.
 
 ## Decisions already made
 
@@ -40,8 +40,8 @@ code; changing a theme color must not involve a profiler package.
 `jank.js` consumes only documented `junkui` exports. `junkui` never imports `jank.js`, even for
 types. Do not introduce a third shared-types package for trivial shapes such as `dispose()`.
 
-The eventual build bundles the selected junkui CSS and helpers into jank's existing CSS and
-viewer assets. It records junkui as a workspace build dependency, not an installed runtime
+The build bundles the selected junkui CSS and helpers into jank's JavaScript and standalone CSS.
+Viewer assets follow in their implementation slice. It records junkui as a workspace build dependency, not an installed runtime
 requirement. This keeps the current zero-runtime-dependency distribution. Independently
 publishable builds, export checks and license notices are required before either package ships.
 

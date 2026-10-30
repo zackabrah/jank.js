@@ -119,6 +119,8 @@ export function createProfilerRuntime(
       arm: (value) => collector.measureCollection(() => capture.arm(value)),
       disarm: () => collector.measureCollection(() => capture.disarm()),
       recent: () => collector.measureCollection(() => capture.recent()),
+      list: () => collector.measureCollection(() => capture.list()),
+      read: (id) => collector.measureCollection(() => capture.read(id)),
       completed: () => collector.measureCollection(() => capture.completed()),
     },
     beginFrame: (atMs) =>
@@ -178,7 +180,11 @@ export function createProfilerRuntime(
     requestScopes: () => collector.requestScopes(),
     measureRefresh: (render) => collector.measureRefresh(render),
     snapshot: () =>
-      collector.measureCollection(() => ({ ...collector.snapshot(), ...observations.snapshot() })),
+      collector.measureCollection(() => ({
+        ...collector.snapshot(),
+        ...observations.snapshot(),
+        traceEnabled: releaseTrace !== null,
+      })),
     clear: () => {
       capture.clear();
       observations.clear();

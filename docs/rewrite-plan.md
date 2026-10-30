@@ -45,9 +45,11 @@ available until the complete parity matrix and release checks pass.
    disposal, host-style interference, axe results and desktop/narrow visual baselines in three
    engines. The built package exposes JavaScript, declarations and standalone CSS without
    profiler imports or runtime dependencies. See [UI evidence](junkui.md).
-5. **The live panel.** Build LINE first, then MINI and FULL. Separate live/loading/capture views,
-   their view models and local interaction state. Add real accessibility and visual checks at
-   each size. Capture ownership stays outside the panel.
+5. **Core live panel implemented.** LINE, MINI and FULL, live statistics, native tabs, freeze,
+   recording/export, labelled automatic capture, archive thumbnails and scope ownership now
+   have browser, accessibility and visual checks. See [panel evidence](panel.md). Loading run
+   detail and optional integration views remain with slice 7; viewer handoff remains with slice 6.
+   New visual baselines do not constitute final reference-feature acceptance.
 6. **Analysis and offline viewer.** Add pure inspection/lanes, shared chart geometry, selection,
    navigation, import/export, and safe handoff. Verify a single HTML artifact works offline.
 7. **Loading and optional integrations.** Implement loading handles and adapter-specific resource

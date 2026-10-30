@@ -96,6 +96,11 @@ describe("manual capture", () => {
     }
     expect(controller.completed()).toHaveLength(10);
     expect(controller.completed()[0]?.frames[0]?.id).toBe(3);
+    expect(controller.list().map((capture) => capture.id)).toEqual([
+      4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+    ]);
+    expect(controller.read(3)).toBeNull();
+    expect(controller.read(4)?.frames[0]?.id).toBe(3);
   });
 
   it("caps manual recording at 6000 frames and releases only its scope request", () => {
@@ -303,6 +308,9 @@ describe("capture ownership", () => {
     const result = controller.stop();
     Reflect.set(result?.frames[0]?.cpu ?? {}, "renderMs", 999);
     const completed = controller.completed();
+    const summaries = controller.list();
+    Reflect.set(summaries[0] ?? {}, "id", 999);
+    expect(controller.list()[0]?.id).toBe(1);
     Reflect.set(completed[0]?.metadata.environment.timer ?? {}, "source", "wrong");
     Reflect.set(controller.recent().frames[0]?.cpu ?? {}, "updateMs", 999);
     expect(controller.completed()[0]?.frames[0]?.cpu).toEqual({ updateMs: null, renderMs: null });

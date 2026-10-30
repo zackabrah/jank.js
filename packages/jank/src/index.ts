@@ -19,6 +19,7 @@ export type {
   LoadingRun,
   LoadingSnapshot,
 } from "./loading/loading.ts";
+export { createPanel } from "./panel/create-panel.ts";
 export type { CreatePanel, Panel, PanelMode, PanelOptions } from "./panel/panel.ts";
 export type {
   ChannelOptions,
@@ -27,7 +28,12 @@ export type {
   ProfilerOptions,
   TraceSink,
 } from "./profiler.ts";
-export type { CaptureController, CaptureOptions, CaptureState } from "./recordings/capture.ts";
+export type {
+  CaptureController,
+  CaptureOptions,
+  CaptureState,
+  SavedCapture,
+} from "./recordings/capture.ts";
 export { parseRecording, serializeRecording } from "./recordings/codec.ts";
 export { RecordingError } from "./recordings/read-values.ts";
 export type {

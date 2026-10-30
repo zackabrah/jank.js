@@ -31,6 +31,37 @@ function gpu(frameId: number): GpuState {
 }
 
 describe("public profiler recording path", () => {
+  it("exposes lightweight capture summaries, stable archive IDs and current instrumentation demand", () => {
+    const { profiler, advanceTo } = setup({
+      trace: { writeScope: () => {}, writeEvent: () => {} },
+    });
+    expect(profiler.snapshot()).toMatchObject({ scopesRequested: false, traceEnabled: false });
+    profiler.capture.start();
+    profiler.beginFrame(100);
+    advanceTo(116);
+    profiler.beginFrame(116);
+    profiler.capture.stop();
+    expect(profiler.capture.list()).toEqual([
+      { id: 1, kind: "manual", frameCount: 1, durationMs: 16, truncated: false },
+    ]);
+    const saved = profiler.capture.read(1);
+    expect(saved?.frames).toHaveLength(1);
+    if (saved) {
+      Reflect.set(saved.frames[0] ?? {}, "id", 900);
+    }
+    expect(profiler.capture.read(1)?.frames[0]?.id).toBe(1);
+    expect(profiler.capture.read(999)).toBeNull();
+    profiler.setTraceEnabled(true);
+    expect(profiler.snapshot()).toMatchObject({ scopesRequested: true, traceEnabled: true });
+    profiler.clear();
+    expect(profiler.capture.read(1)).toBeNull();
+    profiler.capture.start();
+    profiler.capture.stop();
+    expect(profiler.capture.list()).toMatchObject([{ id: 2, frameCount: 0, durationMs: 0 }]);
+    profiler.dispose();
+    expect(profiler.snapshot()).toMatchObject({ scopesRequested: false, traceEnabled: false });
+  });
+
   it("captures host scopes, counters, events and GPU data in a round-trippable file", () => {
     const { profiler, advanceTo } = setup({ application: { name: "Host", version: "1" } });
     const physics = profiler.createChannel({

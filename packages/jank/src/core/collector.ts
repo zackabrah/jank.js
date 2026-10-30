@@ -267,6 +267,7 @@ class FrameCollector {
     const costStart = this.costNow();
     const frames = this.history.snapshot();
     const snapshot = {
+      scopesRequested: !this.disposed && this.scopeRequests > 0,
       targetFps: this.targetFps,
       frames,
       channels: [...this.channels.values()].map((channel) => ({ ...channel.description })),

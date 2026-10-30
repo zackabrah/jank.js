@@ -21,10 +21,11 @@
     "test:visual": "playwright test --grep @visual",
     "dev:fixture": "vite --host 127.0.0.1 --port 4186 --strictPort",
     "bench": "node --experimental-strip-types scripts/benchmark.mjs",
+    "bench:panel": "node scripts/benchmark-panel.mjs",
     "build": "pnpm -r build",
     "build:types": "pnpm -r build:types",
     "test:tooling": "node --test tests/tooling/*.test.mjs",
-    "prepare": "git config core.hooksPath .githooks"
+    "prepare": "git config core.hooksPath .githooks && pnpm --filter junkui build"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
