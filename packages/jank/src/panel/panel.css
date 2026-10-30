@@ -169,6 +169,8 @@
   overflow-wrap: anywhere;
 }
 .jank .jank-row > :last-child {
+  flex-shrink: 0;
+  max-width: 50%;
   color: var(--jl-muted);
   text-align: right;
   overflow-wrap: anywhere;

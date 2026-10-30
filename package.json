@@ -20,6 +20,7 @@
     "test:browser": "playwright test --grep-invert @visual",
     "test:visual": "playwright test --grep @visual",
     "dev:fixture": "vite --host 127.0.0.1 --port 4186 --strictPort",
+    "dev:demo": "vite --host 127.0.0.1 --port 4187 --strictPort --open /examples/basic/",
     "bench": "node --experimental-strip-types scripts/benchmark.mjs",
     "bench:panel": "node scripts/benchmark-panel.mjs",
     "build": "pnpm -r build",
