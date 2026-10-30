@@ -144,3 +144,22 @@ still lack evicted/unobserved frames; it does not claim capture completeness.
 Schema 4 stores intervals, associations, metrics and omissions with strict validation. Versions
 1–3 are rejected, not converted. See [recording semantics](recordings.md) and the [verification
 report](verification/webgpu.md) for actual browser evidence and measurement limits.
+# Rejected timestamp diagnostics (schema 5)
+
+Current source builds write schema 5; the archived rewrite.3 preview remains schema 4.
+Rejected native passes retain their ID, label, category, invocation, renderer frame ID and
+absolute timestamp pair in `rejectedPasses`. Values are decimal uint64 strings; null means
+the readback value was absent. Accepted and rejected passes share the existing per-frame and
+recording storage budgets. Rejected measurements never become measured zero or complete totals.
+
+- `missing-timestamp`: one or both readback values are absent.
+- `zero-timestamp`: an endpoint is zero; Jank conservatively treats this as unavailable.
+- `reversed-timestamp`: both endpoints are nonzero and the end precedes the start.
+- `out-of-range-timestamp`: a pair duration or its frame-relative end exceeds Jank's 60s bound.
+
+Classification follows that order. Equal nonzero endpoints are a valid quantized zero duration.
+These reasons describe observations and Jank's acceptance policy, not their underlying cause.
+The [WebGPU timestamp specification](https://www.w3.org/TR/webgpu/#timestamp-query) requires
+applications to handle arbitrary values and notes that counter resets can produce negative deltas.
+Controlled tests verify each rejection, exact large values, ordered diagnostic identities,
+copying, codec limits and round trips. No hardware fault injection is claimed.

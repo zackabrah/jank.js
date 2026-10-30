@@ -3,7 +3,7 @@
 This branch contains the development stack, architecture, contracts, and a working public
 profiler. `createProfiler` connects host frames, scopes, counters, events, GPU observations,
 manual/automatic capture and a bounded archive. `parseRecording`, `serializeRecording` and
-`RecordingError` provide validated version 4 files. `createPanel` provides LINE/MINI/FULL views,
+`RecordingError` provide validated version 5 files. `createPanel` provides LINE/MINI/FULL views,
 live statistics, freeze, capture controls and local exports. Optional WebGL2 and Three r186
 WebGPU adapters provide correlated GPU timing. WebGPU retains labelled compute/render intervals,
 separate sums, union busy time and elapsed span; `finalizeRecording` collects late results with a bounded wait. The viewer and loading runtime remain pending.

@@ -3,20 +3,20 @@ import { gpuIntervalFixture } from "../../../../tests/fixtures/gpu-sample.ts";
 import { recordingFixture } from "../../../../tests/fixtures/recording.ts";
 import { parseRecording, serializeRecording } from "./codec.ts";
 
-describe("schema 4 GPU recordings", () => {
+describe("schema 5 GPU recordings", () => {
   it("round trips exact timestamp origins, repeated invocations, metrics and legacy WebGL durations", () => {
     const recording = recordingFixture();
     const mixed = {
       ...recording,
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       gpu: [...recording.gpu, gpuIntervalFixture()],
     };
     expect(parseRecording(serializeRecording(mixed))).toEqual({ ok: true, recording: mixed });
   });
 
-  it("rejects version 3 explicitly instead of reinterpreting pass sums", () => {
+  it("rejects version 4 explicitly instead of inventing missing diagnostics", () => {
     expect(
-      parseRecording(JSON.stringify({ ...recordingFixture(), schemaVersion: 3 })),
+      parseRecording(JSON.stringify({ ...recordingFixture(), schemaVersion: 4 })),
     ).toMatchObject({
       ok: false,
       problem: { code: "unsupported-version" },

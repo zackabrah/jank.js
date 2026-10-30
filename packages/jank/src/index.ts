@@ -20,8 +20,10 @@ export type {
   GpuIntervalSample,
   GpuMetrics,
   GpuPassSample,
+  GpuRejectedPass,
   GpuSample,
   GpuState,
+  GpuTimestampRejection,
 } from "./core/gpu.ts";
 export type { ProfilerSnapshot } from "./core/snapshot.ts";
 export type {

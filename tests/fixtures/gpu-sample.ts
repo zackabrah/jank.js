@@ -16,6 +16,7 @@ export function gpuIntervalFixture(): GpuIntervalSample {
     omittedPasses: 0,
     completeness: "complete",
     issues: [],
+    rejectedPasses: [],
     metrics: { renderSumMs: 4, computeSumMs: 6, combinedSumMs: 10, busyMs: 8, elapsedSpanMs: 9 },
     passes: [
       {

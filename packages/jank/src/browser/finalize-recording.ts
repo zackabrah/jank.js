@@ -1,4 +1,9 @@
-import type { GpuFrameResolution, GpuFrameResolver, GpuSample } from "../core/gpu.ts";
+import {
+  type GpuFrameResolution,
+  type GpuFrameResolver,
+  type GpuSample,
+  gpuPassStorage,
+} from "../core/gpu.ts";
 import { readRecording } from "../recordings/codec.ts";
 import { recordingLimits } from "../recordings/limits.ts";
 import { describeError } from "../recordings/observations.ts";
@@ -71,7 +76,7 @@ function mergeSamples(recording: Recording, incoming: GpuFrameResolution["sample
       sample,
     ]),
   );
-  let passCount = recording.gpu.reduce((sum, sample) => sum + sample.passes.length, 0);
+  let passCount = recording.gpu.reduce((sum, sample) => sum + gpuPassStorage(sample), 0);
   let omittedSamples = 0;
   for (const sample of readResolutionSamples(incoming)) {
     const key = sampleKey(sample);
@@ -82,7 +87,8 @@ function mergeSamples(recording: Recording, incoming: GpuFrameResolution["sample
     if (previous?.measurement === "intervals" && previous.completeness === "complete") {
       continue;
     }
-    const nextPassCount = passCount + sample.passes.length - (previous?.passes.length ?? 0);
+    const nextPassCount =
+      passCount + gpuPassStorage(sample) - (previous ? gpuPassStorage(previous) : 0);
     if (
       nextPassCount > recordingLimits.gpuIntervals ||
       (!previous && samples.size === recordingLimits.frames)

@@ -35,12 +35,27 @@ export interface GpuMetrics {
   readonly elapsedSpanMs: number;
 }
 
+export const gpuTimestampRejections = [
+  "missing-timestamp",
+  "zero-timestamp",
+  "reversed-timestamp",
+  "out-of-range-timestamp",
+] as const;
+export type GpuTimestampRejection = (typeof gpuTimestampRejections)[number];
+
+export interface GpuRejectedPass extends Omit<GpuIntervalPass, "startNs" | "endNs"> {
+  readonly reason: GpuTimestampRejection;
+  /** Absolute decimal uint64 values, or null when no readback value exists. */
+  readonly startNs: string | null;
+  readonly endNs: string | null;
+}
+
 export const gpuIncompleteReasons = [
   "query-capacity",
   "queue-pressure",
   "readback-error",
   "readback-timeout",
-  "missing-timestamp",
+  ...gpuTimestampRejections,
   "submission-error",
   "unclosed-frame",
   "disabled",
@@ -64,6 +79,7 @@ export interface GpuIntervalSample {
     readonly originNs: string;
   };
   readonly passes: readonly GpuIntervalPass[];
+  readonly rejectedPasses: readonly GpuRejectedPass[];
   readonly expectedPasses: number;
   readonly omittedPasses: number;
   readonly completeness: "complete" | "incomplete";
@@ -113,7 +129,15 @@ export function copyGpuSample(sample: GpuSample): GpuSample {
       issues: [...sample.issues],
       metrics: sample.metrics === null ? null : { ...sample.metrics },
       passes: sample.passes.map((pass) => ({ ...pass })),
+      rejectedPasses: sample.rejectedPasses.map((pass) => ({ ...pass })),
     };
   }
   return { ...sample, passes: sample.passes.map((pass) => ({ ...pass })) };
+}
+
+/** Rejected diagnostics share the bounded pass budget with accepted intervals. */
+export function gpuPassStorage(sample: GpuSample): number {
+  return (
+    sample.passes.length + (sample.measurement === "intervals" ? sample.rejectedPasses.length : 0)
+  );
 }

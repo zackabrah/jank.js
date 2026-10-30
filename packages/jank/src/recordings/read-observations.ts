@@ -1,5 +1,5 @@
 import type { CounterSample, CounterValue, EventSample, FrameSample } from "../core/frames.ts";
-import type { GpuSample } from "../core/gpu.ts";
+import { type GpuSample, gpuPassStorage } from "../core/gpu.ts";
 import { collectionLimits } from "../core/limits.ts";
 import { recordingLimits } from "./limits.ts";
 import { readGpuIntervals } from "./read-gpu-intervals.ts";
@@ -111,7 +111,7 @@ export function readGpu(value: unknown, frames: readonly FrameSample[]): GpuSamp
   const identities = new Set<string>();
   return list(value, "$.gpu", recordingLimits.frames, (entry, path) => {
     const sample = readGpuSample(entry, path);
-    passCount += sample.passes.length;
+    passCount += gpuPassStorage(sample);
     if (passCount > recordingLimits.gpuIntervals) {
       invalid(path, "Recording exceeds the total GPU pass limit");
     }

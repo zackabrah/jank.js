@@ -85,7 +85,7 @@ GPU samples remain absent, never zero. The helper does not modify legacy pass-su
 
 ## File boundary
 
-The version 4 codec is exported from `jank.js`. `parseRecording(text)` returns either
+The version 5 codec is exported from `jank.js`. `parseRecording(text)` returns either
 `{ ok: true, recording }` or `{ ok: false, problem }`. Problems include a code, field path and
 readable message. Version 1/2/3 files are rejected explicitly. Use their matching preview to
 read them; there is no implicit migration or reinterpretation of older GPU pass sums.

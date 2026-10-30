@@ -5,7 +5,7 @@ import {
   type EventSample,
   type FrameSample,
 } from "../core/frames.ts";
-import { copyGpuSample, type GpuSample, type GpuState } from "../core/gpu.ts";
+import { copyGpuSample, type GpuSample, type GpuState, gpuPassStorage } from "../core/gpu.ts";
 import { recordingLimits } from "./limits.ts";
 import { readCounterValues, readGpuSample } from "./read-observations.ts";
 import { integer, text } from "./read-values.ts";
@@ -116,7 +116,8 @@ export class ObservationHistory {
       sample.measurement === "intervals"
         ? `interval:${sample.clock.id}:${sample.sequence}`
         : `duration:${sample.rendererFrameId}:${sample.frameId}`;
-    this.gpuPassCount += sample.passes.length - (this.gpu.get(key)?.sample.passes.length ?? 0);
+    const previous = this.gpu.get(key);
+    this.gpuPassCount += gpuPassStorage(sample) - (previous ? gpuPassStorage(previous.sample) : 0);
     this.gpu.set(key, { atMs, sample });
     this.trimGpu();
   }
@@ -144,7 +145,7 @@ export class ObservationHistory {
       }
       const [key, dropped] = first;
       this.gpu.delete(key);
-      this.gpuPassCount -= dropped.sample.passes.length;
+      this.gpuPassCount -= gpuPassStorage(dropped.sample);
       this.droppedAtMs = Math.max(this.droppedAtMs, dropped.atMs);
       this.droppedGpuFrameId = Math.max(this.droppedGpuFrameId, dropped.sample.frameId ?? 0);
     }
