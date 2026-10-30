@@ -114,6 +114,7 @@
   min-height: 0;
   overflow: hidden auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: var(--jl-faint) transparent;
 }
@@ -247,11 +248,6 @@
   content: "▲";
   font-size: 9px;
   padding-right: 2px;
-}
-.jank .jank-counters {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 12px;
 }
 .jank .jank-row::after {
   content: "";

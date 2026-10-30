@@ -51,10 +51,10 @@ export function renderLive(root: HTMLElement, snapshot: ProfilerSnapshot, mode: 
     `${snapshot.targetFps} FPS · ${milliseconds(1000 / snapshot.targetFps)} MS`,
   );
   rows(element(root, '[data-list="scopes"]'), [
-    ...scopes.channels.map((scope): [string, string] => [
-      snapshot.channels.find((channel) => channel.id === scope.channelId)?.label ?? scope.channelId,
-      milliseconds(scope.averageMs, 2),
-    ]),
+    ...snapshot.channels.flatMap((channel): [string, string][] => {
+      const scope = scopes.channels.find((scope) => scope.channelId === channel.id);
+      return scope ? [[channel.label, milliseconds(scope.averageMs, 2)]] : [];
+    }),
     ["unattributed", milliseconds(scopes.unattributedMs, 2)],
   ]);
   write(

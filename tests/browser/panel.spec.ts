@@ -3,6 +3,94 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { parseRecording } from "../../packages/jank/src/index.ts";
 
+test("scope rows keep registration order as timing and sample order change", async ({ page }) => {
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  const orders = await page.evaluate(async () => {
+    const modulePath = "/packages/jank/src/index.ts";
+    const { createPanel, createProfiler }: typeof import("../../packages/jank/src/index.ts") =
+      await import(modulePath);
+    window.panelFixture.panel.dispose();
+    let timeMs = 0;
+    const profiler = createProfiler({ now: () => timeMs });
+    const first = profiler.createChannel({ id: "first", label: "zeta" });
+    const second = profiler.createChannel({ id: "second", label: "alpha" });
+    profiler.createChannel({
+      id: "counters",
+      label: "Counters only",
+      readCounters: () => ({ n: 1 }),
+    });
+    const panel = createPanel({ container: document.body, profiler, mode: "full" });
+    const orders: string[][] = [];
+    for (const sequence of [
+      [second, first],
+      [first, second],
+    ]) {
+      // Replace the entire rolling history so its first observed scope changes.
+      for (let frame = 0; frame < 601; frame += 1) {
+        const startedAtMs = timeMs;
+        profiler.beginFrame(timeMs);
+        for (const [index, channel] of sequence.entries()) {
+          const token = channel.begin();
+          timeMs += index + 1;
+          channel.end(token);
+        }
+        timeMs = startedAtMs + 16;
+      }
+      profiler.beginFrame(timeMs);
+      panel.refresh(timeMs);
+      orders.push(
+        Array.from(
+          document.querySelectorAll('[data-list="scopes"] .jank-row > :first-child'),
+          (label) => label.textContent ?? "",
+        ),
+      );
+    }
+    panel.dispose();
+    profiler.dispose();
+    return orders;
+  });
+  expect(orders).toEqual([
+    ["zeta", "alpha", "unattributed"],
+    ["zeta", "alpha", "unattributed"],
+  ]);
+});
+
+test("counter labels and values stay on one line when details need a scrollbar", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 960, height: 1000 });
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.evaluate(() => {
+    window.panelFixture.profiler.createChannel({
+      id: "renderer",
+      label: "render submit",
+      readCounters: () => ({ objects: 256, draws: 257, triangles: 3072 }),
+    });
+    window.panelFixture.advance(70);
+  });
+  const details = page.getByRole("region", { name: "Performance details" });
+  const widthBefore = await details.evaluate((region) => region.clientWidth);
+  await page.setViewportSize({ width: 960, height: 560 });
+  expect(await details.evaluate((region) => region.scrollHeight > region.clientHeight)).toBe(true);
+  expect(await details.evaluate((region) => region.clientWidth)).toBe(widthBefore);
+  for (const width of [960, 360]) {
+    await page.setViewportSize({ width, height: 560 });
+    const counters = page.locator('[data-list="counters"]');
+    await counters.scrollIntoViewIfNeeded();
+    const sizes = await counters.locator(".jank-row").evaluateAll((rows) =>
+      rows.map((row) => ({
+        height: row.getBoundingClientRect().height,
+        overflow: row.scrollWidth > row.clientWidth,
+      })),
+    );
+    expect(sizes).toHaveLength(5);
+    for (const size of sizes) {
+      expect(size.height).toBeLessThanOrEqual(20);
+      expect(size.overflow).toBe(false);
+    }
+  }
+});
+
 test("LIVE keeps its summary pinned while details scroll from CPU scopes", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 560 });
   await page.goto("/tests/fixtures/panel/?mode=full");

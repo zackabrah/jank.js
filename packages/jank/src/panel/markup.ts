@@ -42,7 +42,7 @@ export function panelMarkup(): string {
           <div class="jank-scroll" role="region" aria-label="Performance details" tabindex="0">
             <h2>CPU SCOPES <span>MS / FRAME</span></h2><div data-list="scopes" class="jank-list"></div><p class="jank-note" data-value="coverage"></p>
             <h2>GPU <span>ASYNCHRONOUS</span></h2><div data-list="gpu" class="jank-list"></div><p class="jank-note" data-value="gpu-note"></p>
-            <h2>COUNTERS</h2><div data-list="counters" class="jank-list jank-counters"></div>
+            <h2>COUNTERS</h2><div data-list="counters" class="jank-list"></div>
             <h2>EVENTS</h2><div data-list="events" class="jank-list"></div>
             <div class="jank-actions">
               <button type="button" class="jl-btn" data-action="freeze" aria-pressed="false">FREEZE</button>

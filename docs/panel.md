@@ -5,7 +5,10 @@ and native tabs. It preserves the compact 360px LINE/FULL and 240px MINI layouts
 palette, square controls, frame graph and CPU/counter readouts. At small viewport sizes the
 panel stays within the viewport. LIVE keeps its header, tabs, metrics and graph pinned;
 details scroll from CPU SCOPES above the overhead footer. The focusable details region supports
-keyboard scrolling and uses a thin, neutral scrollbar. LOADING and CAPTURE scroll independently.
+keyboard scrolling and uses a thin, neutral scrollbar with reserved gutter space. LOADING and
+CAPTURE scroll independently. CPU scope rows follow channel registration order, keeping their
+positions stable as samples and timings change. Counters use one label/value pair per row so
+ordinary labels remain readable when the details region scrolls.
 
 ```ts
 import { createPanel, createProfiler } from "jank.js";
