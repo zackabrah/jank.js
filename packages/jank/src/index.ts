@@ -10,7 +10,16 @@ export type {
   ScopeCoverage,
   ScopeSample,
 } from "./core/frames.ts";
-export type { GpuPassSample, GpuSample, GpuState } from "./core/gpu.ts";
+export type {
+  GpuDurationSample,
+  GpuIncompleteReason,
+  GpuIntervalPass,
+  GpuIntervalSample,
+  GpuMetrics,
+  GpuPassSample,
+  GpuSample,
+  GpuState,
+} from "./core/gpu.ts";
 export type { ProfilerSnapshot } from "./core/snapshot.ts";
 export type {
   CreateLoadingProfiler,

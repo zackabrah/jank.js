@@ -2,6 +2,7 @@ import type { CounterSample, CounterValue, EventSample, FrameSample } from "../c
 import type { GpuSample } from "../core/gpu.ts";
 import { collectionLimits } from "../core/limits.ts";
 import { recordingLimits } from "./limits.ts";
+import { readGpuIntervals } from "./read-gpu-intervals.ts";
 import {
   choice,
   integer,
@@ -85,6 +86,9 @@ export function readEvents(value: unknown, frames: readonly FrameSample[]): Even
 
 export function readGpuSample(value: unknown, path: string): GpuSample {
   const data = object(value, path);
+  if (data.measurement === "intervals") {
+    return readGpuIntervals(value, path);
+  }
   return {
     frameId: nullable(data.frameId, `${path}.frameId`, (value, path) => integer(value, path, 1)),
     rendererFrameId: integer(data.rendererFrameId, `${path}.rendererFrameId`),
@@ -103,8 +107,21 @@ export function readGpuSample(value: unknown, path: string): GpuSample {
 
 export function readGpu(value: unknown, frames: readonly FrameSample[]): GpuSample[] {
   const frameIds = new Set(frames.map((frame) => frame.id));
+  let passCount = 0;
+  const identities = new Set<string>();
   return list(value, "$.gpu", recordingLimits.frames, (entry, path) => {
     const sample = readGpuSample(entry, path);
+    passCount += sample.passes.length;
+    if (passCount > recordingLimits.gpuIntervals) {
+      invalid(path, "Recording exceeds the total GPU pass limit");
+    }
+    if (sample.measurement === "intervals") {
+      const key = `${sample.clock.id}:${sample.sequence}`;
+      if (identities.has(key)) {
+        invalid(path, "Duplicate GPU frame sequence for this clock");
+      }
+      identities.add(key);
+    }
     if (sample.frameId !== null && !frameIds.has(sample.frameId)) {
       invalid(`${path}.frameId`, "Unknown frame ID");
     }

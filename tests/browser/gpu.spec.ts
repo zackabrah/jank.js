@@ -23,7 +23,9 @@ for (const backend of ["webgl2", "webgpu"]) {
       if (sample.status === "ready") {
         expect(sample.sample.frameId).not.toBeNull();
         expect(sample.sample.measurement).toBe("pass-sum");
-        expect(sample.sample.durationMs).toBeGreaterThanOrEqual(0);
+        expect(
+          sample.sample.measurement !== "intervals" && sample.sample.durationMs,
+        ).toBeGreaterThanOrEqual(0);
         expect(sample.currentRendererFrameId).toBeGreaterThanOrEqual(sample.sample.rendererFrameId);
         // Readback can finish before the next host boundary seals the measured frame.
         await expect

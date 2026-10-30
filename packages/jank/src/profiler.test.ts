@@ -183,7 +183,7 @@ describe("public profiler recording path", () => {
     profiler.addEvent("Pending frame");
     const saved = profiler.capture.stop();
     expect(saved?.events.map((event) => event.label)).toEqual(["Inside", "Pending frame"]);
-    expect(saved?.gpu[0]?.passes[0]?.durationMs).toBe(2);
+    expect(saved?.gpu[0]?.passes[0]).toMatchObject({ durationMs: 2 });
     if (!saved) {
       throw new Error("Missing capture");
     }
@@ -233,7 +233,7 @@ describe("bounded optional observations", () => {
     }
     expect(() => serializeRecording(recording)).not.toThrow();
     const sample = gpu(1201);
-    if (sample.status !== "ready") {
+    if (sample.status !== "ready" || sample.sample.measurement === "intervals") {
       throw new Error("Expected ready sample");
     }
     for (let index = 0; index <= 6000; index += 1) {
@@ -252,7 +252,7 @@ describe("bounded optional observations", () => {
     profiler.beginFrame(120116);
     const recent = profiler.capture.recent();
     expect(recent.gpu).toHaveLength(6000);
-    expect(recent.gpu.at(-1)?.durationMs).toBe(7);
+    expect(recent.gpu.at(-1)).toMatchObject({ durationMs: 7 });
     expect(recent.truncated).toBe(true);
     expect(() => serializeRecording(recent)).not.toThrow();
   });

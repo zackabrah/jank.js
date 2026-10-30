@@ -25,7 +25,7 @@ export interface RecordingEnvironment {
 export interface Recording {
   readonly format: "jank.js-recording";
   /** New field names require a new schema; never reinterpret a version 2 file. */
-  readonly schemaVersion: 3;
+  readonly schemaVersion: 4;
   readonly clock: { readonly unit: "milliseconds"; readonly origin: "profiler-start" };
   readonly metadata: {
     readonly createdAt: string;

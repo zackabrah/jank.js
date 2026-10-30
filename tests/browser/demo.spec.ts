@@ -143,7 +143,7 @@ test("borrowed GPU, loading and trace sources are explicit and recording validat
     throw new Error("Missing recording download");
   }
   await page.getByLabel("Validate a recording").setInputFiles(path);
-  await expect(page.locator("#recording-summary")).toContainText("Valid schema 3");
+  await expect(page.locator("#recording-summary")).toContainText("Valid schema 4");
   const summary = await page.locator("#recording-summary").textContent();
   await page.getByLabel("Validate a recording").setInputFiles({
     name: "invalid.json",

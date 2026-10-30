@@ -19,7 +19,7 @@ export function bindRecordingFile(
       if (current !== generation) {
         return;
       }
-      summary.textContent = `Valid schema 3 · ${recording.frames.length} frames · ${recording.counters.length} counter samples · ${recording.gpu.length} GPU samples${recording.truncated ? " · truncated" : ""}`;
+      summary.textContent = `Valid schema ${recording.schemaVersion} · ${recording.frames.length} frames · ${recording.counters.length} counter samples · ${recording.gpu.length} GPU samples${recording.truncated ? " · truncated" : ""}`;
     } catch (cause) {
       if (current === generation) {
         error.textContent = cause instanceof Error ? cause.message : "Unable to read recording.";

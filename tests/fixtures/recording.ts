@@ -3,7 +3,7 @@ import type { Recording } from "../../packages/jank/src/recordings/recording.ts"
 export function recordingFixture(): Recording {
   return {
     format: "jank.js-recording",
-    schemaVersion: 3,
+    schemaVersion: 4,
     clock: { unit: "milliseconds", origin: "profiler-start" },
     metadata: {
       createdAt: "2026-10-30T00:00:00.000Z",

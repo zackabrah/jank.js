@@ -41,9 +41,25 @@ stops the host loop. Built-in User Timing and renderer adapters belong to later 
 
 ## File boundary
 
-The version 3 codec is exported from `jank.js`. `parseRecording(text)` returns either
+The version 4 codec is exported from `jank.js`. `parseRecording(text)` returns either
 `{ ok: true, recording }` or `{ ok: false, problem }`. Problems include a code, field path and
-readable message. Version 1/2 files are rejected explicitly.
+readable message. Version 1/2/3 files are rejected explicitly. Use their matching preview to
+read them; there is no implicit migration or reinterpretation of older GPU pass sums.
+
+Schema 4 retains `pass-sum` and `elapsed-span` duration samples for sources such as WebGL2.
+Its separate `intervals` variant records application frame ID, adapter sequence, per-pass
+renderer frame IDs, stable IDs, labels, types, optional categories and invocation numbers.
+Repeated IDs remain separate invocations. A GPU clock ID and decimal uint64 nanosecond origin
+identify the clock; integer pass offsets preserve nanosecond precision without converting a
+large absolute timestamp to a JavaScript number. They are unrelated to the CPU clock.
+
+Render sum, compute sum, combined sum, interval-union busy time and first-to-last elapsed span
+are distinct metrics. Readers recompute and verify these values. An incomplete frame retains
+its available intervals, omission count and reasons, but has `metrics: null`. No partial sum is
+presented as a complete frame total. Empty, explicitly measured frames can have zero totals.
+Each sample allows 256 passes within a 60-second GPU interval; a recording and observation
+history retain at most 16,384 GPU passes overall. Eviction marks affected captures truncated.
+Out-of-order samples are retained once and cannot move the live interval sample backwards.
 
 `serializeRecording(recording)` validates and copies the input before encoding it. Invalid
 caller data throws `RecordingError`, retaining the original recording. Unknown object fields

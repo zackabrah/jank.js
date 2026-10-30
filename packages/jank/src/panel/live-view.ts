@@ -1,8 +1,8 @@
 import { summarizeFrames, summarizeScopes } from "../analysis/statistics.ts";
 import { drawFrameChart } from "../charts/frame-chart.ts";
-import type { GpuState } from "../core/gpu.ts";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import { element, milliseconds, rows, write } from "./dom.ts";
+import { renderGpu } from "./gpu-view.ts";
 import type { PanelMode } from "./panel.ts";
 
 export function renderLive(root: HTMLElement, snapshot: ProfilerSnapshot, mode: PanelMode): void {
@@ -85,33 +85,6 @@ function renderCounters(root: HTMLElement, snapshot: ProfilerSnapshot): void {
     }
   }
   rows(element(root, '[data-list="counters"]'), values.slice(0, 12));
-}
-
-function renderGpu(root: HTMLElement, gpu: GpuState | null): void {
-  const list = element<HTMLElement>(root, '[data-list="gpu"]');
-  if (gpu?.status === "ready") {
-    rows(list, [
-      [gpu.sample.measurement, milliseconds(gpu.sample.durationMs, 2)],
-      ...gpu.sample.passes.map((pass): [string, string] => [
-        pass.label,
-        milliseconds(pass.durationMs, 2),
-      ]),
-    ]);
-    write(
-      root,
-      "gpu-note",
-      `Renderer frame ${gpu.sample.rendererFrameId}; age ${gpu.currentRendererFrameId - gpu.sample.rendererFrameId} frames. ${gpu.droppedSamples} dropped samples; ${gpu.sample.omittedPasses} omitted passes.`,
-    );
-    return;
-  }
-  rows(list, [["GPU time", "–"]]);
-  let description = gpu?.status ?? "No GPU source connected.";
-  if (gpu?.status === "unsupported") {
-    description = gpu.reason;
-  } else if (gpu?.status === "error") {
-    description = gpu.message;
-  }
-  write(root, "gpu-note", description);
 }
 
 export function renderOverhead(root: HTMLElement, snapshot: ProfilerSnapshot): void {

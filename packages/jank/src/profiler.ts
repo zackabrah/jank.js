@@ -68,7 +68,7 @@ export function createProfilerRuntime(
       const snapshot = collector.snapshot();
       return {
         format: "jank.js-recording",
-        schemaVersion: 3,
+        schemaVersion: 4,
         clock: { unit: "milliseconds", origin: "profiler-start" },
         metadata: environment.metadata(),
         targetFps: snapshot.targetFps,

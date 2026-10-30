@@ -26,7 +26,8 @@ export class ObservationHistory {
   private counterRounds: CounterSample[][] = [];
   private readonly latestCounters = new Map<string, CounterSample>();
   private events: EventSample[] = [];
-  private gpu: ReceivedGpu[] = [];
+  private readonly gpu = new Map<string, ReceivedGpu>();
+  private gpuPassCount = 0;
   private gpuState: GpuState | null = null;
   private sampledAtMs = -Infinity;
   private droppedAtMs = -Infinity;
@@ -107,17 +108,31 @@ export class ObservationHistory {
       state.sample.frameId !== null && !knowsFrame(state.sample.frameId)
         ? { ...state.sample, frameId: null }
         : state.sample;
-    this.gpuState = { ...state, sample };
-    const previous = this.gpu.at(-1)?.sample;
-    if (
-      previous?.rendererFrameId === sample.rendererFrameId &&
-      previous.frameId === sample.frameId
-    ) {
-      this.gpu[this.gpu.length - 1] = { atMs, sample };
-      return;
+    const latest = this.gpuState?.status === "ready" ? this.gpuState.sample : null;
+    if (!isOlderGpuSample(sample, latest)) {
+      this.gpuState = { ...state, sample };
     }
-    const dropped = append(this.gpu, { atMs, sample }, recordingLimits.frames);
-    if (dropped) {
+    const key =
+      sample.measurement === "intervals"
+        ? `interval:${sample.clock.id}:${sample.sequence}`
+        : `duration:${sample.rendererFrameId}:${sample.frameId}`;
+    this.gpuPassCount += sample.passes.length - (this.gpu.get(key)?.sample.passes.length ?? 0);
+    this.gpu.set(key, { atMs, sample });
+    this.trimGpu();
+  }
+
+  private trimGpu(): void {
+    while (
+      this.gpu.size > recordingLimits.frames ||
+      this.gpuPassCount > recordingLimits.gpuIntervals
+    ) {
+      const first = this.gpu.entries().next().value;
+      if (!first) {
+        return;
+      }
+      const [key, dropped] = first;
+      this.gpu.delete(key);
+      this.gpuPassCount -= dropped.sample.passes.length;
       this.droppedAtMs = Math.max(this.droppedAtMs, dropped.atMs);
       this.droppedGpuFrameId = Math.max(this.droppedGpuFrameId, dropped.sample.frameId ?? 0);
     }
@@ -154,7 +169,7 @@ export class ObservationHistory {
     return {
       counters: this.counterRounds.flat().filter(inWindow).map(copyCounterSample),
       events: this.events.filter(inWindow).map((event) => ({ ...event })),
-      gpu: this.gpu
+      gpu: [...this.gpu.values()]
         .filter((entry) =>
           entry.sample.frameId === null ? inWindow(entry) : frameIds.has(entry.sample.frameId),
         )
@@ -168,7 +183,8 @@ export class ObservationHistory {
     this.counterRounds = [];
     this.latestCounters.clear();
     this.events = [];
-    this.gpu = [];
+    this.gpu.clear();
+    this.gpuPassCount = 0;
     this.gpuState = null;
     this.sampledAtMs = -Infinity;
     this.droppedAtMs = -Infinity;
@@ -209,9 +225,30 @@ function validateGpuState(state: GpuState): GpuState {
           sample.rendererFrameId,
         ),
         droppedSamples: integer(state.droppedSamples, "$.gpu.droppedSamples"),
+        ...(state.currentFrameSequence === undefined
+          ? {}
+          : {
+              currentFrameSequence: integer(
+                state.currentFrameSequence,
+                "$.gpu.currentFrameSequence",
+                sample.measurement === "intervals" ? sample.sequence : 0,
+              ),
+            }),
+        ...(state.pendingFrames === undefined
+          ? {}
+          : { pendingFrames: integer(state.pendingFrames, "$.gpu.pendingFrames") }),
       };
     }
     default:
       throw new Error("Unknown GPU status");
   }
+}
+
+function isOlderGpuSample(sample: GpuSample, latest: GpuSample | null): boolean {
+  return (
+    sample.measurement === "intervals" &&
+    latest?.measurement === "intervals" &&
+    sample.clock.id === latest.clock.id &&
+    sample.sequence < latest.sequence
+  );
 }

@@ -1,3 +1,4 @@
+import { gpuIntervalLimits } from "../core/gpu.ts";
 import { collectionLimits } from "../core/limits.ts";
 
 const counterRounds = 1200;
@@ -12,6 +13,7 @@ export const recordingLimits = {
   counters: counterRounds * collectionLimits.channels,
   events: 200,
   counterValues: 64,
-  gpuPasses: 256,
+  gpuPasses: gpuIntervalLimits.passes,
+  gpuIntervals: 16_384,
   detailLength: 2000,
 } as const;

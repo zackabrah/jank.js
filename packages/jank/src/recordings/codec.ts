@@ -40,11 +40,11 @@ function checkSize(json: string): void {
 
 function readRecording(value: unknown): Recording {
   const data = object(value, "$");
-  if (data.schemaVersion !== 3) {
+  if (data.schemaVersion !== 4) {
     throw new RecordingError({
       code: "unsupported-version",
       path: "$.schemaVersion",
-      message: "Expected recording schema version 3",
+      message: "Expected recording schema version 4; older files require their matching preview",
     });
   }
   const clock = object(data.clock, "$.clock");
@@ -62,7 +62,7 @@ function readRecording(value: unknown): Recording {
   const truncated = boolean(data.truncated, "$.truncated");
   return {
     format: choice(data.format, "$.format", ["jank.js-recording"]),
-    schemaVersion: 3,
+    schemaVersion: 4,
     clock: {
       unit: choice(clock.unit, "$.clock.unit", ["milliseconds"]),
       origin: choice(clock.origin, "$.clock.origin", ["profiler-start"]),
