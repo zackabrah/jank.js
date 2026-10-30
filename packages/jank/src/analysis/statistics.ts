@@ -128,17 +128,8 @@ export function summarizeScopes(frames: readonly FrameSample[]): ScopeStatistics
   const totals = new Map<string, number>();
   let unattributedMs = 0;
   for (const frame of complete) {
-    const groups = new Map<string, ScopeSample[]>();
-    for (const scope of frame.scopes) {
-      const group = groups.get(scope.channelId) ?? [];
-      group.push(scope);
-      groups.set(scope.channelId, group);
-    }
-    for (const [channelId, intervals] of groups) {
-      totals.set(
-        channelId,
-        (totals.get(channelId) ?? 0) + intervalUnion(intervals) / complete.length,
-      );
+    for (const [channelId, durationMs] of channelScopeDurations(frame.scopes)) {
+      totals.set(channelId, (totals.get(channelId) ?? 0) + durationMs / complete.length);
     }
     unattributedMs +=
       Math.max(0, frame.endedAtMs - frame.startedAtMs - intervalUnion(frame.scopes)) /
@@ -150,4 +141,17 @@ export function summarizeScopes(frames: readonly FrameSample[]): ScopeStatistics
     channels: [...totals].map(([channelId, averageMs]) => ({ channelId, averageMs })),
     unattributedMs: complete.length > 0 ? unattributedMs : null,
   };
+}
+
+/** Each channel is inclusive of other channels, but never counts its own overlaps twice. */
+export function channelScopeDurations(scopes: readonly ScopeSample[]): Map<string, number> {
+  const groups = new Map<string, ScopeSample[]>();
+  for (const scope of scopes) {
+    const group = groups.get(scope.channelId) ?? [];
+    group.push(scope);
+    groups.set(scope.channelId, group);
+  }
+  return new Map(
+    [...groups].map(([channelId, intervals]) => [channelId, intervalUnion(intervals)]),
+  );
 }

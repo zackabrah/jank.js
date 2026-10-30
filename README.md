@@ -15,6 +15,7 @@ theme tokens and accessible tabs. Both packages remain private during the rewrit
 - [Feature and verification plan](docs/rewrite-plan.md)
 - [Implemented collection behavior and verification](docs/collection.md)
 - [Recording format and validation](docs/recordings.md)
+- [Pure recording inspection](docs/analysis.md)
 - [Live panel, integration and verification](docs/panel.md)
 - [GPU adapters, ownership and measurement limits](docs/gpu-adapters.md)
 - [Basic interactive demo and feature walkthrough](examples/basic/README.md)

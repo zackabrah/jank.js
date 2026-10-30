@@ -3,7 +3,12 @@ import type {
   CreateViewer,
   GpuState,
 } from "../../packages/jank/src/index.ts";
-import { createPanel, createProfiler, parseRecording } from "../../packages/jank/src/index.ts";
+import {
+  createPanel,
+  createProfiler,
+  inspectFrame,
+  parseRecording,
+} from "../../packages/jank/src/index.ts";
 import { createTabs } from "../../packages/junkui/src/index.ts";
 
 // These declarations are compile-time consumers, not placeholder implementations.
@@ -69,6 +74,12 @@ const viewer = createViewer({ container });
 const result = parseRecording("{}");
 if (result.ok) {
   viewer.load(result.recording);
+  const summary = inspectFrame(result.recording, 1);
+  if (summary) {
+    console.info(summary.coverage.status, summary.attributedMs, summary.likelyCause);
+    // @ts-expect-error Inspection results cannot mutate recorded scopes.
+    summary.scopes[0].endedAtMs = 0;
+  }
 } else {
   console.error(result.problem.message);
   // @ts-expect-error A failed import has no valid recording to load.

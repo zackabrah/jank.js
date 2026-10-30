@@ -42,7 +42,7 @@ test("built profiler and both declaration packages work without workspace source
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
-import { createPanel, createProfiler, finalizeRecording } from "jank.js";
+import { createPanel, createProfiler, finalizeRecording, inspectFrame, type InspectFrame } from "jank.js";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
 declare const gl: WebGL2RenderingContext;
@@ -61,6 +61,12 @@ import "jank.js/styles.css";
 import { createTabs, type CreateTabs } from "junkui";
 import "junkui/styles.css";
 declare const stopped: import("jank.js").Recording;
+const inspect: InspectFrame = inspectFrame;
+const inspected = inspect(stopped, 1);
+if (inspected) {
+  inspected.coverage.status.toUpperCase();
+  inspected.likelyCause?.aboveMedianMs.toFixed(2);
+}
 const finalized: import("jank.js").RecordingFinalization = await finalizeRecording(stopped, webgpu, { timeoutMs: 100 });
 finalized.missingFrameIds.forEach(id => id.toFixed());
 const factory: CreateProfiler = createProfiler;
@@ -97,7 +103,7 @@ tabs.dispose();
       `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createPanel, createProfiler, finalizeRecording, parseRecording, serializeRecording } from "jank.js";
+import { createPanel, createProfiler, finalizeRecording, inspectFrame, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
@@ -127,6 +133,12 @@ assert.ok(recording);
 assert.equal(recording.frames.length, 1);
 assert.equal(recording.frames[0].scopes[0].channelId, "physics");
 assert.equal(recording.counters[0].values.bodies, 10);
+const inspected = inspectFrame(recording, recording.frames[0].id);
+assert.equal(inspected.attributedMs, 5);
+assert.equal(inspected.unattributedMs, 11);
+assert.equal(inspected.coverage.status, "complete");
+assert.equal(inspected.likelyCause, null);
+assert.equal(inspectFrame(recording, -1), null);
 const manifest = JSON.parse(readFileSync(new URL("node_modules/jank.js/package.json", import.meta.url), "utf8"));
 assert.equal(recording.metadata.toolVersion, manifest.version);
 assert.deepEqual(parseRecording(serializeRecording(recording)), { ok: true, recording });

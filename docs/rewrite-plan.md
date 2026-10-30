@@ -50,7 +50,8 @@ available until the complete parity matrix and release checks pass.
    have browser, accessibility and visual checks. See [panel evidence](panel.md). Loading run
    detail and optional integration views remain with slice 7; viewer handoff remains with slice 6.
    New visual baselines do not constitute final reference-feature acceptance.
-6. **Analysis and offline viewer.** Add pure inspection/lanes, shared chart geometry, selection,
+6. **Analysis and offline viewer, started.** Pure CPU frame inspection is implemented; see
+   [analysis semantics](analysis.md). Add lanes, shared chart geometry, selection,
    navigation, import/export, and safe handoff. Verify a single HTML artifact works offline.
 7. **Loading and optional integrations, partly implemented.** WebGL2 and Three r186 WebGPU
    timing were brought forward for the standalone preview. Their optional exports, delayed
