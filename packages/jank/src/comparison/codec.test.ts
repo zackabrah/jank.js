@@ -108,6 +108,10 @@ it("returns precise nested errors and bounded format/context/window validation",
     expect(parseComparison(JSON.stringify(invalid)).ok).toBe(false);
   }
   expect(parseComparison("{")).toMatchObject({ ok: false, problem: { code: "invalid-json" } });
+});
+
+// Keep the real file-size boundary under coverage; runner speed is not the assertion.
+it("rejects comparison input above 32 MiB before parsing", { timeout: 30_000 }, () => {
   expect(parseComparison(" ".repeat(32 * 1024 * 1024 + 1))).toMatchObject({
     ok: false,
     problem: { code: "too-large" },

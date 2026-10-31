@@ -155,7 +155,9 @@ describe("recording files", () => {
     expect(parseRecording(serializeRecording(recording))).toEqual({ ok: true, recording });
   });
 
-  it("checks encoded bytes before parsing, including multibyte text", () => {
+  // Three real 32 MiB boundaries take more than 5 s under V8 coverage on hosted Linux.
+  // This is a format-limit assertion, not a wall-clock performance budget.
+  it("checks encoded bytes before parsing, including multibyte text", { timeout: 30_000 }, () => {
     for (const json of [
       " ".repeat(32 * 1024 * 1024 + 1),
       `"${"é".repeat(16 * 1024 * 1024)}"`,
