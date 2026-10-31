@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Native WebGPU clear-only timestamp reproduction</title>
+</head>
+<body>
+  <main>
+    <h1>Native WebGPU clear-only timestamps</h1>
+    <p>This local probe imports no libraries. It runs draw → clear → clear → draw on one query pair, then clear → draw on an independent unused pair. Each pass is resolved and fully read before reuse.</p>
+    <button id="run" type="button">Run native probe</button>
+    <button id="download" type="button" disabled>Download evidence</button>
+    <p id="status" role="status">Ready. No GPU work submitted.</p>
+    <h2>Raw evidence</h2>
+    <pre id="evidence"></pre>
+  </main>
+  <script>
+    const run = document.querySelector("#run");
+    const download = document.querySelector("#download");
+    const status = document.querySelector("#status");
+    const evidence = document.querySelector("#evidence");
+    run.addEventListener("click", async () => {
+      run.disabled = true;
+      download.disabled = true;
+      status.textContent = "Running…";
+      const report = await probe();
+      evidence.textContent = JSON.stringify(report, null, 2);
+      status.textContent = `${report.status}: ${report.pairs.length} raw pairs, ${report.errors.length} errors. No GPU performance conclusion is implied.`;
+      run.disabled = false;
+      download.disabled = false;
+    });
+    download.addEventListener("click", () => {
+      const url = URL.createObjectURL(new Blob([evidence.textContent], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "native-clear-only-timestamps.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    async function probe() {
+      const report = { status: "unsupported", userAgent: navigator.userAgent, adapter: null, pairs: [], errors: [] };
+      const owned = [];
+      let device;
+      try {
+        const adapter = await navigator.gpu?.requestAdapter();
+        if (!adapter?.features.has("timestamp-query")) { return report; }
+        report.adapter = { vendor: adapter.info.vendor, architecture: adapter.info.architecture, device: adapter.info.device, description: adapter.info.description };
+        device = await adapter.requestDevice({ requiredFeatures: ["timestamp-query"] });
+        device.addEventListener("uncapturederror", event => report.errors.push(event.error.message));
+        const texture = device.createTexture({ size: [16, 16], format: "rgba8unorm", usage: GPUTextureUsage.RENDER_ATTACHMENT });
+        owned.push(texture);
+        const resolved = device.createBuffer({ size: 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
+        owned.push(resolved);
+        const mapped = device.createBuffer({ size: 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+        owned.push(mapped);
+        const module = device.createShaderModule({ code: `
+          @vertex fn vertex(@builtin(vertex_index) i:u32)->@builtin(position) vec4f {
+            var p=array<vec2f,3>(vec2f(-1.,-1.),vec2f(3.,-1.),vec2f(-1.,3.));
+            return vec4f(p[i],0.,1.);
+          }
+          @fragment fn fragment()->@location(0) vec4f { return vec4f(1.); }
+        ` });
+        const pipeline = device.createRenderPipeline({ layout: "auto", vertex: { module, entryPoint: "vertex" }, fragment: { module, entryPoint: "fragment", targets: [{ format: "rgba8unorm" }] } });
+        for (const query of ["reused", "fresh"]) {
+          const querySet = device.createQuerySet({ type: "timestamp", count: 2 });
+          owned.push(querySet);
+          for (const draw of query === "reused" ? [true, false, false, true] : [false, true]) {
+            const encoder = device.createCommandEncoder();
+            const pass = encoder.beginRenderPass({
+              colorAttachments: [{ view: texture.createView(), loadOp: "clear", storeOp: "store", clearValue: [0, 0, 0, 1] }],
+              timestampWrites: { querySet, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 },
+            });
+            if (draw) { pass.setPipeline(pipeline); pass.draw(3); }
+            pass.end();
+            encoder.resolveQuerySet(querySet, 0, 2, resolved, 0);
+            encoder.copyBufferToBuffer(resolved, 0, mapped, 0, 16);
+            device.queue.submit([encoder.finish()]);
+            await mapWithTimeout(mapped);
+            const values = new BigUint64Array(mapped.getMappedRange());
+            report.pairs.push({ query, draw, startNs: String(values[0]), endNs: String(values[1]) });
+            mapped.unmap();
+          }
+        }
+        report.status = "finished";
+      } catch (error) {
+        report.status = "failed";
+        report.errors.push(String(error));
+      } finally {
+        for (const resource of owned.reverse()) { resource.destroy(); }
+        device?.destroy();
+      }
+      return report;
+    }
+    async function mapWithTimeout(buffer) {
+      let timer;
+      try {
+        await Promise.race([
+          buffer.mapAsync(GPUMapMode.READ),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Readback timeout after 3000 ms")), 3000); }),
+        ]);
+      } finally { clearTimeout(timer); }
+    }
+  </script>
+</body>
+</html>

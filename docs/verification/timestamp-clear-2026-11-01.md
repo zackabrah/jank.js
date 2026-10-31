@@ -34,3 +34,8 @@ Do not inject dummy draws, replace rejected intervals with zero, or drop clears 
 remaining work complete. A browser/device fix or independently validated timing path is needed
 before ranking the reported GPU workload. The [WebGPU specification](https://www.w3.org/TR/webgpu/#timestamp-query)
 requires handling arbitrary timestamp values; diagnostics identify observations, not fault ownership.
+
+Follow-up: the [explicit diagnostic and PMREM merge experiment](gpu-diagnostic-2026-11-01.md)
+now provide a tested application workaround for this reproduced clear-only failure, plus a
+[dependency-free upstream reproducer and draft](webgpu-clear-only-upstream-draft.md).
+The broader measurement limits above still apply.

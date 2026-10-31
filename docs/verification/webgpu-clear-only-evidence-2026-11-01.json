@@ -1,0 +1,158 @@
+{
+  "environment": {
+    "browser": "156.0.8078.76",
+    "os": "macOS 26.5.2 (25F84)",
+    "hardware": "Apple M3 Max"
+  },
+  "errors": [],
+  "requests": [],
+  "reports": [
+    {
+      "status": "finished",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": ""
+      },
+      "pairs": [
+        {
+          "query": "reused",
+          "draw": true,
+          "startNs": "132100254269440",
+          "endNs": "132100254597120"
+        },
+        {
+          "query": "reused",
+          "draw": false,
+          "startNs": "132100255776768",
+          "endNs": "132100254597120"
+        },
+        {
+          "query": "reused",
+          "draw": false,
+          "startNs": "132100256956416",
+          "endNs": "132100254597120"
+        },
+        {
+          "query": "reused",
+          "draw": true,
+          "startNs": "132100262854656",
+          "endNs": "132100262920192"
+        },
+        {
+          "query": "fresh",
+          "draw": false,
+          "startNs": "132100265738240",
+          "endNs": "0"
+        },
+        {
+          "query": "fresh",
+          "draw": true,
+          "startNs": "132100267245568",
+          "endNs": "132100267442176"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "status": "finished",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": ""
+      },
+      "pairs": [
+        {
+          "query": "reused",
+          "draw": true,
+          "startNs": "132100289986560",
+          "endNs": "132100289986560"
+        },
+        {
+          "query": "reused",
+          "draw": false,
+          "startNs": "132100291624960",
+          "endNs": "132100289986560"
+        },
+        {
+          "query": "reused",
+          "draw": false,
+          "startNs": "132100293066752",
+          "endNs": "132100289986560"
+        },
+        {
+          "query": "reused",
+          "draw": true,
+          "startNs": "132100299227136",
+          "endNs": "132100299292672"
+        },
+        {
+          "query": "fresh",
+          "draw": false,
+          "startNs": "132100302176256",
+          "endNs": "0"
+        },
+        {
+          "query": "fresh",
+          "draw": true,
+          "startNs": "132100304797696",
+          "endNs": "132100304863232"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "status": "finished",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": ""
+      },
+      "pairs": [
+        {
+          "query": "reused",
+          "draw": true,
+          "startNs": "132100335796224",
+          "endNs": "132100335861760"
+        },
+        {
+          "query": "reused",
+          "draw": false,
+          "startNs": "132100338745344",
+          "endNs": "132100335861760"
+        },
+        {
+          "query": "reused",
+          "draw": false,
+          "startNs": "132100341104640",
+          "endNs": "132100335861760"
+        },
+        {
+          "query": "reused",
+          "draw": true,
+          "startNs": "132100341956608",
+          "endNs": "132100342808576"
+        },
+        {
+          "query": "fresh",
+          "draw": false,
+          "startNs": "132100348837888",
+          "endNs": "0"
+        },
+        {
+          "query": "fresh",
+          "draw": true,
+          "startNs": "132100350869504",
+          "endNs": "132100350935040"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}
