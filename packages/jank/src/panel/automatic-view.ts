@@ -13,6 +13,14 @@ export function createAutomaticView(root: HTMLElement, profiler: Profiler) {
   }
   function render(targetFps = profiler.snapshot().targetFps): void {
     resolvePreset(targetFps);
+    const episodeMode =
+      element<HTMLSelectElement>(root, "[data-capture-window]").value === "episode";
+    for (const node of root.querySelectorAll<HTMLElement>("[data-time-window]")) {
+      node.hidden = !episodeMode;
+    }
+    for (const node of root.querySelectorAll<HTMLElement>("[data-frame-window]")) {
+      node.hidden = episodeMode;
+    }
     threshold.readOnly = preset.value !== "custom";
     const state = profiler.capture.getState();
     const armed =
@@ -34,7 +42,7 @@ export function createAutomaticView(root: HTMLElement, profiler: Profiler) {
       state.status === "collecting" && !state.rearm ? " · will disarm after context" : "";
     setText(
       "[data-automatic-status]",
-      `${labels[state.status]} · >${active.toFixed(2)} ms${suffix}`,
+      `${labels[state.status]} · >${active.toFixed(2)} ms${suffix}${state.status === "collecting" && state.episode ? ` · ${state.episode.triggerCount} triggers · ${(state.episode.remainingMs / 1000).toFixed(2)} s to recovery/limit` : ""}`,
     );
     setText(
       "[data-trigger-rule]",

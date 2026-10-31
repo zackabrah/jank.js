@@ -449,6 +449,15 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
       changeComparisonControl(target);
       return;
     }
+    changeSelection(target);
+  }
+  function changeSelection(target: Element): void {
+    if (target instanceof HTMLSelectElement && target.matches("[data-episode-trigger]")) {
+      if (target.value !== "") {
+        selectFrame(Number(target.value));
+      }
+      return;
+    }
     if (target instanceof HTMLSelectElement && target.matches("[data-viewer-trial]")) {
       selectTrial(Number(target.value));
     } else {

@@ -1,6 +1,7 @@
 import type { CaptureMark } from "../analysis/capture-marks.ts";
 import { captureContextFrames } from "../recordings/excerpt.ts";
 import { element, renderTable } from "./dom.ts";
+import { renderEpisode } from "./episode-view.ts";
 import { sessionDuration } from "./session-view.ts";
 import type { ViewerState } from "./viewer.ts";
 
@@ -54,6 +55,7 @@ export function renderCaptures(
 ): void {
   const recording = state.recording;
   renderTriggerContext(root, state, marks);
+  renderEpisode(root, recording);
   const container = element<HTMLElement>(root, "[data-capture-list]");
   const rule = element<HTMLElement>(root, "[data-capture-rule]");
   const trial = state.comparison?.trials[state.selectedTrialIndex ?? 0];
@@ -118,6 +120,8 @@ export function updateCaptureSelection(
   marks: readonly CaptureMark[],
 ): void {
   const mark = captureAtSelection(state, marks);
+  const picker = element<HTMLSelectElement>(root, "[data-episode-trigger]");
+  picker.value = String(state.selectedFrameId ?? "");
   for (const row of root.querySelectorAll<HTMLElement>("[data-capture-row]")) {
     row.setAttribute("aria-current", String(Number(row.dataset.captureRow) === mark?.frameId));
   }

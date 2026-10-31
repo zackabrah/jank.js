@@ -9,7 +9,16 @@ import type { RecordingExporter } from "./export-recording.ts";
 
 export function initializeCapture(root: HTMLElement, profiler: Profiler): void {
   for (const [key, value] of Object.entries(profiler.capture.getOptions())) {
-    element<HTMLInputElement>(root, `[data-input="${key}"]`).value = String(value);
+    if (typeof value === "number") {
+      element<HTMLInputElement>(root, `[data-input="${key}"]`).value = String(value);
+    }
+  }
+  const window = profiler.capture.getOptions().timeWindow;
+  element<HTMLSelectElement>(root, "[data-capture-window]").value = window ? "episode" : "frames";
+  for (const [key, value] of Object.entries(window ?? {})) {
+    element<HTMLInputElement>(root, `[data-time-window-input="${key}"]`).value = String(
+      value / 1000,
+    );
   }
   element<HTMLInputElement>(root, '[data-input="fps"]').value = String(
     profiler.snapshot().targetFps,
@@ -17,7 +26,19 @@ export function initializeCapture(root: HTMLElement, profiler: Profiler): void {
 }
 
 export function readCaptureOptions(root: HTMLElement): CaptureOptions {
+  const milliseconds = (key: string) =>
+    1000 * element<HTMLInputElement>(root, `[data-time-window-input="${key}"]`).valueAsNumber;
+  const timeWindow =
+    element<HTMLSelectElement>(root, "[data-capture-window]").value === "episode"
+      ? {
+          beforeMs: milliseconds("beforeMs"),
+          afterMs: milliseconds("afterMs"),
+          recoveryMs: milliseconds("recoveryMs"),
+          maxDurationMs: milliseconds("maxDurationMs"),
+        }
+      : null;
   return {
+    ...(timeWindow ? { timeWindow } : {}),
     thresholdMs: element<HTMLInputElement>(root, '[data-input="thresholdMs"]').valueAsNumber,
     beforeFrames: element<HTMLInputElement>(root, '[data-input="beforeFrames"]').valueAsNumber,
     afterFrames: element<HTMLInputElement>(root, '[data-input="afterFrames"]').valueAsNumber,
@@ -34,7 +55,14 @@ export function renderCaptureProgress(
   const health = element<HTMLElement>(root, '[data-value="capture-health"]');
   health.hidden = progress.kind === "recent";
   const coverage = gpuCoverageText(progress.gpu);
-  write(root, "capture-health", `${coverage} · ${progress.remainingFrames} frames remaining`);
+  const episode = progress.episode
+    ? ` · ${progress.episode.triggerCount} triggers · ${(progress.episode.remainingMs / 1000).toFixed(2)} s to recovery/limit`
+    : "";
+  write(
+    root,
+    "capture-health",
+    `${coverage} · ${progress.remainingFrames} frames remaining${episode}`,
+  );
   write(
     root,
     "capture-progress",
@@ -135,6 +163,12 @@ function appendCapture(list: HTMLElement, profiler: Profiler, capture: SavedCapt
     coverage.dataset.captureCoverage = "";
     coverage.textContent = gpuCoverageText(summarizeGpuCoverage(recording));
     title.after(coverage);
+    if (recording.capture.kind === "automatic" && recording.capture.episode) {
+      title.append(
+        ` · EPISODE · ${recording.capture.episode.triggerFrameIds.length} TRIGGERS · ${recording.capture.episode.stopReason.toUpperCase()}`,
+      );
+      exportButton.textContent = "EXPORT EPISODE";
+    }
     const stats = summarizeFrames(recording.frames, recording.targetFps);
     drawFrameChart(chart, {
       frames: recording.frames,

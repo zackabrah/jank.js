@@ -2,7 +2,7 @@
 
 Jank helps inspect frame pacing, CPU work, asynchronous GPU observations and recorded A/B
 experiments. It runs locally. Host integration is described in [INTEGRATION.md](INTEGRATION.md).
-This is a private preview: recording schema 5, comparison format version 1.
+This is a private preview: recording schemas 5/6, comparison format version 1.
 
 ## Open the bundle
 
@@ -136,3 +136,11 @@ separates sampled frames, usable timings and complete totals; expand **GPU cover
 evidence** for rejected/omitted counts. Use **PIN COUNTERS** to move selected provider/field plots
 and their last-observation readouts above work evidence. Pins and group expansion survive
 navigation within a document; opening another document resets them.
+
+For sustained slowdowns, select **CAPTURE → Capture window → Slowdown episode (seconds)**.
+Choose before context, minimum post-trigger context, quiet recovery and an episode duration
+limit. Repeated threshold crossings join one capture until recovery or a cap. Capture progress
+shows trigger count and time to recovery/limit. **Inspect trigger → Episode trigger** navigates
+the history; **EXPORT EPISODE** retains the whole episode. Duration/frame caps and unavailable
+prehistory are reported as truncated. The initial frame-count mode and 50 ms threshold remain
+unchanged; 1.5× at 60 FPS resolves to 25 ms. Quiet recovery means no frame above that threshold.

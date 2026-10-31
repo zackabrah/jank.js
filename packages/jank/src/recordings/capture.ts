@@ -1,4 +1,5 @@
 import type { GpuCoverage } from "../analysis/gpu-coverage.ts";
+import type { CaptureTimeWindow } from "./episode.ts";
 import type { Recording } from "./recording.ts";
 
 export interface CaptureProgress {
@@ -6,6 +7,7 @@ export interface CaptureProgress {
   readonly frameCount: number;
   readonly remainingFrames: number;
   readonly gpu: GpuCoverage;
+  readonly episode?: { readonly triggerCount: number; readonly remainingMs: number };
 }
 
 export interface CaptureOptions {
@@ -13,6 +15,8 @@ export interface CaptureOptions {
   readonly beforeFrames: number;
   readonly afterFrames: number;
   readonly cooldownMs: number;
+  /** Opt-in elapsed windows and repeated-trigger grouping; overrides before/after frame counts. */
+  readonly timeWindow?: CaptureTimeWindow;
 }
 
 export type CaptureState =
@@ -24,6 +28,7 @@ export type CaptureState =
       readonly triggerFrameId: number;
       readonly remainingFrames: number;
       readonly rearm: boolean;
+      readonly episode?: { readonly triggerCount: number; readonly remainingMs: number };
     }
   | { readonly status: "cooldown"; readonly rearmAtMs: number };
 

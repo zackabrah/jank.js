@@ -147,7 +147,7 @@ report](verification/webgpu.md) for actual browser evidence and measurement limi
 
 ## Rejected timestamp diagnostics (schema 5)
 
-Current source builds write schema 5; the archived rewrite.3 preview remains schema 4.
+Non-episode source captures write schema 5; time-based episodes write schema 6; the archived rewrite.3 preview remains schema 4.
 Rejected native passes retain their ID, label, category, invocation, renderer frame ID and
 absolute timestamp pair in `rejectedPasses`. Values are decimal uint64 strings; null means
 the readback value was absent. Accepted and rejected passes share the existing per-frame and

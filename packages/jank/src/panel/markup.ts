@@ -135,12 +135,17 @@ export function panelMarkup(): string {
               <div class="jank-settings jank-fields">
                 <label>Trigger preset <select class="jl-select" aria-label="Trigger preset" data-trigger-preset><option value="custom">Custom milliseconds</option><option value="1.5">1.5 × frame budget</option><option value="2">2 × frame budget</option><option value="3">3 × frame budget</option></select></label>
                 <label>Threshold ms <input class="jl-input" data-input="thresholdMs" type="number" min="0.001" step="any"></label>
-                <label>Before frames <input class="jl-input" data-input="beforeFrames" type="number" min="0" step="1"></label>
-                <label>After frames <input class="jl-input" data-input="afterFrames" type="number" min="0" step="1"></label>
+                <label>Capture window <select class="jl-select" aria-label="Capture window" data-capture-window><option value="frames">Frame-count window</option><option value="episode">Slowdown episode (seconds)</option></select></label>
+                <label data-frame-window>Before frames <input class="jl-input" data-input="beforeFrames" type="number" min="0" step="1"></label>
+                <label data-frame-window>After frames <input class="jl-input" data-input="afterFrames" type="number" min="0" step="1"></label>
+                <label data-time-window hidden>Before seconds <input class="jl-input" data-time-window-input="beforeMs" type="number" min="0" max="600" step="any" value="2"></label>
+                <label data-time-window hidden>Minimum after seconds <input class="jl-input" data-time-window-input="afterMs" type="number" min="0" max="600" step="any" value="4"></label>
+                <label data-time-window hidden>Quiet recovery seconds <input class="jl-input" data-time-window-input="recoveryMs" type="number" min="0" max="600" step="any" value="2"></label>
+                <label data-time-window hidden>Episode limit seconds <input class="jl-input" data-time-window-input="maxDurationMs" type="number" min="0.001" max="600" step="any" value="30"></label>
                 <label>Cooldown ms <input class="jl-input" data-input="cooldownMs" type="number" min="0" step="any"></label>
               </div>
               <p class="jank-note" data-trigger-rule></p>
-              <p class="jank-note">ARM applies these settings. A single frame must exceed the threshold; slower frames below it do not trigger. Cooldown starts after the after-frame window finishes.</p>
+              <p class="jank-note">ARM applies these settings. A single frame must exceed the threshold; slower frames below it do not trigger. Cooldown starts after collection finishes. Episode mode merges threshold crossings until no frame exceeds the threshold for the quiet recovery interval, capped at 6,000 frames or the elapsed limit. Prehistory is bounded to 599 frames; unavailable context is marked truncated.</p>
               <div class="jank-actions"><button type="button" class="jl-btn" data-action="arm" aria-label="Arm automatic capture">ARM</button><button type="button" class="jl-btn" data-action="disarm">DISARM</button></div></div>
           </details>
           <details class="jank-section" data-section="instrumentation" open>

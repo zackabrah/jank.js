@@ -3,7 +3,7 @@
 Run `pnpm build:viewer` to create `artifacts/jank-viewer.html`. Open that one file in a browser;
 it embeds its script, styles and theme, works from `file://`, and makes no network requests.
 For development, open `/examples/viewer/` on the workspace Vite server. The basic demo links to
-it from **Sources & files**. Imports accept schema-5 recordings and version-1 `jank.js-comparison`
+it from **Sources & files**. Imports accept schema-5 recordings and schema-6 episodes and version-1 `jank.js-comparison`
 bundles, up to 32 MiB of UTF-8. Files are read locally and never uploaded.
 
 Use **Open recording or comparison**, or drop a file anywhere on the viewer. Invalid, oversized
@@ -342,3 +342,9 @@ Verification for this slice: 314 unit tests, package-consumer checks, configured
 Chromium, Firefox and WebKit. Narrow A/B pin controls received a focused nine-case recheck after
 layout refinement. These changes concern offline presentation/analysis; they neither recover
 missing timing nor establish profiler overhead or rendering-performance improvements.
+
+Episode imports show requested context/recovery/cap settings, stop reason and retained trigger
+count. **Episode trigger** selects any retained threshold crossing without changing the original
+trigger. **EXPORT EPISODE** exports the entire retained episode, including all trigger IDs and
+measurement gaps, regardless of which frame is selected. Historical schema-5 files remain
+unchanged and are not retroactively labelled as complete episodes.

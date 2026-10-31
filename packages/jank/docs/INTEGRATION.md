@@ -337,7 +337,7 @@ Copy `jank-viewer.html` from the bundle to your application's static files and s
 to its same-origin HTTP(S) address. Direct handoff validates origin/window/messages; file URLs
 and unsupported origins use download/local import. The standalone file also opens directly
 without installation. A custom embedded viewer uses `createViewer({ container })`; retain its
-handle and call `dispose()` on removal. Viewer imports accept recording schema 5 and comparison
+handle and call `dispose()` on removal. Viewer imports accept recording schemas 5/6 and comparison
 version 1, with a 32 MiB UTF-8 limit. No remote upload is involved.
 
 Dispose owned objects in this order where present: panel, comparison, bounds overlay, GPU
@@ -363,3 +363,11 @@ with a replacement profiler or lost WebGPU device.
   library diagnostics are labelled simulations, not measurements of your application.
 
 The MIT license included in the package also covers its bundled junkui code.
+
+Automatic episodes are opt-in with `capture.arm({ thresholdMs: 25, beforeFrames: 0,
+afterFrames: 0, cooldownMs: 5000, timeWindow: { beforeMs: 2000, afterMs: 4000,
+recoveryMs: 2000, maxDurationMs: 30000 } })`. Time windows override the two frame-count fields.
+The profiler retains the host-owned loop and bounded history; only sealed frames advance the
+episode. Finalize a saved episode through the same GPU finalization/export path as other
+recordings. Schema 6 preserves its trigger history, settings and stop reason. Existing schema-5
+files remain supported; older viewer bundles need the updated viewer to open schema-6 episodes.

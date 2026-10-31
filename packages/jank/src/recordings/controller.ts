@@ -1,6 +1,14 @@
 import type { FrameSample } from "../core/frames.ts";
 import type { CaptureController, CaptureOptions, CaptureState, SavedCapture } from "./capture.ts";
 import { copyRecording } from "./copy.ts";
+import {
+  advanceEpisode,
+  beginEpisode,
+  coversTimeWindow,
+  type EpisodeCollection,
+  episodeProgress,
+  validateTimeWindow,
+} from "./episode.ts";
 import { recordingLimits } from "./limits.ts";
 import type { Recording } from "./recording.ts";
 
@@ -20,6 +28,7 @@ interface AutomaticCapture {
   readonly frames: FrameSample[];
   readonly options: CaptureOptions;
   readonly triggerFrameId: number;
+  readonly episode: EpisodeCollection | null;
   readonly truncated: boolean;
   remainingFrames: number;
   rearm: boolean;
@@ -64,13 +73,16 @@ class CaptureSession implements CaptureController {
         triggerFrameId: state.triggerFrameId,
         remainingFrames: state.remainingFrames,
         rearm: state.rearm,
+        ...(state.episode
+          ? { episode: episodeProgress(state.episode, state.frames.at(-1)?.endedAtMs ?? 0) }
+          : {}),
       };
     }
     return { ...state };
   }
 
   getOptions(): CaptureOptions {
-    return { ...this.options };
+    return copyOptions(this.options);
   }
 
   getProgress(): ReturnType<CaptureController["getProgress"]> {
@@ -92,6 +104,9 @@ class CaptureSession implements CaptureController {
       frameCount: frames.length,
       remainingFrames,
       gpu: this.dependencies.gpuCoverage(frames),
+      ...(state.status === "collecting" && state.episode
+        ? { episode: episodeProgress(state.episode, frames.at(-1)?.endedAtMs ?? 0) }
+        : {}),
     };
   }
 
@@ -100,6 +115,9 @@ class CaptureSession implements CaptureController {
       return;
     }
     if (this.state.status === "collecting") {
+      if (this.state.episode && !this.state.episode.stopReason) {
+        this.state.episode.stopReason = "manual-start";
+      }
       this.saveAutomatic(this.state, true);
     }
     this.state = { status: "manual", frames: [] };
@@ -124,7 +142,7 @@ class CaptureSession implements CaptureController {
     if (this.state.status === "manual") {
       throw new Error("Stop manual recording before arming automatic capture");
     }
-    this.options = { ...options };
+    this.options = copyOptions(options);
     if (this.state.status === "collecting") {
       this.state.rearm = true;
     } else if (this.state.status !== "cooldown") {
@@ -176,23 +194,47 @@ class CaptureSession implements CaptureController {
 
   private trigger(frame: FrameSample): void {
     const previous = this.dependencies.recentFrames().filter((sample) => sample.id < frame.id);
-    const before = previous.slice(Math.max(0, previous.length - this.options.beforeFrames));
+    const window = this.options.timeWindow;
+    const before = window
+      ? previous.filter((sample) => sample.endedAtMs > frame.startedAtMs - window.beforeMs)
+      : previous.slice(Math.max(0, previous.length - this.options.beforeFrames));
+    const episode = window ? beginEpisode(window, frame) : null;
     const state: AutomaticCapture = {
       status: "collecting",
       frames: [...before, frame],
-      options: { ...this.options },
+      options: copyOptions(this.options),
+      episode,
       triggerFrameId: frame.id,
-      remainingFrames: this.options.afterFrames,
+      remainingFrames: episode
+        ? recordingLimits.frames - before.length - 1
+        : this.options.afterFrames,
       rearm: true,
-      truncated: before.length < this.options.beforeFrames,
+      truncated: window
+        ? !coversTimeWindow(before, frame.startedAtMs - window.beforeMs, frame.startedAtMs)
+        : before.length < this.options.beforeFrames,
     };
     this.state = state;
-    if (state.remainingFrames === 0) {
+    if (state.remainingFrames === 0 || episode?.stopReason) {
       this.finishAutomatic(state, frame.endedAtMs);
     }
   }
 
   private acceptAfterFrame(state: AutomaticCapture, frame: FrameSample): void {
+    if (state.episode) {
+      if (!state.episode.stopReason) {
+        state.frames.push(frame);
+        state.remainingFrames = recordingLimits.frames - state.frames.length;
+        advanceEpisode(state.episode, frame, {
+          thresholdMs: state.options.thresholdMs,
+          extend: state.rearm,
+          frameCount: state.frames.length,
+        });
+      }
+      if (state.episode.stopReason) {
+        this.finishAutomatic(state, state.frames.at(-1)?.endedAtMs ?? frame.endedAtMs);
+      }
+      return;
+    }
     if (state.remainingFrames > 0) {
       state.frames.push(frame);
       state.remainingFrames -= 1;
@@ -203,7 +245,11 @@ class CaptureSession implements CaptureController {
   }
 
   private finishAutomatic(state: AutomaticCapture, endedAtMs: number): void {
-    this.saveAutomatic(state, state.truncated);
+    const reason = state.episode?.stopReason;
+    this.saveAutomatic(
+      state,
+      state.truncated || reason === "frame-capacity" || reason === "duration-limit",
+    );
     this.state = state.rearm
       ? { status: "cooldown", rearmAtMs: endedAtMs + state.options.cooldownMs }
       : { status: "idle" };
@@ -211,16 +257,34 @@ class CaptureSession implements CaptureController {
   }
 
   private saveAutomatic(state: AutomaticCapture, truncated: boolean): Recording {
+    const episode = state.episode;
+    const triggerIndex = state.frames.findIndex((frame) => frame.id === state.triggerFrameId);
     return this.save(
       state.frames,
       {
         kind: "automatic",
         triggerFrameId: state.triggerFrameId,
         thresholdMs: state.options.thresholdMs,
-        beforeFrames: state.options.beforeFrames,
-        afterFrames: state.options.afterFrames,
+        beforeFrames: episode ? triggerIndex : state.options.beforeFrames,
+        afterFrames: episode ? state.frames.length - triggerIndex - 1 : state.options.afterFrames,
+        ...(episode?.stopReason
+          ? {
+              episode: {
+                timeWindow: { ...episode.timeWindow },
+                cooldownMs: state.options.cooldownMs,
+                triggerFrameIds: [...episode.triggerFrameIds],
+                stopReason: episode.stopReason,
+              },
+            }
+          : {}),
       },
-      truncated,
+      truncated ||
+        (episode !== null &&
+          !coversTimeWindow(
+            state.frames,
+            state.frames[0]?.startedAtMs ?? 0,
+            state.frames.at(-1)?.endedAtMs ?? 0,
+          )),
     );
   }
 
@@ -229,7 +293,11 @@ class CaptureSession implements CaptureController {
     capture: Recording["capture"],
     truncated: boolean,
   ): Recording {
-    const recording = copyRecording(this.dependencies.createRecording(frames, capture, truncated));
+    const assembled = this.dependencies.createRecording(frames, capture, truncated);
+    const recording = copyRecording({
+      ...assembled,
+      schemaVersion: capture.kind === "automatic" && capture.episode ? 6 : assembled.schemaVersion,
+    });
     this.archive.push({
       recording,
       summary: {
@@ -286,7 +354,13 @@ class CaptureSession implements CaptureController {
   }
 }
 
+function copyOptions(options: CaptureOptions): CaptureOptions {
+  return { ...options, ...(options.timeWindow ? { timeWindow: { ...options.timeWindow } } : {}) };
+}
 function validateOptions(options: CaptureOptions): void {
+  if (options.timeWindow) {
+    validateTimeWindow(options.timeWindow);
+  }
   if (
     !Number.isFinite(options.thresholdMs) ||
     options.thresholdMs <= 0 ||

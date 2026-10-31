@@ -386,3 +386,135 @@ describe("capture ownership", () => {
 });
 
 import { summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";
+
+describe("bounded slowdown episodes", () => {
+  const episodeOptions = {
+    ...options,
+    timeWindow: { beforeMs: 30, afterMs: 30, recoveryMs: 40, maxDurationMs: 500 },
+  };
+  it("uses elapsed prehistory, merges repeated slow frames and retains a quiet recovery tail", () => {
+    const { controller, frame } = setup();
+    controller.arm(episodeOptions);
+    frame(16);
+    frame(16);
+    frame(16);
+    frame(35);
+    frame(16);
+    frame(35);
+    frame(16);
+    frame(16);
+    expect(controller.completed()).toHaveLength(0);
+    expect(controller.getState()).toMatchObject({
+      status: "collecting",
+      episode: { triggerCount: 2, remainingMs: 8 },
+    });
+    frame(16);
+    const saved = controller.completed()[0];
+    expect(saved?.frames.map((frame) => frame.id)).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(saved?.schemaVersion).toBe(6);
+    expect(saved?.capture).toMatchObject({
+      triggerFrameId: 4,
+      beforeFrames: 2,
+      afterFrames: 5,
+      episode: {
+        triggerFrameIds: [4, 6],
+        stopReason: "recovered",
+        timeWindow: episodeOptions.timeWindow,
+        cooldownMs: 100,
+      },
+    });
+    expect(saved?.truncated).toBe(false);
+    expect(controller.getState()).toEqual({ status: "cooldown", rearmAtMs: 282 });
+    if (!saved) {
+      throw new Error("No episode");
+    }
+    expect(() => serializeRecording(saved)).not.toThrow();
+  });
+  it("caps sustained load by elapsed duration, marks truncation, and never emits overlapping captures while collecting", () => {
+    const { controller, frame } = setup();
+    controller.arm({
+      ...episodeOptions,
+      timeWindow: { beforeMs: 0, afterMs: 30, recoveryMs: 40, maxDurationMs: 100 },
+    });
+    for (let index = 0; index < 4; index += 1) {
+      frame(35);
+    }
+    expect(controller.completed()).toHaveLength(1);
+    expect(controller.completed()[0]).toMatchObject({
+      truncated: true,
+      capture: { episode: { triggerFrameIds: [1, 2, 3, 4], stopReason: "duration-limit" } },
+    });
+  });
+  it("caps frame storage independently of elapsed duration and exposes remaining capacity", () => {
+    const { controller, frame } = setup();
+    controller.arm({
+      ...episodeOptions,
+      thresholdMs: 0.5,
+      timeWindow: { beforeMs: 0, afterMs: 100, recoveryMs: 100, maxDurationMs: 10000 },
+    });
+    frame(1);
+    expect(controller.getProgress()).toMatchObject({
+      kind: "automatic",
+      remainingFrames: 5999,
+      episode: { triggerCount: 1, remainingMs: 100 },
+    });
+    for (let index = 1; index < 6000; index += 1) {
+      frame(1);
+    }
+    expect(controller.completed()[0]).toMatchObject({
+      truncated: true,
+      capture: { episode: { stopReason: "frame-capacity" } },
+    });
+    expect(controller.completed()[0]?.frames).toHaveLength(6000);
+  });
+  it("disarm stops extending the episode, manual start truncates it, and export failure preserves its closing boundary", () => {
+    const { controller, frame, failExport } = setup();
+    controller.arm({
+      ...episodeOptions,
+      timeWindow: { beforeMs: 0, afterMs: 30, recoveryMs: 40, maxDurationMs: 500 },
+    });
+    frame(35);
+    controller.disarm();
+    frame(35);
+    failExport(true);
+    expect(() => frame(35)).toThrow("Export failed");
+    failExport(false);
+    frame(35);
+    expect(controller.completed()[0]?.frames).toHaveLength(3);
+    expect(controller.completed()[0]?.capture).toMatchObject({
+      episode: { stopReason: "disarmed", triggerFrameIds: [1, 2, 3] },
+    });
+    expect(controller.getState()).toEqual({ status: "idle" });
+    controller.arm(episodeOptions);
+    frame(35);
+    controller.start();
+    expect(controller.completed()[1]).toMatchObject({
+      truncated: true,
+      capture: { episode: { stopReason: "manual-start" } },
+    });
+  });
+  it("copies nested settings and trigger history and rejects invalid bounds atomically", () => {
+    const { controller, frame } = setup();
+    controller.arm(episodeOptions);
+    Reflect.set(controller.getOptions().timeWindow ?? {}, "recoveryMs", 999);
+    expect(controller.getOptions()).toEqual(episodeOptions);
+    for (const timeWindow of [
+      { ...episodeOptions.timeWindow, beforeMs: -1 },
+      { ...episodeOptions.timeWindow, maxDurationMs: 20 },
+      { ...episodeOptions.timeWindow, recoveryMs: Infinity },
+    ]) {
+      expect(() => controller.arm({ ...episodeOptions, timeWindow })).toThrow();
+    }
+    frame(35);
+    frame(16);
+    frame(16);
+    frame(16);
+    const saved = controller.completed()[0];
+    if (saved?.capture.kind !== "automatic") {
+      throw new Error("No automatic capture");
+    }
+    Reflect.set(saved.capture.episode?.triggerFrameIds ?? [], "0", 999);
+    expect(controller.completed()[0]?.capture).toMatchObject({ episode: { triggerFrameIds: [1] } });
+    expect(saved.truncated).toBe(true);
+  });
+});

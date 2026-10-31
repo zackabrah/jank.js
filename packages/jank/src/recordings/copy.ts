@@ -18,11 +18,25 @@ export function copyRecording(recording: Recording): Recording {
         viewport: environment.viewport === null ? null : { ...environment.viewport },
       },
     },
-    capture: { ...recording.capture },
+    capture: copyCapture(recording.capture),
     frames: recording.frames.map(copyFrame),
     channels: recording.channels.map((channel) => ({ ...channel })),
     counters: recording.counters.map(copyCounterSample),
     events: recording.events.map((event) => ({ ...event })),
     gpu: recording.gpu.map(copyGpuSample),
   };
+}
+
+export function copyCapture(capture: Recording["capture"]): Recording["capture"] {
+  if (capture.kind === "automatic" && capture.episode) {
+    return {
+      ...capture,
+      episode: {
+        ...capture.episode,
+        timeWindow: { ...capture.episode.timeWindow },
+        triggerFrameIds: [...capture.episode.triggerFrameIds],
+      },
+    };
+  }
+  return { ...capture };
 }

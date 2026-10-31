@@ -148,8 +148,10 @@ Desktop bundle `red-skies-cloud-ramp-jank-f1662bb-2026-10-31.zip`. Installed Jan
   inspection, original-trigger selection and a sampled-out trigger notice are implemented.
   Sustained-over-budget triggering remains a separate follow-up from single-frame detection.
 - [x] Show actual retained pre/post elapsed durations in the automatic recording inspector.
-- [ ] Evaluate bounded seconds-based windows. Explain cooldown timing and archive retention/eviction. Consider
-  grouping repeated captures of one episode and opt-in automatic export for longer sessions.
+- [x] Add bounded seconds-based windows, group repeated threshold crossings into one slowdown
+  episode, and export its settings, trigger history and completeness. Explain cooldown timing
+  and archive retention/eviction.
+- [ ] Consider opt-in automatic export for longer sessions.
 - [x] Separate sampled GPU frames, frames with usable timing, complete frames, valid/rejected
   timestamp pairs, omitted passes and missing observations. The trigger sampling notice remains
   explicit; partial evidence never becomes a valid whole-frame total.

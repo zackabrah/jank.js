@@ -17,11 +17,12 @@ import type { Recording, RecordingResult } from "./recording.ts";
 
 export function readRecording(value: unknown): Recording {
   const data = object(value, "$");
-  if (data.schemaVersion !== 5) {
+  if (data.schemaVersion !== 5 && data.schemaVersion !== 6) {
     throw new RecordingError({
       code: "unsupported-version",
       path: "$.schemaVersion",
-      message: "Expected recording schema version 5; older files require their matching preview",
+      message:
+        "Expected recording schema version 5 or 6; older files require their matching preview",
     });
   }
   const clock = object(data.clock, "$.clock");
@@ -39,14 +40,14 @@ export function readRecording(value: unknown): Recording {
   const truncated = boolean(data.truncated, "$.truncated");
   return {
     format: choice(data.format, "$.format", ["jank.js-recording"]),
-    schemaVersion: 5,
+    schemaVersion: data.schemaVersion,
     clock: {
       unit: choice(clock.unit, "$.clock.unit", ["milliseconds"]),
       origin: choice(clock.origin, "$.clock.origin", ["profiler-start"]),
     },
     metadata: readMetadata(data.metadata),
     targetFps: number(data.targetFps, "$.targetFps", Number.MIN_VALUE),
-    capture: readCapture(data.capture, frames, truncated),
+    capture: readCapture(data.capture, frames, truncated, data.schemaVersion),
     truncated,
     channels,
     frames,

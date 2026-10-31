@@ -85,7 +85,7 @@ GPU samples remain absent, never zero. The helper does not modify legacy pass-su
 
 ## File boundary
 
-The version 5 codec is exported from `jank.js`. `parseRecording(text)` returns either
+The version 5/6 codec is exported from `jank.js`. `parseRecording(text)` returns either
 `{ ok: true, recording }` or `{ ok: false, problem }`. Problems include a code, field path and
 readable message. Version 1/2/3/4 files are rejected explicitly. Use their matching preview to
 read them; there is no implicit migration or reinterpretation of older GPU pass sums.
@@ -146,3 +146,43 @@ Results are local Node batch averages with synthetic frame time and a real cost 
 include synchronous copying and garbage-collection noise, exclude browser layout/paint/GPU,
 adapters and final UI, and do not compare against the old implementation. Min/max are batch
 means, not frame-tail latency. The panel, viewer, loading runtime and integrations remain pending.
+
+
+## Time-based slowdown episodes (schema 6)
+
+Frame-count mode remains the default. Set `timeWindow` when arming to opt into one bounded
+slowdown episode. Its before window uses elapsed time and includes whole overlapping frames
+from the existing 599-frame prehistory; unavailable time or gaps mark the recording truncated.
+Repeated sealed frames exceeding `thresholdMs` join the same episode and extend its quiet
+recovery deadline. Collection ends after both the minimum post-trigger duration and a continuous
+interval without further threshold crossings. Quiet means below the trigger threshold, not
+necessarily within the frame budget. Limits end the episode even if the slowdown continues.
+
+```ts
+profiler.capture.arm({
+  thresholdMs: 25,
+  beforeFrames: 0, // ignored when timeWindow is supplied
+  afterFrames: 0,
+  cooldownMs: 5000,
+  timeWindow: { beforeMs: 2000, afterMs: 4000, recoveryMs: 2000, maxDurationMs: 30000 },
+});
+```
+
+Windows are finite 0–600,000 ms. The duration limit must be positive and at least the post-trigger
+and recovery windows. It starts at the first trigger's end, excludes prehistory, and is also
+bounded by 6,000 total retained frames. Only sealed frames are considered, so one frame may
+cross a time boundary; stalled hosts cannot finalize until another boundary arrives. No new
+clock, timer or host-loop ownership is introduced. Cooldown starts when the episode ends.
+Disarming freezes further extension but retains the current tail and its threshold crossings.
+Rearming changes the next episode's settings. Manual start interrupts and truncates an episode.
+Clear/dispose discard active collection; failed assembly retries the same closing boundary.
+
+Schema 6 adds `capture.episode`: requested time settings, cooldown, every retained threshold
+crossing in order, and a stop reason (`recovered`, `disarmed`, `frame-capacity`, `duration-limit`,
+or `manual-start`). Its before/after frame counts describe the retained frames, rather than a
+requested frame window. Non-episode captures still write schema 5. Both schemas import; schema 5
+cannot silently accept episode fields. Copies and exports detach nested settings and trigger IDs.
+Existing recording metadata, observations and completeness diagnostics accompany the whole episode.
+GPU/counter/event retention pools remain independently bounded; time windows do not guarantee
+complete GPU samples. At a limit, the episode is truncated and a later trigger after cooldown
+can start a new episode. Archives still evict the oldest capture after ten entries.

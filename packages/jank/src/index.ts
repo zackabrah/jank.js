@@ -72,6 +72,11 @@ export type {
   SavedCapture,
 } from "./recordings/capture.ts";
 export { parseRecording, serializeRecording } from "./recordings/codec.ts";
+export type {
+  CaptureTimeWindow,
+  EpisodeMetadata,
+  EpisodeStopReason,
+} from "./recordings/episode.ts";
 export { RecordingError } from "./recordings/read-values.ts";
 export type {
   ParseRecording,

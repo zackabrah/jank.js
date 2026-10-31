@@ -10,6 +10,7 @@ const cases = [
   { name: "128 scopes per frame", scopesPerFrame: 128, snapshotEvery: 0 },
   { name: "8 scopes and snapshot every 6 frames", scopesPerFrame: 8, snapshotEvery: 6 },
   { name: "manual capture with 8 scopes", scopesPerFrame: 8, capture: true },
+  { name: "slowdown episodes and serialize with 8 scopes", scopesPerFrame: 8, episode: true },
   {
     name: "manual capture and serialize with 8 scopes",
     scopesPerFrame: 8,
@@ -45,6 +46,14 @@ function prepareWorkload(workload, enabled, now) {
 }
 
 function finishCapture(workload, profiler) {
+  if (workload.episode) {
+    // Seal the remaining bounded episode explicitly; include archive copy and validated export.
+    profiler?.capture.start();
+    return (profiler?.capture.completed() ?? []).reduce(
+      (sum, recording) => sum + serializeRecording(recording).length,
+      0,
+    );
+  }
   if (!workload.capture) {
     return 0;
   }
@@ -60,6 +69,15 @@ function runWorkload(workload, enabled) {
   let checksum = 0;
   const { profiler, channel } = prepareWorkload(workload, enabled, () => timeMs);
   const startedAtMs = performance.now();
+  if (workload.episode) {
+    profiler?.capture.arm({
+      thresholdMs: 10,
+      beforeFrames: 0,
+      afterFrames: 0,
+      cooldownMs: 0,
+      timeWindow: { beforeMs: 0, afterMs: 100, recoveryMs: 100, maxDurationMs: 30000 },
+    });
+  }
   if (workload.capture) {
     profiler?.capture.start();
   }
@@ -135,7 +153,7 @@ const report = {
   framesPerSample,
   units: "microseconds per host frame",
   limitations:
-    "Local Node microbenchmark of the public profiler with synthetic frame time and real cost clock. Includes synchronous collection, copying and GC noise; marked workloads also include capture start/stop assembly and optional validated serialization, amortized across 5,000 frames. Excludes construction, disposal, browser layout, paint, GPU, adapters and UI. Counter providers return one numeric value each. Baseline is the same host loop without profiling, not the previous implementation. Min/max describe batch means, not frame-tail latency or export latency.",
+    "Local Node microbenchmark of the public profiler with synthetic frame time and real cost clock. Includes synchronous collection, copying and GC noise; marked workloads also include capture start/stop assembly and optional validated serialization, amortized across 5,000 frames. Excludes construction, disposal, browser layout, paint, GPU, adapters and UI. The episode case uses 30-second duration caps during sustained synthetic load, then seals and serializes the remaining episode. Counter providers return one numeric value each. Baseline is the same host loop without profiling, not the previous implementation. Min/max describe batch means, not frame-tail latency or export latency.",
   results,
 };
 

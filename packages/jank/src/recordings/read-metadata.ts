@@ -1,5 +1,7 @@
 import type { FrameSample } from "../core/frames.ts";
+import { coversTimeWindow } from "./episode.ts";
 import { recordingLimits } from "./limits.ts";
+import { readEpisode, validateEpisodeEnd } from "./read-episode.ts";
 import {
   boolean,
   choice,
@@ -71,9 +73,13 @@ export function readCapture(
   value: unknown,
   frames: readonly FrameSample[],
   truncated: boolean,
+  schemaVersion: 5 | 6 = 5,
 ): Recording["capture"] {
   const path = "$.capture";
   const data = object(value, path);
+  if (data.episode !== undefined && (schemaVersion !== 6 || data.kind !== "automatic")) {
+    invalid(`${path}.episode`, "Episodes require schema 6 automatic capture");
+  }
   const kind = choice(data.kind, `${path}.kind`, ["manual", "recent", "automatic"]);
   if (kind !== "automatic") {
     return { kind };
@@ -98,10 +104,26 @@ export function readCapture(
     data.afterFrames,
     `${path}.afterFrames`,
     0,
-    recordingLimits.afterFrames,
+    data.episode === undefined ? recordingLimits.afterFrames : recordingLimits.frames - 1,
   );
   checkWindow(`${path}.beforeFrames`, beforeFrames, triggerIndex, truncated);
   checkWindow(`${path}.afterFrames`, afterFrames, frames.length - triggerIndex - 1, truncated);
+  if (data.episode !== undefined) {
+    const episode = readEpisode(data.episode, frames, triggerFrameId, thresholdMs);
+    validateEpisodeEnd(episode, frames, trigger, truncated);
+    const last = frames.at(-1);
+    if (
+      !truncated &&
+      !coversTimeWindow(
+        frames,
+        trigger.startedAtMs - episode.timeWindow.beforeMs,
+        last?.endedAtMs ?? trigger.endedAtMs,
+      )
+    ) {
+      invalid("$.truncated", "Episode context contains unavailable time");
+    }
+    return { kind, triggerFrameId, thresholdMs, beforeFrames, afterFrames, episode };
+  }
   return { kind, triggerFrameId, thresholdMs, beforeFrames, afterFrames };
 }
 
