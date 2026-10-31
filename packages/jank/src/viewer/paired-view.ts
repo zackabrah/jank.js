@@ -146,7 +146,9 @@ function renderWorkTable(
   kind: "cpu" | "gpu",
 ): void {
   const container = element<HTMLElement>(root, `[data-paired-${kind}]`);
-  const selected = rows.filter((row) => row.kind === kind);
+  const selected = rows.filter(
+    (row) => row.kind === kind || (kind === "cpu" && row.kind === "frame"),
+  );
   renderTable(
     container,
     kind === "cpu" ? "CPU scope comparison" : "GPU pass comparison",

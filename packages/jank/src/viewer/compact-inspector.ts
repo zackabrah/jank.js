@@ -9,7 +9,9 @@ export function renderCompactWork(
 ): void {
   for (const kind of ["cpu", "gpu"] as const) {
     const container = element<HTMLElement>(root, `[data-inspector-${kind}]`);
-    const selected = rows.filter((row) => row.kind === kind);
+    const selected = rows.filter(
+      (row) => row.kind === kind || (kind === "cpu" && row.kind === "frame"),
+    );
     container.className = "jank-viewer-compact";
     container.dataset.comparison = String(comparison);
     renderTable(
@@ -49,9 +51,18 @@ function annotateMeasurements(
   comparison: boolean,
 ): void {
   for (const [index, row] of selected.entries()) {
-    const cells = container.querySelectorAll("tbody tr")[index]?.querySelectorAll("td");
+    const tableRow = container.querySelectorAll("tbody tr")[index];
+    const cells = tableRow?.querySelectorAll("td");
+    tableRow?.setAttribute("data-work-kind", row.kind);
+    tableRow?.setAttribute("data-work-key", row.key);
     if (cells?.[0]) {
       cells[0].title = row.label;
+      if (!comparison) {
+        const label = container.ownerDocument.createElement("span");
+        label.className = "jank-viewer-work-label";
+        label.textContent = row.displayLabel;
+        cells[0].replaceChildren(label);
+      }
     }
     if (cells?.[1]) {
       cells[1].title = row.a.note;

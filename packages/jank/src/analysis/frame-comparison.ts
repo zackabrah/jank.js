@@ -4,7 +4,7 @@ import type { Recording } from "../recordings/recording.ts";
 import { intervalUnion } from "./statistics.ts";
 
 export interface WorkIdentity {
-  readonly kind: "cpu" | "gpu";
+  readonly kind: "cpu" | "gpu" | "frame";
   readonly key: string;
   readonly label: string;
   readonly displayLabel: string;
@@ -100,7 +100,26 @@ export function workCatalog(a: Recording | null, b: Recording | null): WorkIdent
       }
     }
   }
-  return [...entries.values()].sort((a, b) => Number(a.kind === "gpu") - Number(b.kind === "gpu"));
+  const ordered = [...entries.values()].sort(
+    (a, b) => Number(a.kind === "gpu") - Number(b.kind === "gpu"),
+  );
+  if (a || b) {
+    ordered.push(
+      {
+        kind: "frame",
+        key: "unattributed",
+        label: "Unattributed frame time",
+        displayLabel: "unattributed",
+      },
+      {
+        kind: "frame",
+        key: "overhead",
+        label: "Synchronous profiler overhead",
+        displayLabel: "profiler",
+      },
+    );
+  }
+  return ordered;
 }
 
 function cpuMeasurement(frame: FrameSample, channelId: string): WorkMeasurement {
@@ -127,6 +146,9 @@ export function measureFrameWork(
   const sample = samples.length === 1 ? samples[0] : undefined;
   const passes = sample ? gpuPasses(sample) : [];
   return catalog.map((identity) => {
+    if (identity.kind === "frame") {
+      return frameContext(frame, identity.key);
+    }
     if (identity.kind === "cpu") {
       return cpuMeasurement(frame, identity.key);
     }
@@ -165,4 +187,25 @@ export function compareFrameWork(
         : null;
     return { ...identity, a, b, differenceMs };
   });
+}
+
+function frameContext(frame: FrameSample, key: string): WorkMeasurement {
+  if (key === "overhead") {
+    return {
+      durationMs: frame.overhead.collectionMs + frame.overhead.refreshMs,
+      comparable: true,
+      note: "Synchronous collection + refresh; may overlap scope intervals. Excludes deferred layout, paint and GPU work.",
+    };
+  }
+  if (frame.coverage.status === "not-collected") {
+    return unknown("CPU scopes not collected; unattributed time is unknown");
+  }
+  return {
+    durationMs: Math.max(0, frame.endedAtMs - frame.startedAtMs - intervalUnion(frame.scopes)),
+    comparable: frame.coverage.status === "complete",
+    note:
+      frame.coverage.status === "complete"
+        ? "Frame interval minus scope union; includes waiting and unobserved work, not measured idle time"
+        : "Partial coverage; includes omitted scopes, waiting and unobserved work. Not comparable.",
+  };
 }

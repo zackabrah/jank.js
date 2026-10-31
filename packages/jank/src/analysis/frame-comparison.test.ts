@@ -55,6 +55,8 @@ describe("elapsed A/B frame inspection", () => {
       "Physics · physics",
       "Extra · extra",
       "opaque · pass-sum",
+      "Unattributed frame time",
+      "Synchronous profiler overhead",
     ]);
     expect(rows[0]).toMatchObject({ a: { durationMs: 4 }, b: { durationMs: 6 }, differenceMs: 2 });
     expect(rows[1]).toMatchObject({ differenceMs: null, a: { durationMs: null } });
@@ -140,4 +142,43 @@ describe("elapsed A/B frame inspection", () => {
       b: { note: "Multiple GPU observations" },
     });
   });
+});
+
+it("restores frame context without conflating scope gaps, overlapping work or instrumentation overhead", () => {
+  const recording = recordingFixture();
+  const first = recording.frames[0];
+  if (!first) {
+    throw new Error("Missing frame");
+  }
+  const frame = {
+    ...first,
+    scopes: [...first.scopes, { channelId: "physics", startedAtMs: 102, endedAtMs: 106 }],
+    overhead: { collectionMs: 0.1, refreshMs: 0.2 },
+  };
+  const catalog = workCatalog(recording, null);
+  const rows = compareFrameWork(
+    catalog,
+    { recording, frame },
+    { recording, frame: { ...frame, coverage: { status: "truncated", omittedScopes: 1 } } },
+  );
+  const unattributed = rows.find((row) => row.kind === "frame" && row.key === "unattributed");
+  const overhead = rows.find((row) => row.kind === "frame" && row.key === "overhead");
+  expect(unattributed).toMatchObject({
+    a: { durationMs: 10, comparable: true },
+    b: { durationMs: 10, comparable: false },
+    differenceMs: null,
+  });
+  expect(overhead?.a.durationMs).toBeCloseTo(0.3);
+  expect(overhead?.differenceMs).toBe(0);
+  const missing = compareFrameWork(
+    catalog,
+    { recording, frame: { ...frame, scopes: [], coverage: { status: "not-collected" } } },
+    { recording: null, frame: null },
+  );
+  expect(
+    missing.find((row) => row.key === "unattributed" && row.kind === "frame")?.a.durationMs,
+  ).toBeNull();
+  expect(
+    missing.filter((row) => row.kind === "frame").every((row) => row.b.durationMs === null),
+  ).toBe(true);
 });

@@ -46,7 +46,7 @@ test("lanes keep order and missing GPU gaps while hover, zoom, scrolling and eve
   });
   const left = page.locator('[data-timeline-lanes="overlay"]');
   const right = page.locator('[data-timeline-lanes="overlay"]');
-  await expect(left.locator("[data-lane-name]")).toHaveCount(4);
+  await expect(left.locator("[data-lane-name]")).toHaveCount(6);
   const order = await left.locator("[data-lane-name]").allTextContents();
   await expect(
     right.locator('[data-lane-kind="gpu"]').first().locator('[data-series="b"] rect'),

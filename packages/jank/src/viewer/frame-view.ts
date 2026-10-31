@@ -45,11 +45,7 @@ export function renderFrame(
   const inspected = inspectFrame(recording, frame.id);
   write(root, "frame", `Frame #${frame.id}`);
   if (inspected?.likelyCause) {
-    const cause = inspected.likelyCause;
-    const label =
-      recording.channels.find((channel) => channel.id === cause.channelId)?.label ??
-      cause.channelId;
-    write(root, "likely", `${label} +${cause.aboveMedianMs.toFixed(2)} ms vs median · heuristic`);
+    renderLikelyScope(root, recording, inspected.likelyCause);
   }
   const note = root.ownerDocument.createElement("p");
   note.textContent = `CPU update ${milliseconds(frame.cpu.updateMs)}, render ${milliseconds(frame.cpu.renderMs)}. Scope coverage: ${frame.coverage.status}. Attributed union ${milliseconds(inspected?.attributedMs)}; unattributed ${milliseconds(inspected?.unattributedMs)} (waiting or unobserved work). Scope rows are inclusive; do not add nested scopes.`;
@@ -236,4 +232,21 @@ export function renderNoRecording(root: HTMLElement): void {
     input.value = "";
     input.disabled = true;
   }
+}
+
+function renderLikelyScope(
+  root: HTMLElement,
+  recording: Recording,
+  cause: { channelId: string; aboveMedianMs: number },
+): void {
+  for (const row of root.querySelectorAll<HTMLElement>(
+    '[data-inspector-cpu] [data-work-kind="cpu"]',
+  )) {
+    if (row.dataset.workKey === cause.channelId) {
+      row.setAttribute("data-likely-scope", "");
+    }
+  }
+  const label =
+    recording.channels.find((channel) => channel.id === cause.channelId)?.label ?? cause.channelId;
+  write(root, "likely", `${label} +${cause.aboveMedianMs.toFixed(2)} ms vs median · heuristic`);
 }

@@ -817,3 +817,21 @@
   cursor: grab;
   touch-action: none;
 }
+
+.jank-viewer-compact[data-comparison="false"] td:first-child {
+  background-image: radial-gradient(circle, var(--jl-muted) 0.5px, transparent 0.7px);
+  background-size: 4px 2px;
+  background-repeat: repeat-x;
+  background-position: center;
+}
+.jank-viewer-work-label {
+  background: var(--jl-ink);
+  padding-right: 8px;
+}
+.jank-viewer-compact [data-likely-scope] td {
+  color: var(--jl-text);
+  font-weight: 700;
+}
+.jank-viewer-compact [data-work-kind="frame"] td {
+  color: var(--jl-muted);
+}

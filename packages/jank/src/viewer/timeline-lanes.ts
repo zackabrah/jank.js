@@ -120,10 +120,15 @@ function renderSample(
   svg.prepend(bar);
 }
 
+interface LaneOptions {
+  name: string;
+  maximumMs: number;
+  overlay?: TimelineModel | undefined;
+}
 export function renderTimelineLanes(
   container: HTMLElement,
   model: TimelineModel,
-  options: { name: string; maximumMs: number; overlay?: TimelineModel | undefined },
+  options: LaneOptions,
 ): void {
   container.replaceChildren();
   renderEvents(container, model, options.overlay ? "A" : options.name);
@@ -133,50 +138,10 @@ export function renderTimelineLanes(
   let previousKind = "";
   for (const [index, lane] of model.lanes.entries()) {
     if (previousKind !== lane.identity.kind) {
-      const heading = container.ownerDocument.createElement("div");
-      heading.className = "jank-viewer-lane-group";
-      const title = container.ownerDocument.createElement("b");
-      title.textContent = lane.identity.kind.toUpperCase();
-      const scale = container.ownerDocument.createElement("span");
-      scale.textContent = `0–${options.maximumMs.toFixed(1)} ms`;
-      heading.append(title, scale);
-      container.append(heading);
+      renderLaneHeading(container, lane.identity.kind, options.maximumMs);
       previousKind = lane.identity.kind;
     }
-    const row = container.ownerDocument.createElement("div");
-    row.className = "jank-viewer-lane";
-    row.dataset.laneKind = lane.identity.kind;
-    const heading = container.ownerDocument.createElement("div");
-    heading.className = "jank-viewer-lane-heading";
-    const name = container.ownerDocument.createElement("span");
-    name.dataset.laneName = "";
-    name.textContent = lane.identity.displayLabel;
-    name.title = lane.identity.label;
-    const value = container.ownerDocument.createElement("span");
-    value.dataset.laneReadout = "";
-    heading.append(name, value);
-    const svg = surface(
-      container,
-      `${options.name} ${lane.identity.label} duration lane; arrow keys select frames`,
-    );
-    const a = svgElement(
-      container.ownerDocument,
-      "g",
-      options.overlay ? { "data-series": "a" } : {},
-    );
-    for (const sample of lane.samples) {
-      renderSample(a, sample, model, options.maximumMs);
-    }
-    svg.prepend(a);
-    if (options.overlay) {
-      const b = svgElement(container.ownerDocument, "g", { "data-series": "b" });
-      for (const sample of options.overlay.lanes[index]?.samples ?? []) {
-        renderSample(b, sample, options.overlay, options.maximumMs);
-      }
-      a.after(b);
-    }
-    row.append(heading, svg);
-    container.append(row);
+    renderLane(container, model, index, options);
   }
   renderEmptyLanes(container, model);
 }
@@ -224,4 +189,58 @@ function renderEmptyLanes(container: HTMLElement, model: TimelineModel): void {
   const empty = container.ownerDocument.createElement("p");
   empty.textContent = "No CPU scopes or GPU pass identities recorded. Timing is unknown.";
   container.append(empty);
+}
+
+function renderLaneHeading(container: HTMLElement, kind: string, maximumMs: number): void {
+  const heading = container.ownerDocument.createElement("div");
+  heading.className = "jank-viewer-lane-group";
+  const title = container.ownerDocument.createElement("b");
+  title.textContent = kind === "frame" ? "FRAME CONTEXT" : kind.toUpperCase();
+  const scale = container.ownerDocument.createElement("span");
+  scale.textContent = `0–${maximumMs.toFixed(1)} ms`;
+  heading.append(title, scale);
+  container.append(heading);
+}
+function renderLane(
+  container: HTMLElement,
+  model: TimelineModel,
+  index: number,
+  options: LaneOptions,
+): void {
+  const lane = model.lanes[index];
+  if (!lane) {
+    return;
+  }
+  const row = container.ownerDocument.createElement("div");
+  row.className = "jank-viewer-lane";
+  row.dataset.laneKind = lane.identity.kind;
+  const heading = container.ownerDocument.createElement("div");
+  heading.className = "jank-viewer-lane-heading";
+  const name = container.ownerDocument.createElement("span");
+  name.dataset.laneName = "";
+  const overhead = lane.identity.kind === "frame" && lane.identity.key === "overhead";
+  const laneMaximumMs = overhead ? options.maximumMs / 20 : options.maximumMs;
+  name.textContent = lane.identity.displayLabel + (overhead ? " ×20" : "");
+  name.title = lane.identity.label;
+  const value = container.ownerDocument.createElement("span");
+  value.dataset.laneReadout = "";
+  heading.append(name, value);
+  const svg = surface(
+    container,
+    `${options.name} ${lane.identity.label} duration lane; arrow keys select frames`,
+  );
+  const a = svgElement(container.ownerDocument, "g", options.overlay ? { "data-series": "a" } : {});
+  for (const sample of lane.samples) {
+    renderSample(a, sample, model, laneMaximumMs);
+  }
+  svg.prepend(a);
+  if (options.overlay) {
+    const b = svgElement(container.ownerDocument, "g", { "data-series": "b" });
+    for (const sample of options.overlay.lanes[index]?.samples ?? []) {
+      renderSample(b, sample, options.overlay, laneMaximumMs);
+    }
+    a.after(b);
+  }
+  row.append(heading, svg);
+  container.append(row);
 }

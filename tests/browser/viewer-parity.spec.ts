@@ -49,3 +49,27 @@ test("dragging the session range pans without turning the release into a frame s
   await chart.click({ position: { x: bounds.width * 0.8, y: 25 } });
   await expect(page.locator("[data-viewer-frame]")).not.toContainText("Frame #1");
 });
+
+test("frame context and the likely scope stay visible in the compact inspector and timeline", async ({
+  page,
+}) => {
+  await page.goto("/examples/viewer/");
+  await page.getByLabel("Open recording or comparison").setInputFiles(file());
+  await expect(page.locator('[data-lane-kind="frame"] [data-lane-name]')).toHaveText([
+    "unattributed",
+    "profiler ×20",
+  ]);
+  await page.locator('[data-capture-action="open"]').first().click();
+  const cpu = page.locator("[data-inspector-cpu]");
+  await expect(cpu).toContainText("unattributed");
+  await expect(cpu).toContainText("profiler");
+  await expect(cpu.locator("[data-likely-scope]")).toContainText("scene update");
+  const rows = page.locator('[data-lane-kind="frame"]');
+  const heights = await rows.evaluateAll((nodes) =>
+    nodes.map((node) => node.getBoundingClientRect().height),
+  );
+  await page.getByRole("button", { name: "Next frame", exact: true }).click();
+  expect(
+    await rows.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height)),
+  ).toEqual(heights);
+});

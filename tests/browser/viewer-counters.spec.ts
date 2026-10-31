@@ -83,6 +83,7 @@ test("single counter lanes preserve sample ages when panning and clear on replac
   await page.getByText("VIEW", { exact: true }).click();
   await expect(lane.locator("[data-counter-point]")).toHaveCount(0);
   await expect(lane.locator("[data-counter-scale]")).toHaveText("no samples");
+  await lane.locator("svg").scrollIntoViewIfNeeded();
   const bounds = await lane.locator("svg").boundingBox();
   if (!bounds) {
     throw new Error("Missing counter lane");
