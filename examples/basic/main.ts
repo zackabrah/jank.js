@@ -64,7 +64,6 @@ const scene = startScene();
 const gpu = createDemoGpu(scene?.context ?? null, (state) => {
   instrumentation?.profiler.observeGpu(state);
   headroom.gpu(state);
-  comparison?.gpu(state);
 });
 
 function startProfiler() {
@@ -134,12 +133,14 @@ function attachPanel(mode?: PanelMode): void {
   if (!instrumentation || panel) {
     return;
   }
+  const experiment = comparison?.controller();
   panel = createPanel({
     container: element("panel-mount"),
     profiler: instrumentation.profiler,
     mode: "full",
     gpu: gpu.source,
     loading: loading.source,
+    ...(experiment ? { comparison: experiment } : {}),
   });
   if (mode) {
     panel.setMode(mode);
@@ -189,13 +190,13 @@ function frame(atMs: number): void {
   }
   hostFrames += 1;
   headroom.beforeFrame(atMs);
-  comparison?.beforeFrame(atMs);
+  const current = instrumentation;
+  const frameId = current?.profiler.beginFrame(atMs) ?? -1;
+  comparison?.beforeFrame(atMs, frameId);
   const comparisonSettings = comparison?.settings();
   const frameMs = atMs - lastFrameMs;
   const deltaSeconds = Math.min(0.05, Math.max(0, (atMs - lastFrameMs) / 1000));
   lastFrameMs = atMs;
-  const current = instrumentation;
-  const frameId = current?.profiler.beginFrame(atMs) ?? -1;
   const updateStartMs = performance.now();
   const animationToken = current?.animation.begin();
   const animate = comparisonSettings?.animate ?? (!paused || headroom.active());
@@ -216,7 +217,6 @@ function frame(atMs: number): void {
   gpu.endPass();
   const renderEndMs = performance.now();
   headroom.frame({ frameId, atMs, cpuMs: renderEndMs - updateStartMs, frameMs });
-  comparison?.frame({ frameId, atMs, cpuMs: renderEndMs - updateStartMs });
   if (current && renderToken !== undefined) {
     current.render.end(renderToken);
     current.profiler.endFrame({

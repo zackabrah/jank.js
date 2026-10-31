@@ -8,6 +8,7 @@ import {
   readCaptureOptions,
   renderCaptureProgress,
 } from "./capture-view.ts";
+import { createComparisonView } from "./comparison-view.ts";
 import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
 import { createRecordingExporter } from "./export-recording.ts";
@@ -71,6 +72,12 @@ export function createPanel(options: PanelOptions): Panel {
   let current = profiler.snapshot();
   const renderCaptures = createCaptureView(root, profiler, exporter);
   initializeCapture(root, profiler);
+  const comparisonView = options.comparison
+    ? createComparisonView(root, options.comparison, {
+        changed: safelyRedraw,
+        saveJson: download.saveJson,
+      })
+    : null;
 
   function showError(error: unknown): void {
     if (disposed) {
@@ -90,6 +97,7 @@ export function createPanel(options: PanelOptions): Panel {
         renderOverhead(root, current);
         if (selectedTab === "capture") {
           renderCaptures(current);
+          comparisonView?.render();
           return;
         }
         if (selectedTab === "loading") {
@@ -129,6 +137,7 @@ export function createPanel(options: PanelOptions): Panel {
     recordButton.setAttribute("aria-pressed", String(recording));
     renderExportState(root, exporter.state(), recording);
     renderFreezeControls(root, frozen !== null);
+    comparisonView?.render();
     write(root, "header-budget", (1000 / (frozen ?? current).targetFps).toFixed(1));
     for (const button of root.querySelectorAll<HTMLButtonElement>("[data-fps]")) {
       button.setAttribute("aria-pressed", String(Number(button.dataset.fps) === current.targetFps));
@@ -195,7 +204,16 @@ export function createPanel(options: PanelOptions): Panel {
     }
   }
 
+  function comparisonAction(name: string): void {
+    if (exporter.state().busy) {
+      throw new Error("Wait for the current export to finish.");
+    }
+    comparisonView?.action(name);
+  }
   const actions: Readonly<Record<string, () => void>> = {
+    "comparison-start": () => comparisonAction("comparison-start"),
+    "comparison-stop": () => comparisonAction("comparison-stop"),
+    "comparison-export": () => comparisonAction("comparison-export"),
     line: () => setMode("line", true),
     mini: () => setMode("mini", true),
     full: () => setMode("full", true),
@@ -211,6 +229,7 @@ export function createPanel(options: PanelOptions): Panel {
       }
     },
     clear: () => {
+      options.comparison?.cancel("Profiler cleared; comparison cancelled.");
       exporter.clear();
       liveView.clear();
       profiler.clear();
@@ -299,6 +318,7 @@ export function createPanel(options: PanelOptions): Panel {
         liveView.dispose();
         tabs.dispose();
         root.removeEventListener("click", click);
+        comparisonView?.dispose();
         exporter.dispose();
         download.dispose();
         gpuView.clear();

@@ -226,3 +226,11 @@ normal refresh throttling, excluding deferred paint, compositor/GPU execution an
 scheduling. They are not a claim of a performance improvement or a controlled comparison with
 the earlier panel run. Core coverage, package-consumer checks, the collection benchmark and
 cross-browser parity/accessibility/visual tests also passed.
+
+## A/B comparisons
+
+Pass a host-driven `comparison` controller to enable **CAPTURE → A/B COMPARISON**. It provides
+warm-up/measurement/pair controls, cancellation, per-trial coverage, median/p95/budget comparisons
+and one export containing all completed trial recordings. See [comparison integration and limits](comparisons.md).
+The section stays hidden when no comparison host is connected. Closing the panel cancels an active
+run and restores the scene without disposing the borrowed controller.

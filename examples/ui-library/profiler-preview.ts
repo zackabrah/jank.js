@@ -1,4 +1,5 @@
 import {
+  createComparison,
   createPanel,
   createProfiler,
   type GpuIntervalPass,
@@ -70,10 +71,31 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
       },
     ],
   };
+  let comparisonCpuScale = 1;
+  const comparison = createComparison({
+    profiler,
+    host: {
+      begin: () => ({
+        apply: (variant) => {
+          comparisonCpuScale = variant === "A" ? 1 : 1.25;
+          return {
+            label: `SIMULATED comparison ${variant}`,
+            settings: [{ label: "Synthetic CPU scale", value: comparisonCpuScale }],
+            resolution: null,
+            animation: "Synthetic stream; not a device benchmark",
+          };
+        },
+        restore: () => {
+          comparisonCpuScale = 1;
+        },
+      }),
+    },
+  });
   const panels = (["full", "mini", "line"] as const).map((mode) => {
     const panel = createPanel({
       container: containers[mode],
       profiler,
+      comparison,
       mode,
       gpuPassOrder: ["panorama", "ocean", "resolve"],
       gpu: {
@@ -97,8 +119,9 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
     boundaryMs += durationMs;
     clockMs = boundaryMs;
     const frameId = profiler.beginFrame(boundaryMs);
+    comparison.tick(boundaryMs, frameId);
     sequence += 1;
-    const updateMs = 2.6 + Math.sin(sequence / 13) * 0.9;
+    const updateMs = (2.6 + Math.sin(sequence / 13) * 0.9) * comparisonCpuScale;
     const renderMs = 3.8 + Math.cos(sequence / 17) * 1.1;
     const updateToken = simulation.begin();
     clockMs += updateMs;
@@ -134,12 +157,14 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
       refresh();
     },
     setGpuExample: (value: string) => {
+      comparison.cancel("GPU example changed; restart the simulated comparison.");
       gpuExample = value;
       gpuEnabled = true;
       step();
       refresh(true);
     },
     spike: () => {
+      comparison.cancel("Sample spike requested; comparison cancelled.");
       step(48);
       profiler.addEvent("Sample spike", "Synthetic 48 ms frame.");
       step();
@@ -153,6 +178,7 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
       for (const panel of panels) {
         panel.dispose();
       }
+      comparison.dispose();
       profiler.dispose();
     },
   };

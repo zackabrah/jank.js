@@ -26,3 +26,8 @@ interaction, blocked-network operation, keyboard navigation, recording export an
 GPU state transitions, mobile layout, reduced motion and axe accessibility in all three browser
 engines. WebKit's offline emulation blocks local file navigation, so its network requests are
 blocked with routing instead. The sample stream starts paused when reduced motion is requested.
+
+The CAPTURE tab includes the shared A/B comparison controls. Resume the sample stream before
+running them. A uses the normal synthetic CPU values; B multiplies synthetic update time by 1.25.
+The report and export are real Jank comparison artifacts, clearly labelled simulated; they do not
+measure this machine. Changing the GPU example or adding a spike cancels the sample experiment.

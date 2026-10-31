@@ -63,6 +63,7 @@ test("the single HTML file works offline with the real controls, effects and pro
   ).toBeVisible();
   await page.locator("#full-preview").getByRole("tab", { name: "CAPTURE", exact: true }).click();
   await expect(page.locator("#full-preview [data-captures] .jank-capture")).toHaveCount(1);
+  await expect(page.locator("#full-preview [data-comparison]")).toBeVisible();
   expect(requests).toEqual([]);
   const html = readFileSync(artifact, "utf8");
   expect(html).not.toMatch(/<script[^>]+src=|<link[^>]+rel=["']stylesheet|@import\s/);

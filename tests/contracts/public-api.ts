@@ -1,10 +1,12 @@
 import type {
+  ComparisonHost,
   CreateLoadingProfiler,
   CreateViewer,
   GpuFrameResolver,
   GpuState,
 } from "../../packages/jank/src/index.ts";
 import {
+  createComparison,
   createPanel,
   createProfiler,
   inspectFrame,
@@ -17,11 +19,13 @@ declare const createViewer: CreateViewer;
 declare const createLoadingProfiler: CreateLoadingProfiler;
 declare const container: HTMLElement;
 declare const gpuResolver: GpuFrameResolver;
+declare const comparisonHost: ComparisonHost;
 declare const tablist: HTMLElement;
 declare const firstTab: HTMLButtonElement;
 declare const firstPanel: HTMLElement;
 
 const profiler = createProfiler({ targetFps: 60, now: () => performance.now() });
+const comparison = createComparison({ profiler, host: comparisonHost, gpuResolver });
 const channel = profiler.createChannel({ id: "physics", label: "Physics" });
 const panel = createPanel({
   container,
@@ -29,9 +33,12 @@ const panel = createPanel({
   mode: "mini",
   gpuResolver,
   exportTimeoutMs: 2000,
+  comparison,
 });
 const releaseScopes = profiler.requestScopes();
-const frameId = profiler.beginFrame(performance.now());
+const atMs = performance.now();
+const frameId = profiler.beginFrame(atMs);
+comparison.tick(atMs, frameId);
 const token = channel.begin();
 channel.end(token);
 profiler.endFrame({ updateMs: 1, renderMs: 2 });

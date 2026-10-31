@@ -161,14 +161,3 @@ body {
 #comparison .comparison-settings > label {
   justify-content: space-between;
 }
-#comparison-trials {
-  padding-left: 18px;
-}
-#comparison-trials li {
-  margin-block: 12px;
-}
-#comparison-summary p,
-#comparison-context {
-  overflow-wrap: anywhere;
-  color: var(--jl-muted);
-}

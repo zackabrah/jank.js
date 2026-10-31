@@ -133,63 +133,8 @@
               >
               <label>B animate <input id="comparison-b-animate" type="checkbox" checked /></label>
             </fieldset>
-            <fieldset class="comparison-settings">
-              <legend>Measurement windows</legend>
-              <label
-                >Warm-up seconds<input
-                  id="comparison-warmup"
-                  class="jl-input"
-                  type="number"
-                  min="0.5"
-                  max="10"
-                  step="0.5"
-                  value="1"
-                  required
-                ></label
-              >
-              <label
-                >Measurement seconds<input
-                  id="comparison-measure"
-                  class="jl-input"
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="0.5"
-                  value="2"
-                  required
-                ></label
-              >
-              <label
-                >Pairs<input
-                  id="comparison-pairs"
-                  class="jl-input"
-                  type="number"
-                  min="2"
-                  max="6"
-                  step="1"
-                  value="3"
-                  required
-                ></label
-              >
-            </fieldset>
-            <div class="controls">
-              <button id="comparison-start" type="submit" class="jl-btn jl-primary">
-                Run A/B comparison
-              </button><button id="comparison-stop" type="button" class="jl-btn" disabled>
-                Stop comparison
-              </button>
-            </div>
           </form>
-          <p id="comparison-context">
-            Defaults take about 21 seconds. Actual WebGL2 timing only; unavailable GPU results
-            remain unknown.
-          </p>
-          <p id="comparison-status" role="status"></p>
-          <div id="comparison-summary"></div>
-          <ol id="comparison-trials" aria-label="Completed comparison trials"></ol>
-          <button id="comparison-export" type="button" class="jl-btn" disabled>
-            Export comparison
-          </button>
+          <p>Run, stop and export from Jank’s CAPTURE → A/B COMPARISON section. Configure measurement windows and pairs there. Each exported bundle includes the completed A/B recordings and these scene settings.</p>
           <p>
             Compare median per-trial p95 times and their ranges. Negative B − A means lower time; a
             range crossing zero indicates mixed results, not a reliable improvement. CPU and GPU

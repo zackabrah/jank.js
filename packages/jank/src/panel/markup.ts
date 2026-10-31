@@ -77,6 +77,25 @@ export function panelMarkup(): string {
           </details>
         </section>
         <section data-tabpanel="capture" class="jank-scroll">
+          <details class="jank-section" data-section="comparison" data-comparison hidden>
+            <summary><h2>A/B COMPARISON</h2></summary>
+            <div>
+              <p class="jank-note">Configure A and B in the host. Jank alternates AB / BA and uses the current frame budget.</p>
+              <fieldset class="jank-settings jank-fields"><legend>Measurement windows</legend>
+                <label>Warm-up seconds <input class="jl-input" data-comparison-input="warmup" type="number" min="0.5" max="10" step="0.5" value="1" required></label>
+                <label>Measurement seconds <input class="jl-input" data-comparison-input="measure" type="number" min="1" max="10" step="0.5" value="2" required></label>
+                <label>Pairs <input class="jl-input" data-comparison-input="pairs" type="number" min="2" max="6" step="1" value="3" required></label>
+              </fieldset>
+              <div class="jank-actions">
+                <button type="button" class="jl-btn jl-primary" data-action="comparison-start">Run A/B comparison</button>
+                <button type="button" class="jl-btn" data-action="comparison-stop" disabled>Stop comparison</button>
+                <button type="button" class="jl-btn" data-action="comparison-export" disabled>Export comparison</button>
+              </div>
+              <p class="jank-note" data-comparison-status role="status"></p>
+              <div data-comparison-summary></div><div data-comparison-trials></div>
+              <p class="jank-note">Quick estimate, not statistical significance. Medians of per-trial values; negative B − A is lower time. A paired range crossing zero shows mixed results. Each metric needs 20 samples and 80% coverage in every trial. Frame pacing allows 1 ms or 5% tolerance; CPU/GPU use the exact budget and can overlap. Export includes all completed A/B recordings. A 500 ms GPU drain follows each window; a connected interval resolver may wait up to 2 s more.</p>
+            </div>
+          </details>
           <details class="jank-section" data-section="completeness" open>
             <summary><h2>CAPTURE COMPLETENESS</h2></summary>
             <div>

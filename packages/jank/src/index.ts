@@ -1,7 +1,21 @@
 export { type GpuCoverage, summarizeGpuCoverage } from "./analysis/gpu-coverage.ts";
 export { type FrameSummary, type InspectFrame, inspectFrame } from "./analysis/summary.ts";
+export { createComparison } from "./browser/create-comparison.ts";
 export { createProfiler } from "./browser/create-profiler.ts";
 export { finalizeRecording, type RecordingFinalization } from "./browser/finalize-recording.ts";
+export type {
+  Comparison,
+  ComparisonContext,
+  ComparisonHost,
+  ComparisonMetric,
+  ComparisonOptions,
+  ComparisonReport,
+  ComparisonSnapshot,
+  ComparisonSummary,
+  ComparisonTiming,
+  ComparisonTrial,
+} from "./comparison/comparison.ts";
+export { serializeComparison } from "./comparison/recordings.ts";
 export type { Channel, ScopeToken } from "./core/channels.ts";
 export type {
   ChannelDescription,
