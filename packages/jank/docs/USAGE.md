@@ -1,4 +1,4 @@
-# Usage guide · jank.js 0.2.1-rewrite.5
+# Usage guide · jank.js 0.2.1-rewrite.6
 
 Jank helps inspect frame pacing, CPU work, asynchronous GPU observations and recorded A/B
 experiments. It runs locally. Host integration is described in [INTEGRATION.md](INTEGRATION.md).
@@ -11,7 +11,10 @@ This is a private preview: recording schemas 5/6/7, comparison format version 1.
 - Open `jank-viewer.html` to inspect exported files offline. Choose **Open recording or
   comparison**, or drop a file onto the page. The bundle's `samples/example-sustained-episode.json`
   provides a synthetic sustained slowdown to explore; it is not a device benchmark.
-- Install `packages/jank.js-0.2.1-rewrite.5.tgz` into a host application to measure real work.
+- Open `jank-gpu-diagnostic.html` and select **Run timestamp diagnostic** to compare native
+  drawn and clear-only passes. **Download report** retains raw endpoints and rejection reasons.
+  This uses a separate device and does not validate your application’s whole-frame GPU timing.
+- Install `packages/jank.js-0.2.1-rewrite.6.tgz` into a host application to measure real work.
   `junkui` is independent and optional; Jank already bundles the UI code it needs.
 
 The HTML files include their scripts and styles and require no server or network access.
@@ -151,5 +154,5 @@ budget and requires consecutive over-budget frames; it replaces the single-frame
 The inspector shows onset and confirmation. Sustained exports use schema 7; use the new viewer.
 
 The panel footer and viewer status bar show the build version and source commit. Recordings
-retain the same identifier in `metadata.toolVersion` (for example, `0.2.1-rewrite.5+<commit>`).
+retain the same identifier in `metadata.toolVersion` (for example, `0.2.1-rewrite.6+<commit>`).
 `+source` means a source/development run; `-dirty` means uncommitted changes were present at build.

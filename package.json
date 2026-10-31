@@ -30,7 +30,8 @@
     "check:full": "pnpm check && pnpm test:coverage && pnpm test:package && pnpm test:browser && pnpm test:visual",
     "build:ui-library": "node scripts/build-standalone.mjs ui-library",
     "build:viewer": "node scripts/build-standalone.mjs viewer",
-    "build:bundle": "node scripts/build-bundle.mjs"
+    "build:bundle": "node scripts/build-bundle.mjs",
+    "build:gpu-diagnostic": "node scripts/build-standalone.mjs gpu-diagnostic"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

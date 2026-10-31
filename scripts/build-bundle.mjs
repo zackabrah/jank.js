@@ -20,11 +20,12 @@ await mkdir(directory); // Existing versioned bundles are immutable; never overw
 run(["build"]);
 run(["build:ui-library"]);
 run(["build:viewer"]);
+run(["build:gpu-diagnostic"]);
 await mkdir(join(directory, "packages"));
 for (const folder of ["jank", "junkui"]) {
   run(["pack", "--pack-destination", join(directory, "packages")], join(root, "packages", folder));
 }
-for (const filename of ["jank-ui-library.html", "jank-viewer.html"]) {
+for (const filename of ["jank-ui-library.html", "jank-viewer.html", "jank-gpu-diagnostic.html"]) {
   await cp(join(root, "artifacts", filename), join(directory, filename));
 }
 for (const filename of ["USAGE.md", "INTEGRATION.md"]) {
@@ -32,14 +33,18 @@ for (const filename of ["USAGE.md", "INTEGRATION.md"]) {
 }
 await cp(join(root, "LICENSE"), join(directory, "LICENSE"));
 await cp(join(root, "packages/junkui/README.md"), join(directory, "JUNKUI.md"));
-await cp(
-  join(root, "docs/verification/timestamp-clear-2026-11-01.md"),
-  join(directory, "GPU-TIMESTAMP-LIMITATION.md"),
-);
-await cp(
-  join(root, "docs/verification/timestamp-clear-2026-11-01.json"),
-  join(directory, "GPU-TIMESTAMP-EVIDENCE.json"),
-);
+await mkdir(join(directory, "verification"));
+for (const filename of [
+  "timestamp-clear-2026-11-01.md",
+  "timestamp-clear-2026-11-01.json",
+  "gpu-diagnostic-2026-11-01.md",
+  "pmrem-clear-merge-2026-11-01.json",
+  "webgpu-clear-only-upstream-draft.md",
+  "webgpu-clear-only-reproducer.html",
+  "webgpu-clear-only-evidence-2026-11-01.json",
+]) {
+  await cp(join(root, "docs/verification", filename), join(directory, "verification", filename));
+}
 const { createProfiler, serializeRecording } = await import("../packages/jank/dist/index.js");
 let timeMs = 0;
 const profiler = createProfiler({
@@ -97,6 +102,8 @@ Source commit: ${identity.commit}
 
 Open jank-ui-library.html to explore the simulated UI, or jank-viewer.html to inspect local
 recordings. Import samples/example-sustained-episode.json for a synthetic slowdown example.
+Open jank-gpu-diagnostic.html to run the explicit native timestamp probe and download its
+raw evidence. It uses a separate device and does not calibrate your application's timing.
 Read USAGE.md for controls and INTEGRATION.md for host integration.
 
 Install packages/jank.js-${manifest.version}.tgz with pnpm add /absolute/path/to/the/archive.tgz.
@@ -108,7 +115,10 @@ Build identity appears in the panel/viewer and recording metadata.toolVersion. B
 records the full commit, and SHA256SUMS covers every other file in this directory.
 
 GPU timestamp reliability remains limited: native clear-only passes reproduced stale end
-values locally. See GPU-TIMESTAMP-LIMITATION.md. This release does not establish a GPU ranking.
+values locally. See verification/gpu-diagnostic-2026-11-01.md and the native reproducer and
+upstream draft alongside it. The draft has not been submitted. A separately tested PMREM
+workaround belongs to the host renderer and is not applied by this package. This release does
+not establish a GPU ranking.
 `,
 );
 async function checksums(folder, prefix = "") {

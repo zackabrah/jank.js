@@ -47,6 +47,6 @@ controls and diagnostics are sufficient; no new authored setting was needed.
 A full live storm-transition reprofile is still needed before claiming the application now
 has reliable whole-frame GPU metrics. This work isolates and avoids one reproduced failure;
 it does not establish that all historical invalid samples shared that cause, or that accepted
-positive intervals are independently calibrated. Package preview version remains rewrite.5;
-the new diagnostic artifact carries its source revision. No new installable release or remote
-publication was performed.
+positive intervals are independently calibrated. At the time of this verification, the package
+preview version was still rewrite.5 and the diagnostic artifact carried its source revision.
+A later versioned bundle may include this evidence unchanged; no remote publication was performed.
