@@ -30,7 +30,7 @@ for (const filename of ["jank-ui-library.html", "jank-viewer.html"]) {
 for (const filename of ["USAGE.md", "INTEGRATION.md"]) {
   await cp(join(root, "packages/jank/docs", filename), join(directory, filename));
 }
-await cp(join(root, "packages/jank/LICENSE"), join(directory, "LICENSE"));
+await cp(join(root, "LICENSE"), join(directory, "LICENSE"));
 await cp(join(root, "packages/junkui/README.md"), join(directory, "JUNKUI.md"));
 await cp(
   join(root, "docs/verification/timestamp-clear-2026-11-01.md"),
