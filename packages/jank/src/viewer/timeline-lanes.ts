@@ -1,5 +1,6 @@
 import type { LaneSample, TimelineModel, TimelineWindow } from "../analysis/timeline.ts";
 import { milliseconds } from "./dom.ts";
+import { createGpuGroup, gpuGroups, openGpuGroups } from "./gpu-groups.ts";
 
 const svgNamespace = "http://www.w3.org/2000/svg";
 export function svgElement<K extends keyof SVGElementTagNameMap>(
@@ -130,18 +131,30 @@ export function renderTimelineLanes(
   model: TimelineModel,
   options: LaneOptions,
 ): void {
+  const open = openGpuGroups(container);
   container.replaceChildren();
   renderEvents(container, model, options.overlay ? "A" : options.name);
   if (options.overlay) {
     renderEvents(container, options.overlay, "B");
   }
   let previousKind = "";
-  for (const [index, lane] of model.lanes.entries()) {
-    if (previousKind !== lane.identity.kind) {
-      renderLaneHeading(container, lane.identity.kind, options.maximumMs);
-      previousKind = lane.identity.kind;
+  const indexed = model.lanes.map((lane, index) => ({ ...lane.identity, index }));
+  for (const group of gpuGroups(indexed)) {
+    const first = group.rows[0];
+    if (!first) {
+      continue;
     }
-    renderLane(container, model, index, options);
+    if (previousKind !== first.kind) {
+      renderLaneHeading(container, first.kind, options.maximumMs);
+      previousKind = first.kind;
+    }
+    const target =
+      first.kind === "gpu" && group.rows.length > 1
+        ? createGpuGroup(container, group, open)
+        : container;
+    for (const row of group.rows) {
+      renderLane(target, model, row.index, options);
+    }
   }
   renderEmptyLanes(container, model);
 }
@@ -162,10 +175,11 @@ export function updateLaneCursor(
     }
   }
   const time = cursor.hoverMs ?? cursor.selectedMs;
-  const values = container.querySelectorAll<HTMLElement>("[data-lane-readout]");
   model.lanes.forEach((lane, index) => {
     const sample = lane.samples.find((sample) => sample.fromMs <= time && time < sample.toMs);
-    const value = values[index];
+    const value = container.querySelector<HTMLElement>(
+      `[data-lane-index="${index}"] [data-lane-readout]`,
+    );
     if (!value) {
       return;
     }
@@ -214,6 +228,7 @@ function renderLane(
   const row = container.ownerDocument.createElement("div");
   row.className = "jank-viewer-lane";
   row.dataset.laneKind = lane.identity.kind;
+  row.dataset.laneIndex = String(index);
   const heading = container.ownerDocument.createElement("div");
   heading.className = "jank-viewer-lane-heading";
   const name = container.ownerDocument.createElement("span");

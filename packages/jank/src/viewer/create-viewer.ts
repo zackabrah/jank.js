@@ -91,6 +91,9 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
     session.clear();
     state = initialViewerState(input);
     timeline.clear();
+    for (const details of root.querySelectorAll<HTMLDetailsElement>("details[data-gpu-group]")) {
+      details.open = false;
+    }
     const { comparison, recording } = state;
     element<HTMLElement>(root, '[role="alert"]').hidden = true;
     element<HTMLElement>(root, "[data-viewer-comparison]").hidden = !comparison;

@@ -313,3 +313,11 @@ frame IDs and exclude unlinked observations. **GPU coverage & timestamp evidence
 and rejected retained pairs, omitted passes (including rejections), sampled-out frames and absent
 observations. Pair counts include repeated brackets; duration-only sources have no timestamp pairs.
 These distinctions have unit tests and cross-browser partial/rejected/sampled-out regressions.
+
+Repeated interval GPU invocations are collapsed by stable pass ID and pass type in the timeline
+and compact inspector. Groups keep first-seen order, with individual invocation rows underneath;
+equal labels never merge different IDs or types. Expansion survives frame/range/trial navigation
+and resets on a new imported document. The inspector's group sum includes only observed rows,
+shows their count, and remains unknown when none have timing. It is explicitly an observed pass
+sum, not interval-union busy time or a complete frame total. Raw diagnostic tables are retained.
+Keyboard, unknown-frame, replacement, identity and narrow/desktop visual checks cover grouping.

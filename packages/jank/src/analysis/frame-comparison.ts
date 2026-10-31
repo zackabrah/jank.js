@@ -8,6 +8,7 @@ export interface WorkIdentity {
   readonly key: string;
   readonly label: string;
   readonly displayLabel: string;
+  readonly gpuGroup?: { readonly key: string; readonly label: string };
 }
 export interface WorkMeasurement {
   readonly durationMs: number | null;
@@ -60,6 +61,7 @@ function gpuPasses(sample: GpuSample): PassMeasurement[] {
     key: JSON.stringify(["intervals", pass.id, pass.type, pass.invocation]),
     label: `${pass.label} · ${pass.id} / ${pass.type} #${pass.invocation}`,
     displayLabel: `${pass.label} #${pass.invocation}`,
+    gpuGroup: { key: JSON.stringify([pass.id, pass.type]), label: pass.label },
     measurement:
       "reason" in pass
         ? unknown(`Rejected: ${pass.reason}`)
@@ -96,6 +98,7 @@ export function workCatalog(a: Recording | null, b: Recording | null): WorkIdent
           key: entry.key,
           label: entry.label,
           displayLabel: entry.displayLabel,
+          ...(entry.gpuGroup ? { gpuGroup: entry.gpuGroup } : {}),
         });
       }
     }

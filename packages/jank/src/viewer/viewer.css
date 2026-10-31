@@ -847,3 +847,23 @@
 .jank-viewer .jank-trigger-summary p {
   margin-top: 6px;
 }
+
+.jank-viewer-gpu-group {
+  border-bottom: 1px solid var(--jl-line);
+  margin: 0;
+}
+.jank-viewer-gpu-group > summary {
+  padding: 5px 0;
+  color: var(--jl-text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.jank-viewer-group-measurement {
+  display: block;
+  color: var(--jl-muted);
+  font-size: 10px;
+  margin: 3px 0 0 12px;
+}
+.jank-viewer-gpu-group > .jank-viewer-lane .jank-viewer-lane-heading {
+  padding-left: 10px;
+}
