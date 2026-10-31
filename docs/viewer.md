@@ -33,8 +33,41 @@ host-reported metadata, not independent verification of the experiment.
 
 Select a **Trial** to inspect it. Scene settings compare the A and B members of that trial's pair,
 including drawing-buffer resolution and animation state. Missing fields are explicit; duplicate
-setting labels remain separate occurrences. Switching trials resets the selected frame to the
-first frame of that trial, so equal frame IDs in different recordings cannot cross-link data.
+setting labels remain separate occurrences. Switching trials preserves the comparison elapsed time and resolves a frame in the new recording,
+so equal frame IDs in different recordings cannot cross-link data.
+
+## Synchronized A/B inspection
+
+The selected trial chooses its A/B pair. Both timelines use the same elapsed-time window and
+frame-duration scale. Zero is each recording's first retained sealed measured frame, not a GPU
+clock or shared wall-clock timestamp. The selected frame contains the cursor in a half-open
+interval `[start, end)`; a gap, missing trial, empty recording or unsealed tail stays unknown.
+Time alignment does not guarantee identical scene or animation state, particularly when data
+was lost. Check scene settings and coverage before interpreting differences.
+
+Enter **Comparison elapsed time (ms)** or click either timeline to move both cursors. The single
+recording inspector follows the active trial. Its frame controls also move the paired cursor.
+Choose a 250, 1000 or 5000 ms window; both charts move together to contain the cursor. Switching
+trials or pairs preserves elapsed time; loading another document resets it. Invalid input preserves
+the current selection. The API exposes `selectComparisonTime(elapsedMs)` and detached snapshot
+fields `comparisonElapsedMs` and `comparisonWindowMs`.
+
+CPU rows match channel IDs, retain configured order, and show the union of observed intervals
+per channel. Channels may overlap one another; row durations cannot be added. Partial scope
+coverage retains observed durations but has no delta. An unobserved channel stays unknown rather
+than becoming zero, even if another channel was measured in that frame.
+
+GPU interval rows match stable pass ID, compute/render kind and invocation. Duration-only passes
+match unique labels within the same measurement kind; duplicate labels or multiple observations
+for one frame remain ambiguous. Rejected passes retain their rejection reason; accepted intervals
+can be compared even when another pass made the overall sample incomplete. Missing passes and
+incompatible measurement kinds have no delta. GPU clocks are never aligned with CPU clocks.
+
+Rows keep A's configured CPU/first-seen GPU order, followed by B-only identities, throughout the
+pair. Labels come from the first recording containing the identity. Unobserved values dim without
+removing their row. B − A uses explicit longer/shorter text and highlights nonzero differences;
+these are individual frame comparisons, not evidence of statistical significance. The flat,
+compact timeline layout follows the pre-rewrite viewer's visual reference.
 
 ## Frame inspection
 
@@ -76,6 +109,7 @@ const comparison = parseComparison(fileText);
 if (comparison.ok) {
   viewer.loadComparison(comparison.comparison);
   viewer.selectTrial(0);
+  viewer.selectComparisonTime(250); // elapsed milliseconds, independent of frame IDs
   viewer.setRange(0, 100); // zero-based start, count 50/100/200
 }
 // viewer.load(recording), viewer.selectFrame(actualFrameId), viewer.snapshot()
@@ -87,6 +121,6 @@ import path additionally enforces the encoded-byte limit before parsing. Snapsho
 Repeated disposal and late load/selection calls after disposal do not remount the viewer.
 
 This slice provides local import, A/B review and individual-frame investigation. It does not add
-live-window handoff, synchronized A/B playheads, editing, statistical significance estimates or
+live-window handoff, editing, statistical significance estimates or
 full parity with the older viewer's advanced timeline interactions. Frame-chart orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.

@@ -19,6 +19,22 @@ export function viewerMarkup(): string {
       <details open><summary>SCENE SETTING DIFFERENCES</summary>
         <p data-viewer-settings-note></p><div class="jank-viewer-table" tabindex="0" role="region" aria-label="Scene setting differences" data-viewer-settings></div>
       </details>
+      <section aria-label="Synchronized A/B inspection"><details open data-paired-section>
+        <summary>SYNCHRONIZED A/B INSPECTION</summary>
+        <p class="jank-viewer-note">Trials align by elapsed time from their first sealed measured frame, not frame ID or GPU clock. This is a time alignment, not proof of identical scene state. Gaps stay unknown. Click either timeline or use the elapsed-time field.</p>
+        <div class="jank-viewer-actions">
+          <label>Comparison elapsed time (ms) <input class="jl-input" type="number" min="0" step="any" data-paired-time></label>
+          <label>Comparison window (ms) <select class="jl-select" data-paired-window><option>250</option><option selected>1000</option><option>5000</option></select></label>
+        </div>
+        <p data-paired-range></p>
+        <div class="jank-viewer-pair">
+          <section aria-label="Trial A frame"><h2 data-paired-title="a">A</h2><canvas data-paired-chart="a" role="img" aria-label="Trial A elapsed timeline"></canvas><p data-paired-frame="a"></p></section>
+          <section aria-label="Trial B frame"><h2 data-paired-title="b">B</h2><canvas data-paired-chart="b" role="img" aria-label="Trial B elapsed timeline"></canvas><p data-paired-frame="b"></p></section>
+        </div>
+        <p class="jank-viewer-note">B − A: positive means longer, negative means shorter. Frame samples are exploratory, not a statistical result. CPU rows use each channel's interval union; rows may overlap. Partial CPU coverage has no delta. GPU matches stable pass ID, kind and invocation; duration-only labels must be unique. Multiple GPU observations remain ambiguous.</p>
+        <div class="jank-viewer-table" tabindex="0" role="region" aria-label="Paired CPU measurements" data-paired-cpu></div>
+        <div class="jank-viewer-table" tabindex="0" role="region" aria-label="Paired GPU measurements" data-paired-gpu></div>
+      </details></section>
     </section>
     <section data-viewer-recording hidden aria-label="Recording inspection">
       <h2 data-viewer-recording-title>RECORDING</h2>

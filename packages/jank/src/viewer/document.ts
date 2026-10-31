@@ -27,5 +27,7 @@ export function initialViewerState(
     selectedFrameId: recording?.frames[0]?.id ?? null,
     firstVisibleIndex: 0,
     visibleFrameCount: 100,
+    comparisonElapsedMs: 0,
+    comparisonWindowMs: 1000,
   };
 }

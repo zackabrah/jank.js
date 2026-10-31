@@ -17,6 +17,8 @@ export type ViewerState =
       readonly selectedFrameId: number | null;
       readonly firstVisibleIndex: number;
       readonly visibleFrameCount: number;
+      readonly comparisonElapsedMs: number;
+      readonly comparisonWindowMs: number;
     };
 export interface Viewer {
   /** Validates and detaches data before replacing the current document. */
@@ -27,6 +29,8 @@ export interface Viewer {
   selectTrial(index: number): void;
   selectFrame(frameId: number): void;
   setRange(firstIndex: number, frameCount: number): void;
+  /** Relative to each trial's first sealed measured frame; gaps stay unselected. */
+  selectComparisonTime(elapsedMs: number): void;
   snapshot(): ViewerState;
   dispose(): void;
 }

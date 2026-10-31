@@ -20,7 +20,13 @@ export function renderFrame(
   gpu.replaceChildren();
   events.replaceChildren();
   if (!frame) {
-    write(root, "frame", "No sealed frames in this recording.");
+    write(
+      root,
+      "frame",
+      recording.frames.length
+        ? "No frame at the selected elapsed time. Timing is unknown."
+        : "No sealed frames in this recording.",
+    );
     return;
   }
   const inspected = inspectFrame(recording, frame.id);

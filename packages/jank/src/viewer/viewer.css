@@ -172,3 +172,54 @@
 .jank-viewer [data-viewer-settings] table {
   min-width: 480px;
 }
+
+/* Paired inspection follows the reference viewer's flat, compact timeline and hairline dividers. */
+.jank-viewer-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-block: 1px solid var(--jl-line);
+}
+.jank-viewer-pair section {
+  min-width: 0;
+  padding: 0 12px;
+}
+.jank-viewer-pair section + section {
+  border-left: 1px solid var(--jl-line);
+}
+.jank-viewer-pair h2 {
+  margin-top: 12px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+.jank-viewer-pair canvas {
+  height: 120px;
+}
+.jank-viewer-pair p {
+  color: var(--jl-muted);
+  font-size: 11px;
+}
+.jank-viewer [data-paired-cpu] table,
+.jank-viewer [data-paired-gpu] table {
+  min-width: 680px;
+  table-layout: fixed;
+}
+.jank-viewer [data-paired-section] td {
+  padding-block: 5px;
+}
+.jank-viewer-unknown {
+  color: var(--jl-muted);
+}
+.jank-viewer-difference {
+  background: var(--jl-line);
+  font-weight: 600;
+  box-shadow: inset 2px 0 var(--jl-text);
+}
+@media (max-width: 760px) {
+  .jank-viewer-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .jank-viewer-pair section + section {
+    border-left: 0;
+    border-top: 1px solid var(--jl-line);
+  }
+}

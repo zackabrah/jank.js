@@ -1,3 +1,4 @@
+import { frameAtElapsed, type WorkIdentity, workCatalog } from "../analysis/frame-comparison.ts";
 import { summarizeFrames } from "../analysis/statistics.ts";
 import { drawRecordingChart } from "../charts/recording-chart.ts";
 import { readComparison } from "../comparison/codec.ts";
@@ -9,6 +10,7 @@ import { initialViewerState, parseViewerDocument } from "./document.ts";
 import { element, write } from "./dom.ts";
 import { renderFrame, renderRecordingEvidence } from "./frame-view.ts";
 import { viewerMarkup } from "./markup.ts";
+import { drawPairedCharts, pairedWindow, renderPaired, selectedPair } from "./paired-view.ts";
 import type { CreateViewer, ViewerDocument, ViewerImportResult, ViewerState } from "./viewer.ts";
 
 export const createViewer: CreateViewer = ({ container }) => {
@@ -22,6 +24,7 @@ export const createViewer: CreateViewer = ({ container }) => {
   const canvas = element<HTMLCanvasElement>(root, "[data-viewer-chart]");
   let state: ViewerState = { status: "empty" };
   let gpuIndex = 0;
+  let catalog: readonly WorkIdentity[] = [];
   let disposed = false;
   let generation = 0;
 
@@ -84,6 +87,9 @@ export const createViewer: CreateViewer = ({ container }) => {
         selectedTrialIndex ?? "",
       );
       renderSettings(root, comparison, selectedTrialIndex ?? 0);
+      const pair = selectedPair(state);
+      catalog = workCatalog(pair.a?.recording ?? null, pair.b?.recording ?? null);
+      renderPaired(root, state, catalog);
     }
     if (!recording) {
       return;
@@ -100,6 +106,9 @@ export const createViewer: CreateViewer = ({ container }) => {
   function draw(): void {
     if (disposed || state.status !== "loaded" || !state.recording) {
       return;
+    }
+    if (state.comparison) {
+      drawPairedCharts(root, state);
     }
     drawRecordingChart(canvas, {
       frames: state.recording.frames.slice(
@@ -122,7 +131,7 @@ export const createViewer: CreateViewer = ({ container }) => {
       ["range-start", state.firstVisibleIndex + 1],
     ] as const) {
       const input = element<HTMLInputElement>(root, `[data-viewer-${name}]`);
-      input.value = String(value);
+      input.value = name === "frame-position" && selected < 0 ? "" : String(value);
       input.max = String(frames.length);
       input.disabled = frames.length === 0;
     }
@@ -146,6 +155,9 @@ export const createViewer: CreateViewer = ({ container }) => {
         : "No frames to display.",
     );
     renderFrame(root, state.recording, state.selectedFrameId, gpuIndex);
+    if (state.comparison) {
+      renderPaired(root, state, catalog);
+    }
     draw();
   }
   function selectTrial(index: number): void {
@@ -160,8 +172,15 @@ export const createViewer: CreateViewer = ({ container }) => {
       ...state,
       recording: trial.recording,
       selectedTrialIndex: index,
-      selectedFrameId: trial.recording.frames[0]?.id ?? null,
+      selectedFrameId: frameAtElapsed(trial.recording, state.comparisonElapsedMs)?.id ?? null,
       firstVisibleIndex: 0,
+    };
+    const selectedId = state.selectedFrameId;
+    const position = trial.recording.frames.findIndex((frame) => frame.id === selectedId);
+    state = {
+      ...state,
+      firstVisibleIndex:
+        Math.floor(Math.max(0, position) / state.visibleFrameCount) * state.visibleFrameCount,
     };
     renderSelection();
   }
@@ -178,9 +197,38 @@ export const createViewer: CreateViewer = ({ container }) => {
     state = {
       ...state,
       selectedFrameId: frameId,
+      comparisonElapsedMs:
+        (state.recording.frames[index]?.startedAtMs ?? 0) -
+        (state.recording.frames[0]?.startedAtMs ?? 0),
       firstVisibleIndex: inRange
         ? state.firstVisibleIndex
         : Math.floor(index / state.visibleFrameCount) * state.visibleFrameCount,
+    };
+    gpuIndex = 0;
+    renderNavigation();
+  }
+  function selectComparisonTime(elapsedMs: number): void {
+    if (disposed || state.status !== "loaded" || !state.comparison) {
+      return;
+    }
+    if (
+      !Number.isFinite(elapsedMs) ||
+      elapsedMs < 0 ||
+      elapsedMs > state.comparison.options.measureMs
+    ) {
+      throw new RangeError("Choose an elapsed time inside the measurement window");
+    }
+    const frame = frameAtElapsed(state.recording, elapsedMs);
+    const index =
+      state.recording?.frames.findIndex((candidate) => candidate.id === frame?.id) ?? -1;
+    state = {
+      ...state,
+      comparisonElapsedMs: elapsedMs,
+      selectedFrameId: frame?.id ?? null,
+      firstVisibleIndex:
+        index < 0
+          ? state.firstVisibleIndex
+          : Math.floor(index / state.visibleFrameCount) * state.visibleFrameCount,
     };
     gpuIndex = 0;
     renderNavigation();
@@ -266,10 +314,28 @@ export const createViewer: CreateViewer = ({ container }) => {
     if (state.status !== "loaded") {
       return;
     }
+    if (target.matches("[data-paired-time], [data-paired-window]")) {
+      changeComparisonControl(target);
+      return;
+    }
     if (target instanceof HTMLSelectElement && target.matches("[data-viewer-trial]")) {
       selectTrial(Number(target.value));
     } else {
       changeFrameControl(target);
+    }
+  }
+  function changeComparisonControl(target: Element): void {
+    if (state.status !== "loaded") {
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.matches("[data-paired-time]")) {
+      selectComparisonTime(target.valueAsNumber);
+      return;
+    }
+    if (target instanceof HTMLSelectElement && target.matches("[data-paired-window]")) {
+      state = { ...state, comparisonWindowMs: Number(target.value) };
+      renderNavigation();
+      return;
     }
   }
   function changeFrameControl(target: Element): void {
@@ -297,6 +363,13 @@ export const createViewer: CreateViewer = ({ container }) => {
   }
   function click(event: Event): void {
     if (!(event instanceof MouseEvent) || !(event.target instanceof Element)) {
+      return;
+    }
+    if (event.target.matches("[data-paired-chart]") && state.status === "loaded") {
+      const bounds = event.target.getBoundingClientRect();
+      const window = pairedWindow(state);
+      const fraction = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+      selectComparisonTime(window.fromMs + fraction * (window.toMs - window.fromMs));
       return;
     }
     if (event.target === canvas) {
@@ -372,6 +445,9 @@ export const createViewer: CreateViewer = ({ container }) => {
   root.addEventListener("drop", drop);
   const resize = new ResizeObserver(draw);
   resize.observe(canvas);
+  for (const chart of root.querySelectorAll("[data-paired-chart]")) {
+    resize.observe(chart);
+  }
   return {
     load: (recording) => {
       generation += 1;
@@ -388,6 +464,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     import: importJson,
     selectFrame,
     selectTrial,
+    selectComparisonTime,
     setRange,
     snapshot: () => structuredClone(state),
     dispose: () => {
@@ -403,6 +480,7 @@ export const createViewer: CreateViewer = ({ container }) => {
       root.removeEventListener("drop", drop);
       resize.disconnect();
       download.dispose();
+      catalog = [];
       state = { status: "empty" };
       root.remove();
     },

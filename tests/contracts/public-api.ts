@@ -91,6 +91,7 @@ if (comparisonFile.ok) {
   viewer.loadComparison(comparisonFile.comparison);
   viewer.selectTrial(0);
   viewer.setRange(0, 100);
+  viewer.selectComparisonTime(250);
 }
 viewer.import("{}");
 const result = parseRecording("{}");
