@@ -160,8 +160,10 @@ Desktop bundle `red-skies-cloud-ramp-jank-f1662bb-2026-10-31.zip`. Installed Jan
   readouts identify observed pass sums and observed-row counts; they never claim GPU busy time.
 - [x] Pin important context counters above work lanes and near selected-frame evidence, retaining
   raw values, sample ages, unknown observations and A/B alignment.
-- [ ] Improve numeric counter formatting and distinguish counter-only channels from CPU work
-  without hiding genuinely unobserved registered CPU scopes. Explain CPU retention independently.
+- [x] Round visible numeric counters and deltas to four significant digits while retaining exact
+  values in tooltips, graph data and exports.
+- [ ] Distinguish counter-only channels from CPU work without hiding genuinely unobserved
+  registered CPU scopes. Explain CPU retention independently.
 - [ ] Add bounded chunk export and a session manifest/timeline for long recordings. Expose GPU
   pass/sample capacity as well as CPU frame capacity; starting a new capture currently shares
   observation retention. Preserve explicit gaps and unsealed tails across chunks.

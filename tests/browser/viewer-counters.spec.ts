@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { counterComparisonFixture } from "../fixtures/counter-comparison.ts";
+import { recordingFixture } from "../fixtures/recording.ts";
 
 const file = (value: unknown) => ({
   name: "counters.json",
@@ -130,4 +131,36 @@ test("extreme signed counters retain finite graph coordinates", async ({ page })
   expect(
     await points.evaluateAll((nodes) => nodes.map((node) => Number(node.getAttribute("cy")))),
   ).toEqual([2, 24]);
+});
+
+test("counter readouts round display values while keeping exact observations and deltas", async ({
+  page,
+}) => {
+  const first = 49.071333333335815;
+  const second = 49.15775;
+  const recording = {
+    ...recordingFixture(),
+    counters: [
+      { atMs: 100, channelId: "physics", status: "ready", values: { coverage: first } },
+      { atMs: 116, channelId: "physics", status: "ready", values: { coverage: second } },
+    ],
+  };
+  await page.goto("/examples/viewer/");
+  await page.getByLabel("Open recording or comparison").setInputFiles(file(recording));
+  const cell = page.locator("[data-counter-inspector] tbody tr td").nth(1);
+  await expect(cell.locator(".jank-viewer-counter-value")).toHaveText("49.07");
+  await expect(cell).toHaveAttribute("title", new RegExp(String(first)));
+  const lane = page.locator('[data-lane-kind="counter"]');
+  await expect(lane.locator("[data-counter-point]").first()).toHaveAttribute(
+    "data-counter-value",
+    String(first),
+  );
+  await lane.locator("svg").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(cell.locator(".jank-viewer-counter-value")).toHaveText("49.16");
+  await expect(cell.locator(".jank-viewer-counter-delta")).toHaveText("Δ prev +0.08642");
+  await expect(cell.locator(".jank-viewer-counter-delta")).toHaveAttribute(
+    "title",
+    `Δ prev +${second - first} · Previous valid sample`,
+  );
 });

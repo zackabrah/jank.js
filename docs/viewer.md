@@ -348,3 +348,6 @@ count. **Episode trigger** selects any retained threshold crossing without chang
 trigger. **EXPORT EPISODE** exports the entire retained episode, including all trigger IDs and
 measurement gaps, regardless of which frame is selected. Historical schema-5 files remain
 unchanged and are not retroactively labelled as complete episodes.
+
+Counter readouts, deltas and graph scale labels use four significant digits for readability.
+Tooltips and graph sample data retain exact numeric values; exports are unchanged.

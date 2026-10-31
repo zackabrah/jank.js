@@ -159,7 +159,7 @@ export function updateCounterReadout(
   });
 }
 function counterText(value: number | null | undefined): string {
-  return value == null ? "Unknown" : String(value);
+  return value == null ? "Unknown" : scaleLabel(value);
 }
 function annotateObservation(
   cell: HTMLTableCellElement | undefined,
@@ -176,12 +176,14 @@ function annotateObservation(
   const changeText = `Δ prev ${delta} · ${change.note}`;
   const deltaLabel = cell.ownerDocument.createElement("span");
   deltaLabel.className = "jank-viewer-counter-delta";
-  deltaLabel.textContent = `Δ prev ${delta}${change.skippedSamples ? ` · ${change.skippedSamples} invalid` : ""}`;
+  const displayedDelta =
+    change.value === null ? "Unknown" : `${change.value > 0 ? "+" : ""}${scaleLabel(change.value)}`;
+  deltaLabel.textContent = `Δ prev ${displayedDelta}${change.skippedSamples ? ` · ${change.skippedSamples} invalid` : ""}`;
   deltaLabel.title = changeText;
   if (change.value === null) {
     note.textContent += ` · ${change.note}`;
   }
-  cell.title = `${counterText(point.value)} · ${point.note} · ${age} · ${changeText}${change.intervalMs === null ? "" : ` · over ${change.intervalMs} ms`}`;
+  cell.title = `${point.value === null ? "Unknown" : String(point.value)} · ${point.note} · ${age} · ${changeText}${change.intervalMs === null ? "" : ` · over ${change.intervalMs} ms`}`;
   cell.classList.toggle("jank-viewer-unknown", point.value === null);
   const value = cell.ownerDocument.createElement("span");
   value.className = "jank-viewer-counter-value";
@@ -201,6 +203,6 @@ function counterLabel(lane: CounterLane, model: CounterTimeline): string {
 function scaleLabel(value: number): string {
   const absolute = Math.abs(value);
   return absolute >= 10000 || (absolute > 0 && absolute < 0.01)
-    ? value.toExponential(1)
-    : String(value);
+    ? value.toExponential(3).replace(/\.?0+(?=e)/, "")
+    : String(Number(value.toPrecision(4)));
 }
