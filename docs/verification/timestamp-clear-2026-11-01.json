@@ -1,0 +1,172 @@
+{
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "nativeControl": [
+    {
+      "draw": true,
+      "startNs": "129530477412352",
+      "endNs": "129530477412352"
+    },
+    {
+      "draw": false,
+      "startNs": "129530480623616",
+      "endNs": "129530477412352"
+    },
+    {
+      "draw": false,
+      "startNs": "129530481737728",
+      "endNs": "129530477412352"
+    },
+    {
+      "draw": true,
+      "startNs": "129530482786304",
+      "endNs": "129530482851840"
+    }
+  ],
+  "errors": [],
+  "pmremFrames": [
+    {
+      "frameId": 1,
+      "expectedPasses": 2,
+      "rejectedPasses": [],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 2,
+      "expectedPasses": 26,
+      "rejectedPasses": [
+        {
+          "id": "reflections",
+          "label": "Environment reflections",
+          "category": null,
+          "type": "render",
+          "invocation": 1,
+          "rendererFrameId": 7,
+          "reason": "reversed-timestamp",
+          "startNs": "129544198553600",
+          "endNs": "129544192786432"
+        }
+      ],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 3,
+      "expectedPasses": 2,
+      "rejectedPasses": [],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 4,
+      "expectedPasses": 26,
+      "rejectedPasses": [
+        {
+          "id": "reflections",
+          "label": "Environment reflections",
+          "category": null,
+          "type": "render",
+          "invocation": 1,
+          "rendererFrameId": 8,
+          "reason": "reversed-timestamp",
+          "startNs": "129544210612224",
+          "endNs": "129544209367040"
+        }
+      ],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 5,
+      "expectedPasses": 2,
+      "rejectedPasses": [],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 6,
+      "expectedPasses": 26,
+      "rejectedPasses": [
+        {
+          "id": "reflections",
+          "label": "Environment reflections",
+          "category": null,
+          "type": "render",
+          "invocation": 1,
+          "rendererFrameId": 10,
+          "reason": "reversed-timestamp",
+          "startNs": "129544222277632",
+          "endNs": "129544221163520"
+        }
+      ],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 7,
+      "expectedPasses": 2,
+      "rejectedPasses": [],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 8,
+      "expectedPasses": 26,
+      "rejectedPasses": [
+        {
+          "id": "reflections",
+          "label": "Environment reflections",
+          "category": null,
+          "type": "render",
+          "invocation": 1,
+          "rendererFrameId": 12,
+          "reason": "reversed-timestamp",
+          "startNs": "129544233746432",
+          "endNs": "129544232632320"
+        }
+      ],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 9,
+      "expectedPasses": 2,
+      "rejectedPasses": [],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 10,
+      "expectedPasses": 26,
+      "rejectedPasses": [
+        {
+          "id": "reflections",
+          "label": "Environment reflections",
+          "category": null,
+          "type": "render",
+          "invocation": 1,
+          "rendererFrameId": 13,
+          "reason": "reversed-timestamp",
+          "startNs": "129544243707904",
+          "endNs": "129544242724864"
+        }
+      ],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 11,
+      "expectedPasses": 2,
+      "rejectedPasses": [],
+      "exactReadbackMatch": true
+    },
+    {
+      "frameId": 12,
+      "expectedPasses": 26,
+      "rejectedPasses": [
+        {
+          "id": "reflections",
+          "label": "Environment reflections",
+          "category": null,
+          "type": "render",
+          "invocation": 1,
+          "rendererFrameId": 15,
+          "reason": "reversed-timestamp",
+          "startNs": "129530416726016",
+          "endNs": "129530415480832"
+        }
+      ],
+      "exactReadbackMatch": true
+    }
+  ]
+}

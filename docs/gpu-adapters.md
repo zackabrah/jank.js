@@ -193,3 +193,7 @@ starts with the first enabled bracket. Skipped brackets allocate no timestamp sl
 reduce overall coverage, and may miss intermittent hitches or alias periodic workloads. CPU
 collection and the 6,000-frame/32 MiB recording limits remain in force; this is explicit sampling,
 not streaming.
+
+A [clear-only timestamp investigation](verification/timestamp-clear-2026-11-01.md) reproduces
+stale end values with native WebGPU and confirms exact adapter readback for PMREM. This remains
+a measurement limitation; rejected passes and null totals are preserved.
