@@ -13,13 +13,14 @@ function element(id: string): HTMLElement {
 }
 
 let counterPolls = 0;
+let iterations = 0;
 const collector = createProfiler();
 const physics = collector.createChannel({
   id: "physics",
   label: "Physics",
   readCounters: () => {
     counterPolls += 1;
-    return { iterations: 20_000 };
+    return { iterations };
   },
 });
 const releaseScopes = collector.requestScopes();
@@ -34,13 +35,18 @@ let recording: Recording | null = null;
 function frame(atMs: number): void {
   hostFrameCount += 1;
   collector.beginFrame(atMs);
-  const startMs = performance.now();
   const token = physics.begin();
+  const startMs = performance.now();
   let total = 0;
-  // A small real CPU workload; the result is consumed so it cannot be discarded.
-  for (let index = 0; index < 20_000; index += 1) {
-    total += Math.sin(index + hostFrameCount);
-  }
+  // Span a measurable clock interval even when WebKit rounds time to milliseconds.
+  // Consume real work and report its actual count; this fixture is not a throughput benchmark.
+  iterations = 0;
+  do {
+    for (let index = 0; index < 20_000; index += 1) {
+      total += Math.sin(index + iterations + hostFrameCount);
+    }
+    iterations += 20_000;
+  } while (performance.now() - startMs < 1);
   physics.end(token);
   collector.endFrame({ updateMs: performance.now() - startMs, renderMs: 0 });
   collector.measureRefresh(() => {
