@@ -17,6 +17,7 @@ import { renderFrame, renderNoRecording, renderRecordingEvidence } from "./frame
 import { copyFrameEvidence, renderInspectorActions } from "./inspector-actions.ts";
 import { viewerMarkup } from "./markup.ts";
 import { drawPairedCharts, pairedWindow, renderPaired, selectedPair } from "./paired-view.ts";
+import { createSessionNavigation } from "./session-navigation.ts";
 import { drawSession, sessionDuration } from "./session-view.ts";
 import { createTimelineNavigation, recordingWindow } from "./timeline-navigation.ts";
 import type { CreateViewer, ViewerDocument, ViewerImportResult, ViewerState } from "./viewer.ts";
@@ -31,6 +32,28 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
   const download = createDownload(document);
   const canvas = element<HTMLCanvasElement>(root, "[data-viewer-chart]");
   let state: ViewerState = { status: "empty" };
+  const session = createSessionNavigation(root, {
+    state: () => state,
+    pan: (fromMs) => {
+      if (state.status !== "loaded" || !state.recording) {
+        return;
+      }
+      if (state.comparison) {
+        state = { ...state, comparisonWindowStartMs: fromMs };
+        renderNavigation();
+      } else {
+        const frames = state.recording.frames;
+        const origin = frames[0]?.startedAtMs ?? 0;
+        const index = frames.findIndex((frame) => frame.startedAtMs - origin >= fromMs);
+        if (index >= 0) {
+          setRange(
+            Math.min(index, Math.max(0, frames.length - state.visibleFrameCount)),
+            state.visibleFrameCount,
+          );
+        }
+      }
+    },
+  });
   let gpuIndex = 0;
   let captures: readonly CaptureMark[] = [];
   let catalog: readonly WorkIdentity[] = [];
@@ -65,6 +88,7 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
       return;
     }
     generation += 1;
+    session.clear();
     state = initialViewerState(input);
     timeline.clear();
     const { comparison, recording } = state;
@@ -579,25 +603,50 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
       change(event.target);
     }
   }
+  function captureKey(event: Event): boolean {
+    if (
+      !(event instanceof KeyboardEvent) ||
+      !(event.target instanceof Element) ||
+      !["[", "]"].includes(event.key) ||
+      !event.target.matches(
+        "[data-lane-surface], [data-session-chart], [data-viewer-chart], [data-paired-chart]",
+      )
+    ) {
+      return false;
+    }
+    event.preventDefault();
+    const label = event.target.getAttribute("aria-label");
+    stepCapture(event.key === "]" ? 1 : -1);
+    for (const node of root.querySelectorAll<SVGSVGElement>("[data-lane-surface]")) {
+      if (node.getAttribute("aria-label") === label) {
+        node.focus({ preventScroll: true });
+      }
+    }
+    return true;
+  }
   function onEvent(event: Event): void {
     if (disposed || !(event.target instanceof Element)) {
       return;
     }
     try {
-      if (timeline.handle(event)) {
+      if (session.handle(event) || captureKey(event) || timeline.handle(event)) {
         return;
       }
-      if (
-        event.type === "change" ||
-        (event.type === "input" && event.target.matches("input[type=range]"))
-      ) {
-        change(event.target);
-      }
-      if (event.type === "click") {
-        click(event);
-      }
-      if (event.type === "keydown") {
-        keydown(event);
+      switch (event.type) {
+        case "change":
+          change(event.target);
+          break;
+        case "input":
+          if (event.target.matches("input[type=range]")) {
+            change(event.target);
+          }
+          break;
+        case "click":
+          click(event);
+          break;
+        case "keydown":
+          keydown(event);
+          break;
       }
     } catch (cause) {
       error(cause);
@@ -629,6 +678,10 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
     "change",
     "input",
     "keydown",
+    "pointerdown",
+    "pointerup",
+    "pointercancel",
+    "lostpointercapture",
     "pointermove",
     "pointerout",
     "wheel",
@@ -674,12 +727,17 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
       }
       disposed = true;
       stopHandoff();
+      session.clear();
       generation += 1;
       for (const type of [
         "click",
         "change",
         "input",
         "keydown",
+        "pointerdown",
+        "pointerup",
+        "pointercancel",
+        "lostpointercapture",
         "pointermove",
         "pointerout",
         "wheel",

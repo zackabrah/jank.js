@@ -50,7 +50,7 @@ export function viewerMarkup(): string {
             <div data-timeline-lanes="single"></div>
           </section>
           <details class="jank-viewer-help"><summary>NAVIGATION &amp; MEASUREMENT NOTES</summary>
-            <p>Click to select; hover previews without changing selection. Focus a lane and use Left/Right, Home/End. Ctrl/⌘ + wheel zooms; horizontal or Shift + wheel scrolls.</p>
+            <p>Click to select; hover previews without changing selection. Focus a lane and use Left/Right, Home/End. Shift + Left/Right moves ten frames; [ / ] cycles captures. Drag the session strip to pan while preserving selection. Ctrl/⌘ + wheel zooms; horizontal or Shift + wheel scrolls.</p>
             <p>A is cyan and solid; B is violet and dashed. Each overlay uses shared time and height scales. Aligning elapsed time does not guarantee identical scene state. Missing samples stay gaps. GPU durations are placed at their correlated CPU frame; CPU and GPU clocks remain separate.</p>
             <p>Counter points show actual sample timestamps, without interpolation. Counter identity is provider ID plus field name; units are not recorded, so verify definitions before comparing raw A/B values. The inspector shows last observed samples and age, not an assertion that a value remained unchanged. Missing fields, non-numeric values, errors and duplicate timestamps invalidate the previous value.</p>
             <p>Scope intervals use their union per channel; channels can overlap. Partial CPU observations have no comparison delta. Individual frames do not establish statistical significance.</p>

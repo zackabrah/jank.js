@@ -275,3 +275,9 @@ transfers and fallback downloads; it does not close the user's viewer window.
 The transfer timeout includes viewer startup and GPU finalization. A download request cannot prove
 that the user saved a file. Only acknowledged receipt is reported as **Opened in viewer**. A/B bundles
 continue to use comparison export/import; this action transfers one selected recording.
+
+
+Session-strip dragging pans the visible range, including A/B windows, without changing the
+selected frame. Clicking still selects the corresponding elapsed time. Focus a timeline lane
+and use Shift + Left/Right to step ten retained frames, or `[` / `]` to cycle ranked captures.
+Home/End retain the rewrite's whole-recording navigation; inputs keep their normal editing keys.

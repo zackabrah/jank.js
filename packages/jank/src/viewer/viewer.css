@@ -812,3 +812,8 @@
   overflow-wrap: anywhere;
   user-select: text;
 }
+
+.jank-viewer [data-session-chart] {
+  cursor: grab;
+  touch-action: none;
+}

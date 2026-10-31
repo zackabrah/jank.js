@@ -283,7 +283,7 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     const origin = recording?.frames[0]?.startedAtMs ?? 0;
     const elapsed = state.comparisonElapsedMs;
     const frames = recording?.frames ?? [];
-    const next = frameTimeFromKey(frames, event.key, origin + elapsed);
+    const next = frameTimeFromKey(frames, event, origin + elapsed);
     if (next === undefined) {
       return;
     }
@@ -394,14 +394,21 @@ function renderModels(
 
 function frameTimeFromKey(
   frames: readonly FrameSample[],
-  key: string,
+  event: KeyboardEvent,
   atMs: number,
 ): number | undefined {
-  switch (key) {
-    case "ArrowRight":
-      return frames.find((frame) => frame.startedAtMs > atMs)?.startedAtMs;
-    case "ArrowLeft":
-      return frames.findLast((frame) => frame.startedAtMs < atMs)?.startedAtMs;
+  const step = event.shiftKey ? 10 : 1;
+  switch (event.key) {
+    case "ArrowRight": {
+      const index = frames.findIndex((frame) => frame.startedAtMs > atMs);
+      return index < 0
+        ? undefined
+        : frames[Math.min(frames.length - 1, index + step - 1)]?.startedAtMs;
+    }
+    case "ArrowLeft": {
+      const index = frames.findLastIndex((frame) => frame.startedAtMs < atMs);
+      return index < 0 ? undefined : frames[Math.max(0, index - step + 1)]?.startedAtMs;
+    }
     case "Home":
       return frames[0]?.startedAtMs;
     case "End":
