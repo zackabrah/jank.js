@@ -61,6 +61,7 @@ export function createProfilerRuntime(
   let openedFrameId = -1;
   let releaseTrace: (() => void) | null = null;
   const capture = createCaptureController({
+    frameBudgetMs: () => collector.frameBudgetMs(),
     gpuCoverage: (frames) => observations.coverage(frames),
     recentFrames: () => collector.recentFrames(),
     requestScopes: () => collector.requestScopes(),

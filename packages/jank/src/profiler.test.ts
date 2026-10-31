@@ -576,3 +576,39 @@ it.each(["absent", "available", "empty"] as const)(
     }
   },
 );
+
+it("uses Jank's current budget and restarts sustained detection when that budget changes", () => {
+  const { profiler, advanceTo } = setup({ targetFps: 60 });
+  profiler.capture.arm({
+    thresholdMs: 50,
+    sustainedMs: 60,
+    beforeFrames: 10,
+    afterFrames: 0,
+    cooldownMs: 0,
+  });
+  const boundary = (time: number) => {
+    advanceTo(time);
+    profiler.beginFrame(time);
+  };
+  boundary(100);
+  boundary(130);
+  profiler.setTargetFps(30);
+  boundary(160); // 30 ms is within the new budget.
+  expect(profiler.capture.list()).toHaveLength(0);
+  boundary(200);
+  boundary(240);
+  const recording = profiler.capture.completed()[0];
+  expect(recording).toMatchObject({
+    schemaVersion: 7,
+    targetFps: 30,
+    capture: {
+      thresholdMs: 1000 / 30,
+      sustained: { durationMs: 60, frameCount: 2, startedAtMs: 60 },
+    },
+  });
+  if (!recording) {
+    throw new Error("Missing sustained recording");
+  }
+  expect(parseRecording(serializeRecording(recording)).ok).toBe(true);
+  profiler.dispose();
+});

@@ -11,8 +11,10 @@ import {
 } from "./episode.ts";
 import { recordingLimits } from "./limits.ts";
 import type { Recording } from "./recording.ts";
+import { type SustainedTrigger, SustainedTriggerDetector } from "./sustained-trigger.ts";
 
 interface CaptureDependencies {
+  readonly frameBudgetMs: () => number;
   readonly gpuCoverage: (frames: readonly FrameSample[]) => GpuCoverage;
   readonly recentFrames: () => readonly FrameSample[];
   readonly requestScopes: () => () => void;
@@ -29,6 +31,7 @@ interface AutomaticCapture {
   readonly options: CaptureOptions;
   readonly triggerFrameId: number;
   readonly episode: EpisodeCollection | null;
+  readonly sustained: SustainedTrigger | null;
   readonly truncated: boolean;
   remainingFrames: number;
   rearm: boolean;
@@ -46,6 +49,7 @@ export function createCaptureController(dependencies: CaptureDependencies): Capt
 
 class CaptureSession implements CaptureController {
   private readonly dependencies: CaptureDependencies;
+  private readonly detector = new SustainedTriggerDetector();
   private state: ActiveCapture = { status: "idle" };
   private options: CaptureOptions = {
     thresholdMs: 50,
@@ -120,6 +124,7 @@ class CaptureSession implements CaptureController {
       }
       this.saveAutomatic(this.state, true);
     }
+    this.detector.reset();
     this.state = { status: "manual", frames: [] };
     this.updateDemand();
   }
@@ -142,6 +147,7 @@ class CaptureSession implements CaptureController {
     if (this.state.status === "manual") {
       throw new Error("Stop manual recording before arming automatic capture");
     }
+    this.detector.reset();
     this.options = copyOptions(options);
     if (this.state.status === "collecting") {
       this.state.rearm = true;
@@ -152,6 +158,7 @@ class CaptureSession implements CaptureController {
   }
 
   disarm(): void {
+    this.detector.reset();
     if (this.state.status === "collecting") {
       this.state.rearm = false;
     } else if (this.state.status === "armed" || this.state.status === "cooldown") {
@@ -184,15 +191,32 @@ class CaptureSession implements CaptureController {
     if (state.status === "cooldown" && frame.endedAtMs >= state.rearmAtMs) {
       this.state = { status: "armed" };
     }
-    if (
-      this.state.status === "armed" &&
-      frame.endedAtMs - frame.startedAtMs > this.options.thresholdMs
-    ) {
-      this.trigger(frame);
+    if (this.state.status === "armed") {
+      this.checkTrigger(frame);
     }
   }
 
-  private trigger(frame: FrameSample): void {
+  private checkTrigger(frame: FrameSample): void {
+    const durationMs = this.options.sustainedMs;
+    const thresholdMs =
+      durationMs === undefined ? this.options.thresholdMs : this.dependencies.frameBudgetMs();
+    const sustained =
+      durationMs === undefined ? null : this.detector.observe(frame, durationMs, thresholdMs);
+    if (
+      durationMs === undefined
+        ? frame.endedAtMs - frame.startedAtMs > thresholdMs
+        : sustained !== null
+    ) {
+      this.trigger(frame, thresholdMs, sustained);
+      this.detector.reset();
+    }
+  }
+
+  private trigger(
+    frame: FrameSample,
+    thresholdMs: number,
+    sustained: SustainedTrigger | null,
+  ): void {
     const previous = this.dependencies.recentFrames().filter((sample) => sample.id < frame.id);
     const window = this.options.timeWindow;
     const before = window
@@ -202,7 +226,8 @@ class CaptureSession implements CaptureController {
     const state: AutomaticCapture = {
       status: "collecting",
       frames: [...before, frame],
-      options: copyOptions(this.options),
+      options: copyOptions({ ...this.options, thresholdMs }),
+      sustained,
       episode,
       triggerFrameId: frame.id,
       remainingFrames: episode
@@ -265,6 +290,7 @@ class CaptureSession implements CaptureController {
         kind: "automatic",
         triggerFrameId: state.triggerFrameId,
         thresholdMs: state.options.thresholdMs,
+        ...(state.sustained ? { sustained: { ...state.sustained } } : {}),
         beforeFrames: episode ? triggerIndex : state.options.beforeFrames,
         afterFrames: episode ? state.frames.length - triggerIndex - 1 : state.options.afterFrames,
         ...(episode?.stopReason
@@ -279,6 +305,9 @@ class CaptureSession implements CaptureController {
           : {}),
       },
       truncated ||
+        (state.sustained !== null &&
+          state.frames[0]?.id !== undefined &&
+          state.frames[0].id > state.sustained.firstFrameId) ||
         (episode !== null &&
           !coversTimeWindow(
             state.frames,
@@ -296,7 +325,7 @@ class CaptureSession implements CaptureController {
     const assembled = this.dependencies.createRecording(frames, capture, truncated);
     const recording = copyRecording({
       ...assembled,
-      schemaVersion: capture.kind === "automatic" && capture.episode ? 6 : assembled.schemaVersion,
+      schemaVersion: captureVersion(capture, assembled.schemaVersion),
     });
     this.archive.push({
       recording,
@@ -343,6 +372,7 @@ class CaptureSession implements CaptureController {
   }
 
   clear(): void {
+    this.detector.reset();
     this.state = { status: "idle" };
     this.archive = [];
     this.updateDemand();
@@ -357,7 +387,24 @@ class CaptureSession implements CaptureController {
 function copyOptions(options: CaptureOptions): CaptureOptions {
   return { ...options, ...(options.timeWindow ? { timeWindow: { ...options.timeWindow } } : {}) };
 }
+function captureVersion(
+  capture: Recording["capture"],
+  fallback: Recording["schemaVersion"],
+): Recording["schemaVersion"] {
+  if (capture.kind === "automatic" && capture.sustained) {
+    return 7;
+  }
+  return capture.kind === "automatic" && capture.episode ? 6 : fallback;
+}
 function validateOptions(options: CaptureOptions): void {
+  if (
+    options.sustainedMs !== undefined &&
+    (!Number.isFinite(options.sustainedMs) ||
+      options.sustainedMs <= 0 ||
+      options.sustainedMs > 600000)
+  ) {
+    throw new RangeError("Sustained duration must be finite, positive and at most 600000 ms");
+  }
   if (options.timeWindow) {
     validateTimeWindow(options.timeWindow);
   }

@@ -1,0 +1,197 @@
+{
+  "measuredAt": "2026-10-31T20:51:28.599Z",
+  "environment": {
+    "node": "v24.22.1",
+    "os": "darwin 25.5.0",
+    "cpu": "Apple M3 Max"
+  },
+  "sampleCount": 15,
+  "framesPerSample": 5000,
+  "units": "microseconds per host frame",
+  "limitations": "Local Node microbenchmark of the public profiler with synthetic frame time and real cost clock. Includes synchronous collection, copying and GC noise; marked workloads also include capture start/stop assembly and optional validated serialization, amortized across 5,000 frames. Excludes construction, disposal, browser layout, paint, GPU, adapters and UI. The episode case uses 30-second duration caps during sustained synthetic load, then seals and serializes the remaining episode. Counter providers return one numeric value each. Baseline is the same host loop without profiling, not the previous implementation. Min/max describe batch means, not frame-tail latency or export latency.",
+  "results": [
+    {
+      "name": "frames only",
+      "scopesPerFrame": 0,
+      "snapshotEvery": 0,
+      "baseline": {
+        "medianUs": 0.0015999999999991132,
+        "minUs": 0.0015749999999997045,
+        "maxUs": 0.002233400000000074
+      },
+      "observed": {
+        "medianUs": 0.17496679999999856,
+        "minUs": 0.1547249999999991,
+        "maxUs": 0.3455165999999991
+      },
+      "added": {
+        "medianUs": 0.17337519999999815,
+        "minUs": 0.1531499999999994,
+        "maxUs": 0.3434748000000013
+      }
+    },
+    {
+      "name": "8 scopes per frame",
+      "scopesPerFrame": 8,
+      "snapshotEvery": 0,
+      "baseline": {
+        "medianUs": 0.02987499999999841,
+        "minUs": 0.0286166000000037,
+        "maxUs": 0.043533400000001166
+      },
+      "observed": {
+        "medianUs": 1.3325499999999977,
+        "minUs": 1.3143166000000008,
+        "maxUs": 1.909133399999996
+      },
+      "added": {
+        "medianUs": 1.2994416000000002,
+        "minUs": 1.2851500000000045,
+        "maxUs": 1.8657915999999943
+      }
+    },
+    {
+      "name": "128 scopes per frame",
+      "scopesPerFrame": 128,
+      "snapshotEvery": 0,
+      "baseline": {
+        "medianUs": 0.4570831999999882,
+        "minUs": 0.4474915999999894,
+        "maxUs": 0.6237415999999939
+      },
+      "observed": {
+        "medianUs": 20.63978339999999,
+        "minUs": 20.44555839999998,
+        "maxUs": 23.153891600000044
+      },
+      "added": {
+        "medianUs": 20.086824799999977,
+        "minUs": 19.99472499999997,
+        "maxUs": 22.690716600000044
+      }
+    },
+    {
+      "name": "8 scopes and snapshot every 6 frames",
+      "scopesPerFrame": 8,
+      "snapshotEvery": 6,
+      "baseline": {
+        "medianUs": 0.03085819999996602,
+        "minUs": 0.024274999999943248,
+        "maxUs": 0.03132500000001528
+      },
+      "observed": {
+        "medianUs": 12.630841599999986,
+        "minUs": 12.418891800000074,
+        "maxUs": 12.898125000000073
+      },
+      "added": {
+        "medianUs": 12.599674799999958,
+        "minUs": 12.394616800000131,
+        "maxUs": 12.867058200000065
+      }
+    },
+    {
+      "name": "manual capture with 8 scopes",
+      "scopesPerFrame": 8,
+      "capture": true,
+      "baseline": {
+        "medianUs": 0.023358400000051915,
+        "minUs": 0.023191599999972824,
+        "maxUs": 0.02615000000005239
+      },
+      "observed": {
+        "medianUs": 1.7416418000000704,
+        "minUs": 1.5595500000000357,
+        "maxUs": 1.854033199999958
+      },
+      "added": {
+        "medianUs": 1.7183334000001196,
+        "minUs": 1.536358400000063,
+        "maxUs": 1.8306749999999739
+      }
+    },
+    {
+      "name": "slowdown episodes and serialize with 8 scopes",
+      "scopesPerFrame": 8,
+      "episode": true,
+      "baseline": {
+        "medianUs": 0.025675000000046567,
+        "minUs": 0.023433399999976245,
+        "maxUs": 0.026999999999861756
+      },
+      "observed": {
+        "medianUs": 11.497475000000122,
+        "minUs": 11.235066799999913,
+        "maxUs": 12.153125
+      },
+      "added": {
+        "medianUs": 11.471633199999996,
+        "minUs": 11.211558399999921,
+        "maxUs": 12.126825000000007
+      }
+    },
+    {
+      "name": "sustained budget episodes and serialize with 8 scopes",
+      "scopesPerFrame": 8,
+      "episode": true,
+      "sustained": true,
+      "baseline": {
+        "medianUs": 0.024258399999962422,
+        "minUs": 0.023541600000135075,
+        "maxUs": 0.027541799999926297
+      },
+      "observed": {
+        "medianUs": 11.614283200000136,
+        "minUs": 11.1382834,
+        "maxUs": 12.858716599999934
+      },
+      "added": {
+        "medianUs": 11.58959160000013,
+        "minUs": 11.111333400000149,
+        "maxUs": 12.834916599999996
+      }
+    },
+    {
+      "name": "manual capture and serialize with 8 scopes",
+      "scopesPerFrame": 8,
+      "capture": true,
+      "serialize": true,
+      "baseline": {
+        "medianUs": 0.0502916000001278,
+        "minUs": 0.04910820000004605,
+        "maxUs": 0.052549999999973805
+      },
+      "observed": {
+        "medianUs": 11.52621680000011,
+        "minUs": 11.267691600000035,
+        "maxUs": 12.408883400000013
+      },
+      "added": {
+        "medianUs": 11.476808600000185,
+        "minUs": 11.217191600000115,
+        "maxUs": 12.358475200000067
+      }
+    },
+    {
+      "name": "manual capture with 64 counter providers",
+      "scopesPerFrame": 0,
+      "capture": true,
+      "counters": 64,
+      "baseline": {
+        "medianUs": 0.012216599999919708,
+        "minUs": 0.011924999999973807,
+        "maxUs": 0.014550000000053843
+      },
+      "observed": {
+        "medianUs": 4.394116600000052,
+        "minUs": 3.8905416000001423,
+        "maxUs": 4.927616600000147
+      },
+      "added": {
+        "medianUs": 4.382191599999896,
+        "minUs": 3.8786166000001683,
+        "maxUs": 4.915541600000142
+      }
+    }
+  ]
+}

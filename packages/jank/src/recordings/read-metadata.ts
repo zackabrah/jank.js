@@ -2,6 +2,7 @@ import type { FrameSample } from "../core/frames.ts";
 import { coversTimeWindow } from "./episode.ts";
 import { recordingLimits } from "./limits.ts";
 import { readEpisode, validateEpisodeEnd } from "./read-episode.ts";
+import { readSustained } from "./read-sustained.ts";
 import {
   boolean,
   choice,
@@ -73,13 +74,11 @@ export function readCapture(
   value: unknown,
   frames: readonly FrameSample[],
   truncated: boolean,
-  schemaVersion: 5 | 6 = 5,
+  schemaVersion: 5 | 6 | 7 = 5,
 ): Recording["capture"] {
   const path = "$.capture";
   const data = object(value, path);
-  if (data.episode !== undefined && (schemaVersion !== 6 || data.kind !== "automatic")) {
-    invalid(`${path}.episode`, "Episodes require schema 6 automatic capture");
-  }
+  validateCaptureVersion(data, schemaVersion);
   const kind = choice(data.kind, `${path}.kind`, ["manual", "recent", "automatic"]);
   if (kind !== "automatic") {
     return { kind };
@@ -94,6 +93,12 @@ export function readCapture(
   if (trigger.endedAtMs - trigger.startedAtMs <= thresholdMs) {
     invalid(`${path}.thresholdMs`, "Trigger frame must exceed the threshold");
   }
+  const sustained =
+    data.sustained === undefined
+      ? {}
+      : {
+          sustained: readSustained(data.sustained, frames, { trigger, thresholdMs, truncated }),
+        };
   const beforeFrames = integer(
     data.beforeFrames,
     `${path}.beforeFrames`,
@@ -122,13 +127,23 @@ export function readCapture(
     ) {
       invalid("$.truncated", "Episode context contains unavailable time");
     }
-    return { kind, triggerFrameId, thresholdMs, beforeFrames, afterFrames, episode };
+    return { kind, triggerFrameId, thresholdMs, beforeFrames, afterFrames, episode, ...sustained };
   }
-  return { kind, triggerFrameId, thresholdMs, beforeFrames, afterFrames };
+  return { kind, triggerFrameId, thresholdMs, beforeFrames, afterFrames, ...sustained };
 }
 
 function checkWindow(path: string, requested: number, recorded: number, truncated: boolean): void {
   if (recorded > requested || (!truncated && recorded !== requested)) {
     invalid(path, "Frame count does not match the requested capture window");
+  }
+}
+
+function validateCaptureVersion(data: Record<string, unknown>, schemaVersion: number): void {
+  const path = "$.capture";
+  if (data.episode !== undefined && (schemaVersion < 6 || data.kind !== "automatic")) {
+    invalid(`${path}.episode`, "Episodes require schema 6 or later automatic capture");
+  }
+  if (data.sustained !== undefined && (schemaVersion !== 7 || data.kind !== "automatic")) {
+    invalid(`${path}.sustained`, "Sustained triggers require schema 7 automatic capture");
   }
 }

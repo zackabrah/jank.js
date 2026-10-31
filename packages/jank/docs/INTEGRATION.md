@@ -337,7 +337,7 @@ Copy `jank-viewer.html` from the bundle to your application's static files and s
 to its same-origin HTTP(S) address. Direct handoff validates origin/window/messages; file URLs
 and unsupported origins use download/local import. The standalone file also opens directly
 without installation. A custom embedded viewer uses `createViewer({ container })`; retain its
-handle and call `dispose()` on removal. Viewer imports accept recording schemas 5/6 and comparison
+handle and call `dispose()` on removal. Viewer imports accept recording schemas 5/6/7 and comparison
 version 1, with a 32 MiB UTF-8 limit. No remote upload is involved.
 
 Dispose owned objects in this order where present: panel, comparison, bounds overlay, GPU
@@ -371,3 +371,9 @@ The profiler retains the host-owned loop and bounded history; only sealed frames
 episode. Finalize a saved episode through the same GPU finalization/export path as other
 recordings. Schema 6 preserves its trigger history, settings and stop reason. Existing schema-5
 files remain supported; older viewer bundles need the updated viewer to open schema-6 episodes.
+
+To detect sustained slowdown using the profiler’s target FPS, add `sustainedMs: 250` to the
+existing `capture.arm` options. `thresholdMs` remains required for spike-mode configuration but
+is ignored while sustained mode is selected. Omit `sustainedMs` to return to spike mode.
+Sustained captures use schema 7 and retain the actual triggering budget and onset evidence.
+Use the matching updated offline viewer; schemas 5 and 6 remain readable.

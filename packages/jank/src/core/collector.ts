@@ -213,6 +213,10 @@ class FrameCollector {
     };
   }
 
+  frameBudgetMs(): number {
+    return 1000 / this.targetFps;
+  }
+
   setTargetFps(targetFps: number): void {
     if (!this.disposed) {
       validateTargetFps(targetFps);

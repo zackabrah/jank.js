@@ -86,6 +86,7 @@ export type {
   RecordingResult,
   SerializeRecording,
 } from "./recordings/recording.ts";
+export type { SustainedTrigger } from "./recordings/sustained-trigger.ts";
 export type {
   GpuSource,
   LoadingSource,

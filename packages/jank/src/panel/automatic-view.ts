@@ -1,4 +1,5 @@
 import type { Profiler } from "../profiler.ts";
+import type { CaptureOptions } from "../recordings/capture.ts";
 import { readCaptureOptions } from "./capture-view.ts";
 import { element } from "./dom.ts";
 
@@ -13,14 +14,7 @@ export function createAutomaticView(root: HTMLElement, profiler: Profiler) {
   }
   function render(targetFps = profiler.snapshot().targetFps): void {
     resolvePreset(targetFps);
-    const episodeMode =
-      element<HTMLSelectElement>(root, "[data-capture-window]").value === "episode";
-    for (const node of root.querySelectorAll<HTMLElement>("[data-time-window]")) {
-      node.hidden = !episodeMode;
-    }
-    for (const node of root.querySelectorAll<HTMLElement>("[data-frame-window]")) {
-      node.hidden = episodeMode;
-    }
+    showCaptureFields(root);
     threshold.readOnly = preset.value !== "custom";
     const state = profiler.capture.getState();
     const armed =
@@ -30,7 +24,7 @@ export function createAutomaticView(root: HTMLElement, profiler: Profiler) {
     const toggle = element<HTMLButtonElement>(root, '[data-action="auto-toggle"]');
     toggle.setAttribute("aria-pressed", String(armed));
     toggle.disabled = state.status === "manual";
-    const active = profiler.capture.getOptions().thresholdMs;
+    const active = triggerRule(profiler.capture.getOptions(), 1000 / targetFps);
     const labels = {
       idle: "Disarmed",
       manual: "Manual recording",
@@ -42,11 +36,11 @@ export function createAutomaticView(root: HTMLElement, profiler: Profiler) {
       state.status === "collecting" && !state.rearm ? " · will disarm after context" : "";
     setText(
       "[data-automatic-status]",
-      `${labels[state.status]} · >${active.toFixed(2)} ms${suffix}${state.status === "collecting" && state.episode ? ` · ${state.episode.triggerCount} triggers · ${(state.episode.remainingMs / 1000).toFixed(2)} s to recovery/limit` : ""}`,
+      `${labels[state.status]} · ${active}${suffix}${state.status === "collecting" && state.episode ? ` · ${state.episode.triggerCount} triggers · ${(state.episode.remainingMs / 1000).toFixed(2)} s to recovery/limit` : ""}`,
     );
     setText(
       "[data-trigger-rule]",
-      `Next ARM: >${Number(threshold.value).toFixed(2)} ms · ${(1000 / targetFps).toFixed(2)} ms frame budget. Active rule: >${active.toFixed(2)} ms.`,
+      `Next ARM: ${triggerRule(readCaptureOptions(root), 1000 / targetFps)} · ${(1000 / targetFps).toFixed(2)} ms frame budget. Active rule: ${active}.`,
     );
     latestId = profiler.capture.list().findLast((capture) => capture.kind === "automatic")?.id;
     element<HTMLElement>(root, "[data-automatic-saved]").hidden = latestId === undefined;
@@ -88,4 +82,26 @@ export function createAutomaticView(root: HTMLElement, profiler: Profiler) {
       render();
     },
   };
+}
+
+function triggerRule(options: CaptureOptions, budgetMs: number): string {
+  return options.sustainedMs === undefined
+    ? `>${options.thresholdMs.toFixed(2)} ms`
+    : `>${budgetMs.toFixed(2)} ms budget for ${options.sustainedMs} ms continuously`;
+}
+
+function showCaptureFields(root: HTMLElement): void {
+  const episodeMode = element<HTMLSelectElement>(root, "[data-capture-window]").value === "episode";
+  for (const node of root.querySelectorAll<HTMLElement>("[data-time-window]")) {
+    node.hidden = !episodeMode;
+  }
+  for (const node of root.querySelectorAll<HTMLElement>("[data-frame-window]")) {
+    node.hidden = episodeMode;
+  }
+  const sustainedMode =
+    element<HTMLSelectElement>(root, "[data-trigger-mode]").value === "sustained";
+  for (const node of root.querySelectorAll<HTMLElement>("[data-spike-rule]")) {
+    node.hidden = sustainedMode;
+  }
+  element<HTMLElement>(root, "[data-sustained-rule]").hidden = !sustainedMode;
 }

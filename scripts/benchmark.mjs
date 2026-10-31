@@ -12,6 +12,12 @@ const cases = [
   { name: "manual capture with 8 scopes", scopesPerFrame: 8, capture: true },
   { name: "slowdown episodes and serialize with 8 scopes", scopesPerFrame: 8, episode: true },
   {
+    name: "sustained budget episodes and serialize with 8 scopes",
+    scopesPerFrame: 8,
+    episode: true,
+    sustained: true,
+  },
+  {
     name: "manual capture and serialize with 8 scopes",
     scopesPerFrame: 8,
     capture: true,
@@ -26,7 +32,9 @@ const cases = [
 ];
 
 function prepareWorkload(workload, enabled, now) {
-  const profiler = enabled ? createProfiler({ now }) : null;
+  const profiler = enabled
+    ? createProfiler({ now, targetFps: workload.sustained ? 120 : 60 })
+    : null;
   const channel = profiler?.createChannel({
     id: "work",
     label: "Work",
@@ -64,14 +72,11 @@ function finishCapture(workload, profiler) {
   return workload.serialize ? serializeRecording(recording).length : recording.frames.length;
 }
 
-function runWorkload(workload, enabled) {
-  let timeMs = 0;
-  let checksum = 0;
-  const { profiler, channel } = prepareWorkload(workload, enabled, () => timeMs);
-  const startedAtMs = performance.now();
+function startCapture(workload, profiler) {
   if (workload.episode) {
     profiler?.capture.arm({
       thresholdMs: 10,
+      ...(workload.sustained ? { sustainedMs: 250 } : {}),
       beforeFrames: 0,
       afterFrames: 0,
       cooldownMs: 0,
@@ -81,6 +86,14 @@ function runWorkload(workload, enabled) {
   if (workload.capture) {
     profiler?.capture.start();
   }
+}
+
+function runWorkload(workload, enabled) {
+  let timeMs = 0;
+  let checksum = 0;
+  const { profiler, channel } = prepareWorkload(workload, enabled, () => timeMs);
+  const startedAtMs = performance.now();
+  startCapture(workload, profiler);
   for (let frame = 0; frame < framesPerSample; frame += 1) {
     timeMs = frame * 16;
     profiler?.beginFrame(timeMs);

@@ -13,6 +13,8 @@ export function initializeCapture(root: HTMLElement, profiler: Profiler): void {
       element<HTMLInputElement>(root, `[data-input="${key}"]`).value = String(value);
     }
   }
+  element<HTMLSelectElement>(root, "[data-trigger-mode]").value =
+    profiler.capture.getOptions().sustainedMs === undefined ? "spike" : "sustained";
   const window = profiler.capture.getOptions().timeWindow;
   element<HTMLSelectElement>(root, "[data-capture-window]").value = window ? "episode" : "frames";
   for (const [key, value] of Object.entries(window ?? {})) {
@@ -39,6 +41,9 @@ export function readCaptureOptions(root: HTMLElement): CaptureOptions {
       : null;
   return {
     ...(timeWindow ? { timeWindow } : {}),
+    ...(element<HTMLSelectElement>(root, "[data-trigger-mode]").value === "sustained"
+      ? { sustainedMs: element<HTMLInputElement>(root, '[data-input="sustainedMs"]').valueAsNumber }
+      : {}),
     thresholdMs: element<HTMLInputElement>(root, '[data-input="thresholdMs"]').valueAsNumber,
     beforeFrames: element<HTMLInputElement>(root, '[data-input="beforeFrames"]').valueAsNumber,
     afterFrames: element<HTMLInputElement>(root, '[data-input="afterFrames"]').valueAsNumber,

@@ -6,6 +6,7 @@ import type {
 } from "../core/frames.ts";
 import type { GpuSample } from "../core/gpu.ts";
 import type { EpisodeMetadata } from "./episode.ts";
+import type { SustainedTrigger } from "./sustained-trigger.ts";
 
 export interface RecordingEnvironment {
   readonly userAgent: string | null;
@@ -26,7 +27,7 @@ export interface RecordingEnvironment {
 export interface Recording {
   readonly format: "jank.js-recording";
   /** New field names require a new schema; never reinterpret an older file. */
-  readonly schemaVersion: 5 | 6;
+  readonly schemaVersion: 5 | 6 | 7;
   readonly clock: { readonly unit: "milliseconds"; readonly origin: "profiler-start" };
   readonly metadata: {
     readonly createdAt: string;
@@ -40,6 +41,7 @@ export interface Recording {
     | {
         readonly kind: "automatic";
         readonly triggerFrameId: number;
+        readonly sustained?: SustainedTrigger;
         readonly thresholdMs: number;
         readonly beforeFrames: number;
         readonly afterFrames: number;

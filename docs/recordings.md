@@ -186,3 +186,25 @@ Existing recording metadata, observations and completeness diagnostics accompany
 GPU/counter/event retention pools remain independently bounded; time windows do not guarantee
 complete GPU samples. At a limit, the episode is truncated and a later trigger after cooldown
 can start a new episode. Archives still evict the oldest capture after ten entries.
+
+## Sustained frame-budget triggering (schema 7)
+
+Set `sustainedMs: 250` in `capture.arm(...)` to select sustained triggering instead of the
+single-frame `thresholdMs` rule. Omit it to retain spike mode. The detector uses Jank's current
+`1000 / targetFps` budget, compares sealed frame intervals strictly above that budget, and waits
+for a contiguous streak lasting at least the configured duration (positive, at most 600,000 ms).
+A single sufficiently long frame can qualify. On-budget frames, gaps, rearming, disarming,
+manual recording, clear and disposal reset the streak. A changed budget starts a new streak
+on the next observed frame. Timer jitter can interrupt a streak; this is not an average-FPS rule.
+
+The confirming frame is the trigger and window anchor. `capture.sustained` records the requested
+duration, onset frame/time and streak frame count; `capture.thresholdMs` stores the actual budget
+used at confirmation. The ongoing episode freezes that budget, and every later frame exceeding
+it extends recovery. Changing target FPS or arming settings applies to future captures.
+Prehistory remains bounded. If the onset is outside retained context, the capture is explicitly
+truncated rather than inventing the missing frames. Cooldown does not accumulate trigger time.
+
+Sustained files use schema 7 and require the updated viewer. Spike episodes still write schema 6,
+and other captures schema 5. The parser supports all three and validates sustained evidence,
+first confirmation, contiguous intervals and truncated prefixes. The inspector explains the
+sustained rule and displays onset separately from confirmation; exports preserve both.

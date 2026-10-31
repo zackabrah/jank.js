@@ -3,7 +3,7 @@
 Run `pnpm build:viewer` to create `artifacts/jank-viewer.html`. Open that one file in a browser;
 it embeds its script, styles and theme, works from `file://`, and makes no network requests.
 For development, open `/examples/viewer/` on the workspace Vite server. The basic demo links to
-it from **Sources & files**. Imports accept schema-5 recordings and schema-6 episodes and version-1 `jank.js-comparison`
+it from **Sources & files**. Imports accept schema-5 recordings, schema-6 episodes and schema-7 sustained captures and version-1 `jank.js-comparison`
 bundles, up to 32 MiB of UTF-8. Files are read locally and never uploaded.
 
 Use **Open recording or comparison**, or drop a file anywhere on the viewer. Invalid, oversized
@@ -351,3 +351,6 @@ unchanged and are not retroactively labelled as complete episodes.
 
 Counter readouts, deltas and graph scale labels use four significant digits for readability.
 Tooltips and graph sample data retain exact numeric values; exports are unchanged.
+
+Schema-7 sustained captures show the configured continuous duration, budget, onset and confirming
+frame. The Go to trigger action selects confirmation; earlier retained context stays accessible.

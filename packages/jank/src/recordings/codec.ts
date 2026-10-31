@@ -17,12 +17,12 @@ import type { Recording, RecordingResult } from "./recording.ts";
 
 export function readRecording(value: unknown): Recording {
   const data = object(value, "$");
-  if (data.schemaVersion !== 5 && data.schemaVersion !== 6) {
+  if (data.schemaVersion !== 5 && data.schemaVersion !== 6 && data.schemaVersion !== 7) {
     throw new RecordingError({
       code: "unsupported-version",
       path: "$.schemaVersion",
       message:
-        "Expected recording schema version 5 or 6; older files require their matching preview",
+        "Expected recording schema version 5, 6 or 7; older files require their matching preview",
     });
   }
   const clock = object(data.clock, "$.clock");

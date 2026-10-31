@@ -28,14 +28,19 @@ export function copyRecording(recording: Recording): Recording {
 }
 
 export function copyCapture(capture: Recording["capture"]): Recording["capture"] {
-  if (capture.kind === "automatic" && capture.episode) {
+  if (capture.kind === "automatic") {
     return {
       ...capture,
-      episode: {
-        ...capture.episode,
-        timeWindow: { ...capture.episode.timeWindow },
-        triggerFrameIds: [...capture.episode.triggerFrameIds],
-      },
+      ...(capture.sustained ? { sustained: { ...capture.sustained } } : {}),
+      ...(capture.episode
+        ? {
+            episode: {
+              ...capture.episode,
+              timeWindow: { ...capture.episode.timeWindow },
+              triggerFrameIds: [...capture.episode.triggerFrameIds],
+            },
+          }
+        : {}),
     };
   }
   return { ...capture };

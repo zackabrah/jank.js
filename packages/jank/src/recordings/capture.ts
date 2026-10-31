@@ -11,6 +11,8 @@ export interface CaptureProgress {
 }
 
 export interface CaptureOptions {
+  /** Select sustained frame-budget triggering instead of a single-frame threshold (0–600000 ms, exclusive). */
+  readonly sustainedMs?: number;
   readonly thresholdMs: number;
   readonly beforeFrames: number;
   readonly afterFrames: number;

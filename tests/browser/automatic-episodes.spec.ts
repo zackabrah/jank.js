@@ -95,3 +95,64 @@ for (const width of [390, 1280]) {
     });
   });
 }
+
+test("sustained budget mode captures a sub-threshold slowdown and exports its onset", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+  await page.getByLabel("Trigger mode", { exact: true }).selectOption("sustained");
+  await page.getByLabel("Sustained ms", { exact: true }).fill("100");
+  await expect(page.getByLabel("Threshold ms", { exact: true })).toBeHidden();
+  await page.getByLabel("Capture window", { exact: true }).selectOption("episode");
+  await page.getByLabel("Before seconds", { exact: true }).fill("0.2");
+  await page.getByLabel("Minimum after seconds", { exact: true }).fill("0.03");
+  await page.getByLabel("Quiet recovery seconds", { exact: true }).fill("0.04");
+  await page.getByRole("button", { name: "Arm automatic capture", exact: true }).click();
+  await page.evaluate(() => {
+    const f = window.panelFixture;
+    f.advance(4, 16);
+    f.advance(2, 35);
+    f.panel.refresh(1000);
+  });
+  expect(await page.evaluate(() => window.panelFixture.profiler.capture.list().length)).toBe(0);
+  await page.evaluate(() => {
+    const f = window.panelFixture;
+    f.advance(1, 35);
+    f.advance(3, 16);
+    f.panel.refresh(2000);
+  });
+  await page.getByRole("tab", { name: "LIVE", exact: true }).click();
+  await page.getByRole("button", { name: "Inspect trigger", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator("[data-trigger-context]")).toContainText(
+    "confirmed sustained slowdown · onset",
+  );
+  await expect(dialog.locator("[data-capture-rule]")).toContainText(
+    "budget for 100 ms continuously",
+  );
+  const downloading = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Export selected episode", exact: true }).click();
+  const path = await (await downloading).path();
+  if (!path) {
+    throw new Error("Missing download");
+  }
+  const recording = JSON.parse(await readFile(path, "utf8"));
+  expect(recording.schemaVersion).toBe(7);
+  expect(recording.capture.sustained).toMatchObject({ durationMs: 100, frameCount: 3 });
+  expect(recording.capture.thresholdMs).toBe(1000 / 60);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+for (const width of [390, 1280]) {
+  test(`@visual sustained budget capture controls at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1100 });
+    await page.goto("/tests/fixtures/panel/?mode=full");
+    await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+    await page.getByLabel("Trigger mode", { exact: true }).selectOption("sustained");
+    await page.getByLabel("Capture window", { exact: true }).selectOption("episode");
+    await expect(page.getByLabel("Sustained ms", { exact: true })).toHaveValue("250");
+    await expect(page.locator(".jank")).toHaveScreenshot(`sustained-controls-${width}.png`);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+}

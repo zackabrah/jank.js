@@ -2,7 +2,7 @@
 
 Jank helps inspect frame pacing, CPU work, asynchronous GPU observations and recorded A/B
 experiments. It runs locally. Host integration is described in [INTEGRATION.md](INTEGRATION.md).
-This is a private preview: recording schemas 5/6, comparison format version 1.
+This is a private preview: recording schemas 5/6/7, comparison format version 1.
 
 ## Open the bundle
 
@@ -144,3 +144,8 @@ shows trigger count and time to recovery/limit. **Inspect trigger → Episode tr
 the history; **EXPORT EPISODE** retains the whole episode. Duration/frame caps and unavailable
 prehistory are reported as truncated. The initial frame-count mode and 50 ms threshold remain
 unchanged; 1.5× at 60 FPS resolves to 25 ms. Quiet recovery means no frame above that threshold.
+
+For sustained slowdowns, choose **CAPTURE → Trigger mode → Sustained over budget**. Set
+**Sustained ms** (250 by default), choose a window and press **ARM**. This mode uses Jank’s FPS
+budget and requires consecutive over-budget frames; it replaces the single-frame spike rule.
+The inspector shows onset and confirmation. Sustained exports use schema 7; use the new viewer.

@@ -62,7 +62,7 @@ export function renderCaptures(
   const source = recording?.capture;
   rule.textContent =
     source?.kind === "automatic"
-      ? `Recorded automatic trigger · >${source.thresholdMs.toFixed(2)} ms · ${source.beforeFrames} before / ${source.afterFrames} after`
+      ? `Recorded automatic trigger · >${source.thresholdMs.toFixed(2)} ms${source.sustained ? ` budget for ${source.sustained.durationMs} ms continuously` : ""} · ${source.beforeFrames} before / ${source.afterFrames} after`
       : `Detected spikes · >${(2000 / (recording?.targetFps ?? 60)).toFixed(2)} ms · up to ${captureContextFrames} frames each side`;
   if (trial) {
     rule.append(` · trial ${trial.variant}, pair ${trial.pair}`);
@@ -178,5 +178,5 @@ function renderTriggerContext(
     trigger.id,
   );
   element<HTMLElement>(summary, "[data-trigger-context]").textContent =
-    `Trigger #${trigger.id} · ${before} s before · ${after} s after (retained context).${sampledOut ? " Trigger GPU not sampled; neighbouring samples cannot supply its timing." : ""}`;
+    `Trigger #${trigger.id}${recording.capture.kind === "automatic" && recording.capture.sustained ? ` confirmed sustained slowdown · onset #${recording.capture.sustained.firstFrameId} at ${recording.capture.sustained.startedAtMs.toFixed(2)} ms (${recording.capture.sustained.frameCount} frames)` : ""} · ${before} s before · ${after} s after (retained context).${sampledOut ? " Trigger GPU not sampled; neighbouring samples cannot supply its timing." : ""}`;
 }

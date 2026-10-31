@@ -1,0 +1,34 @@
+{
+  "note": "Offline replay of 12618 supplied CPU frame intervals, not a new profiling run. Source gaps preserved.",
+  "endState": {
+    "status": "armed"
+  },
+  "episodes": [
+    {
+      "triggerFrame": 8241,
+      "triggerDurationMs": 41.69999999999709,
+      "sustained": {
+        "durationMs": 250,
+        "startedAtMs": 71018.50000000893,
+        "firstFrameId": 8236,
+        "frameCount": 6
+      },
+      "stop": "duration-limit",
+      "crossings": 811,
+      "truncated": true
+    },
+    {
+      "triggerFrame": 9205,
+      "triggerDurationMs": 34.80000000000291,
+      "sustained": {
+        "durationMs": 250,
+        "startedAtMs": 106282.60000000894,
+        "firstFrameId": 9198,
+        "frameCount": 8
+      },
+      "stop": "recovered",
+      "crossings": 696,
+      "truncated": true
+    }
+  ]
+}

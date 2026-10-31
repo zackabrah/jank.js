@@ -13,6 +13,7 @@ function setup() {
   let demands = 0;
   let failExport = false;
   const controller = createCaptureController({
+    frameBudgetMs: () => 1000 / 60,
     gpuCoverage: (frames) => summarizeGpuCoverage({ frames, gpu: [] }),
     recentFrames: () => recent,
     requestScopes: () => {
@@ -516,5 +517,58 @@ describe("bounded slowdown episodes", () => {
     Reflect.set(saved.capture.episode?.triggerFrameIds ?? [], "0", 999);
     expect(controller.completed()[0]?.capture).toMatchObject({ episode: { triggerFrameIds: [1] } });
     expect(saved.truncated).toBe(true);
+  });
+});
+
+describe("sustained frame-budget capture", () => {
+  it("waits for continuous over-budget time and records onset, confirmation and recovery", () => {
+    const { controller, frame } = setup();
+    controller.arm({
+      ...options,
+      thresholdMs: 50,
+      sustainedMs: 100,
+      timeWindow: { beforeMs: 100, afterMs: 20, recoveryMs: 30, maxDurationMs: 1000 },
+    });
+    frame(35);
+    frame(16); // A short spike does not start a capture.
+    frame(35);
+    frame(35);
+    expect(controller.list()).toHaveLength(0);
+    frame(35);
+    expect(controller.getState()).toMatchObject({ status: "collecting", triggerFrameId: 5 });
+    frame(35); // Budget crossings extend the episode even below the old 50 ms spike setting.
+    frame(16);
+    frame(16);
+    const recording = controller.completed()[0];
+    expect(recording).toMatchObject({
+      schemaVersion: 7,
+      capture: {
+        triggerFrameId: 5,
+        thresholdMs: 1000 / 60,
+        sustained: { durationMs: 100, startedAtMs: 51, firstFrameId: 3, frameCount: 3 },
+        episode: { triggerFrameIds: [5, 6], stopReason: "recovered" },
+      },
+    });
+    if (!recording) {
+      throw new Error("Missing recording");
+    }
+    expect(() => serializeRecording(recording)).not.toThrow();
+  });
+  it("forgets a partial streak when disarmed or rearmed and preserves spike mode", () => {
+    const { controller, frame } = setup();
+    const sustained = { ...options, thresholdMs: 50, sustainedMs: 100 };
+    controller.arm(sustained);
+    frame(70);
+    expect(controller.getState().status).toBe("armed");
+    controller.disarm();
+    controller.arm(sustained);
+    frame(40);
+    expect(controller.getState().status).toBe("armed");
+    controller.arm({ ...options, thresholdMs: 50 });
+    frame(51);
+    expect(controller.getState().status).toBe("collecting");
+    for (const value of [0, -1, NaN, Infinity, 600001]) {
+      expect(() => controller.arm({ ...sustained, sustainedMs: value })).toThrow();
+    }
   });
 });

@@ -146,7 +146,8 @@ Desktop bundle `red-skies-cloud-ramp-jank-f1662bb-2026-10-31.zip`. Installed Jan
   budget-relative threshold guidance, and a prominent **Go to trigger** action or initial trigger
   selection. Preserve access to the full before/after context. LIVE entry, presets, saved-capture
   inspection, original-trigger selection and a sampled-out trigger notice are implemented.
-  Sustained-over-budget triggering remains a separate follow-up from single-frame detection.
+  Sustained-over-budget triggering is selectable separately from single-frame detection, with
+  recorded onset/confirmation and bounded episode recovery.
 - [x] Show actual retained pre/post elapsed durations in the automatic recording inspector.
 - [x] Add bounded seconds-based windows, group repeated threshold crossings into one slowdown
   episode, and export its settings, trigger history and completeness. Explain cooldown timing
