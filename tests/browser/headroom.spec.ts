@@ -39,7 +39,6 @@ test("quick headroom uses Jank's budget and restores controls on stop and resize
       .locator("span")
       .last(),
   ).toHaveText("false");
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Stop estimate", exact: true }).click();
   await expect(page.locator("#headroom-status")).toContainText("Stopped by user");
   await expect(page.getByRole("button", { name: "Resume motion", exact: true })).toBeVisible();
@@ -49,6 +48,8 @@ test("quick headroom uses Jank's budget and restores controls on stop and resize
     "synthetic",
   );
   await expect(page.getByRole("combobox", { name: "Extra CPU per frame" })).toHaveValue("6");
+  // Auditing an active estimate adds frame load and can finish it before the cancellation check.
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Estimate headroom", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("#headroom-status")).toContainText("Viewport changed");
