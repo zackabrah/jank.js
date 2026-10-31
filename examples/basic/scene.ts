@@ -30,6 +30,7 @@ export function createScene(canvas: HTMLCanvasElement) {
   let probe: ReturnType<typeof createGpuProbe> | null = null;
   let probeIterations = 0;
   let elapsedSeconds = 0;
+  let resolutionScale = 1;
 
   function setCount(count: number): void {
     if (count === activeCount) {
@@ -54,19 +55,30 @@ export function createScene(canvas: HTMLCanvasElement) {
     });
   }
 
-  const resize = new ResizeObserver(() => {
+  function resizeRenderer(): void {
     const { width, height } = canvas.getBoundingClientRect();
     if (width > 0 && height > 0) {
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2) * resolutionScale);
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
     }
-  });
+  }
+  const resize = new ResizeObserver(resizeRenderer);
   resize.observe(canvas);
   setCount(36);
   return {
     context,
     setCount,
+    resolutionScale: () => resolutionScale,
+    setResolutionScale: (scale: number) => {
+      resolutionScale = scale;
+      resizeRenderer();
+    },
+    animationTime: () => elapsedSeconds,
+    setAnimationTime: (seconds: number) => {
+      elapsedSeconds = seconds;
+    },
     update: (deltaSeconds: number) => {
       elapsedSeconds += deltaSeconds;
       for (let index = 0; index < activeCount; index += 1) {

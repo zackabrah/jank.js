@@ -72,6 +72,133 @@
             submission; GPU measures scene plus probe. Times overlap and must not be added.
             Missing GPU timing stays unknown. A load cap is not a measured ceiling.</p>
         </details>
+        <details id="comparison">
+          <summary>A/B comparison</summary>
+          <p>
+            Repeat two scene configurations using Jank’s current budget. Pair order alternates A/B,
+            B/A. Animation resets before each warm-up. Scene and panel controls lock during the run.
+          </p>
+          <form id="comparison-form">
+            <fieldset class="comparison-settings">
+              <legend>Configuration A</legend>
+              <label
+                >A objects<select id="comparison-a-objects" class="jl-select">
+                  <option>16</option>
+                  <option selected>36</option>
+                  <option>64</option>
+                  <option>144</option>
+                  <option>256</option>
+                </select></label
+              >
+              <label
+                >A extra CPU<select id="comparison-a-cpu" class="jl-select">
+                  <option value="0">None</option>
+                  <option value="2">2 ms stall</option>
+                  <option value="6">6 ms stall</option>
+                </select></label
+              >
+              <label
+                >A resolution scale<select id="comparison-a-scale" class="jl-select">
+                  <option value="1">100%</option>
+                  <option value="0.75">75%</option>
+                  <option value="0.5">50%</option>
+                </select></label
+              >
+              <label>A animate <input id="comparison-a-animate" type="checkbox" checked /></label>
+            </fieldset>
+            <fieldset class="comparison-settings">
+              <legend>Configuration B</legend>
+              <label
+                >B objects<select id="comparison-b-objects" class="jl-select">
+                  <option>16</option>
+                  <option>36</option>
+                  <option>64</option>
+                  <option selected>144</option>
+                  <option>256</option>
+                </select></label
+              >
+              <label
+                >B extra CPU<select id="comparison-b-cpu" class="jl-select">
+                  <option value="0">None</option>
+                  <option value="2">2 ms stall</option>
+                  <option value="6">6 ms stall</option>
+                </select></label
+              >
+              <label
+                >B resolution scale<select id="comparison-b-scale" class="jl-select">
+                  <option value="1">100%</option>
+                  <option value="0.75">75%</option>
+                  <option value="0.5">50%</option>
+                </select></label
+              >
+              <label>B animate <input id="comparison-b-animate" type="checkbox" checked /></label>
+            </fieldset>
+            <fieldset class="comparison-settings">
+              <legend>Measurement windows</legend>
+              <label
+                >Warm-up seconds<input
+                  id="comparison-warmup"
+                  class="jl-input"
+                  type="number"
+                  min="0.5"
+                  max="10"
+                  step="0.5"
+                  value="1"
+                  required
+                ></label
+              >
+              <label
+                >Measurement seconds<input
+                  id="comparison-measure"
+                  class="jl-input"
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.5"
+                  value="2"
+                  required
+                ></label
+              >
+              <label
+                >Pairs<input
+                  id="comparison-pairs"
+                  class="jl-input"
+                  type="number"
+                  min="2"
+                  max="6"
+                  step="1"
+                  value="3"
+                  required
+                ></label
+              >
+            </fieldset>
+            <div class="controls">
+              <button id="comparison-start" type="submit" class="jl-btn jl-primary">
+                Run A/B comparison
+              </button><button id="comparison-stop" type="button" class="jl-btn" disabled>
+                Stop comparison
+              </button>
+            </div>
+          </form>
+          <p id="comparison-context">
+            Defaults take about 21 seconds. Actual WebGL2 timing only; unavailable GPU results
+            remain unknown.
+          </p>
+          <p id="comparison-status" role="status"></p>
+          <div id="comparison-summary"></div>
+          <ol id="comparison-trials" aria-label="Completed comparison trials"></ol>
+          <button id="comparison-export" type="button" class="jl-btn" disabled>
+            Export comparison
+          </button>
+          <p>
+            Compare median per-trial p95 times and their ranges. Negative B − A means lower time; a
+            range crossing zero indicates mixed results, not a reliable improvement. CPU and GPU
+            overlap: do not add them. CPU excludes panel refresh and browser paint. Frame pacing
+            allows 1 ms or 5% budget tolerance. At least 20 frames covering 80% of the time window are needed; GPU also needs 80%
+            coverage and 20 valid samples. Short runs cannot establish statistical significance or
+            sustained thermal performance.
+          </p>
+        </details>
         <details>
           <summary>Sources &amp; files</summary>
           <div class="controls">

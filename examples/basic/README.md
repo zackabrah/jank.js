@@ -129,3 +129,55 @@ Headroom regression tests cover sustained budget decisions, sparse and delayed G
 conservative recommendations, cancellation and bounded execution. Browser checks exercise
 budget changes, Stop/resize restoration, unavailable GPU timing, completion, real additional
 GPU draw work, restored counters, and desktop/narrow accessibility in all three browsers.
+
+## Repeatable A/B comparisons
+
+Open **A/B comparison**. Configure A and B with an object count, optional deliberate CPU stall,
+resolution scale, and animation state. Choose warm-up and measurement durations and 2–6 pairs,
+then **Run A/B comparison**. Defaults run three pairs in approximately 21 seconds. The order
+alternates A/B, B/A, A/B to expose some effects of changing machine conditions. Each trial resets
+animation time to zero before warming up; frozen trials use the same initial poses. Resolution
+scale multiplies the demo's pixel ratio (device ratio capped at 2), without changing the CSS viewport.
+
+Each trial warms up for 0.5–10 seconds, measures for 1–10 seconds, then allows 500ms for GPU
+readbacks. Only frames whose two host boundaries fall within the measurement window contribute.
+CPU measurements cover update and render submission, including any requested deliberate stall;
+GPU measurements use only the actual WebGL2 timer around the scene. Late replies are matched by
+profiler frame ID and deduplicated. Readbacks arriving after the drain do not alter completed
+trials. No simulated timing is substituted when timer queries are unsupported or missing.
+
+The report shows per-trial p95 CPU/GPU/frame times, sample counts, GPU coverage, and the percentage
+over Jank's current budget. CPU/GPU comparisons use the exact budget; frame pacing allows 1ms or
+5% tolerance because presentation intervals are quantized. Each metric needs 20 valid samples and complete frame intervals covering at least 80% of the
+requested measurement duration. Window coverage is reported; a long frame crossing the end cannot
+leave only fast frames and silently produce a comparison.
+GPU also requires at least 80% coverage in **every** trial before an aggregate comparison is shown.
+
+The summary gives A and B medians and ranges of trial p95 values, and the median/range of paired
+B-minus-A differences. Trials have equal weight rather than pooling all frames. Negative differences
+mean lower time. A range crossing zero means mixed observations. These are descriptive results,
+not statistical significance, universal headroom or a guarantee under sustained thermal load.
+CPU and GPU overlap and must not be added. CPU excludes panel refresh/browser paint; frame pacing
+includes the whole host loop. Keep the same panel instrumentation and minimize other machine work.
+
+**Export comparison** downloads a separate `jank-demo-comparison` JSON report, not a Jank recording.
+It includes the full A/B configuration, warm-up/measurement schedule, target budget, ordered trial
+results, GPU coverage, actual drawing-buffer dimensions per trial, CSS viewport/device pixel ratio,
+animation policy, browser identity, panel mode, scope/tracing state and measurement limits. The
+recording file picker deliberately does not treat this report as a frame recording.
+
+Scene and panel controls are disabled during comparison; **Stop comparison** remains available.
+Existing recordings must first be stopped or disarmed and their archive is preserved. Headroom,
+loading and comparison runs cannot overlap. Completion or cancellation restores the original scene
+count, resolution, animation time and GPU mode; the user's CPU/motion controls are left intact.
+Hiding the tab, changing viewport/device ratio or budget, losing the GPU context, or changing the
+GPU source cancels the run. Only completed trials are retained, and a cancelled run has no aggregate
+comparison. Per-trial storage is capped at 2,048 frames. Three consecutive CPU frames above 100ms
+stop the run; a wall-clock deadline allows the planned duration plus 20 seconds, checked between
+host frames. An in-flight blocking frame can delay cancellation.
+
+`comparison-run.ts` owns bounded windows and paired statistics; `comparison.ts` owns controls,
+metadata, export and restoration. The main demo loop remains the only animation scheduler.
+Deterministic tests cover boundaries, delayed/duplicate/missing GPU timing, sparse windows,
+paired variation, caps and cancellation. Browser cases in all three engines cover completed runs,
+exports, restoration, unavailable GPU timing, existing captures, resize, and accessibility.

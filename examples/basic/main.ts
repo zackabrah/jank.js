@@ -4,6 +4,7 @@ import {
   type Panel,
   type PanelMode,
 } from "../../packages/jank/src/index.ts";
+import { createComparison } from "./comparison.ts";
 import { createLoadingExample, createTraceExample } from "./example-sources.ts";
 import { createDemoGpu, type DemoGpuMode } from "./gpu-source.ts";
 import { createHeadroomTest } from "./headroom.ts";
@@ -42,6 +43,7 @@ let lastFrameMs = performance.now();
 let lastReadoutMs = -Infinity;
 let frameRequest = 0;
 let disposed = false;
+let comparison: ReturnType<typeof createComparison> | null = null;
 
 function reportError(cause: unknown): void {
   const alert = element("demo-error");
@@ -62,6 +64,7 @@ const scene = startScene();
 const gpu = createDemoGpu(scene?.context ?? null, (state) => {
   instrumentation?.profiler.observeGpu(state);
   headroom.gpu(state);
+  comparison?.gpu(state);
 });
 
 function startProfiler() {
@@ -83,8 +86,8 @@ function startProfiler() {
     id: "animation",
     label: "animation",
     readCounters: () => ({
-      paused: paused && !headroom.active(),
-      extraMs: headroom.active() ? 0 : Number(cpuLoad.value),
+      paused: !(comparison?.settings()?.animate ?? (!paused || headroom.active())),
+      extraMs: comparison?.settings()?.cpuMs ?? (headroom.active() ? 0 : Number(cpuLoad.value)),
     }),
   });
   const workload = profiler.createChannel({ id: "workload", label: "deliberate CPU work" });
@@ -110,7 +113,21 @@ const headroom = createHeadroomTest({
   gpu,
   canvas,
   profiler: () => instrumentation?.profiler ?? null,
-  canStart: () => loading.source.snapshot()?.status !== "loading",
+  canStart: () => loading.source.snapshot()?.status !== "loading" && !comparison?.active(),
+});
+
+comparison = createComparison({
+  scene,
+  gpu,
+  canvas,
+  profiler: () => instrumentation?.profiler ?? null,
+  canStart: () => !headroom.active() && loading.source.snapshot()?.status !== "loading",
+  settings: () => ({
+    objects: Number(objectCount.value),
+    cpuMs: Number(cpuLoad.value),
+    animate: !paused,
+    scale: scene?.resolutionScale() ?? 1,
+  }),
 });
 
 function attachPanel(mode?: PanelMode): void {
@@ -137,6 +154,7 @@ function detachPanel(): void {
 }
 
 function stopProfiler(): void {
+  comparison?.cancel("Profiler stopped; restart the comparison.");
   headroom.cancel("Profiler stopped; restart to estimate headroom.");
   detachPanel();
   releaseScopes?.();
@@ -155,12 +173,24 @@ function spendCpuTime(durationMs: number): void {
   }
 }
 
+function consumeHitch(): number {
+  const requested = pendingHitch;
+  pendingHitch = false;
+  if (!requested || headroom.active() || comparison?.active()) {
+    return 0;
+  }
+  instrumentation?.profiler.addEvent("Deliberate 80 ms hitch");
+  return 80;
+}
+
 function frame(atMs: number): void {
   if (disposed) {
     return;
   }
   hostFrames += 1;
   headroom.beforeFrame(atMs);
+  comparison?.beforeFrame(atMs);
+  const comparisonSettings = comparison?.settings();
   const frameMs = atMs - lastFrameMs;
   const deltaSeconds = Math.min(0.05, Math.max(0, (atMs - lastFrameMs) / 1000));
   lastFrameMs = atMs;
@@ -168,17 +198,12 @@ function frame(atMs: number): void {
   const frameId = current?.profiler.beginFrame(atMs) ?? -1;
   const updateStartMs = performance.now();
   const animationToken = current?.animation.begin();
-  scene?.update(paused && !headroom.active() ? 0 : deltaSeconds);
+  const animate = comparisonSettings?.animate ?? (!paused || headroom.active());
+  scene?.update(animate ? deltaSeconds : 0);
   const workloadToken = current?.workload.begin();
   headroom.compute();
-  let extraMs = headroom.active() ? 0 : Number(cpuLoad.value);
-  if (pendingHitch) {
-    pendingHitch = false;
-    if (!headroom.active()) {
-      extraMs += 80;
-      current?.profiler.addEvent("Deliberate 80 ms hitch");
-    }
-  }
+  let extraMs = comparisonSettings?.cpuMs ?? (headroom.active() ? 0 : Number(cpuLoad.value));
+  extraMs += consumeHitch();
   spendCpuTime(extraMs);
   if (current && workloadToken !== undefined && animationToken !== undefined) {
     current.workload.end(workloadToken);
@@ -191,6 +216,7 @@ function frame(atMs: number): void {
   gpu.endPass();
   const renderEndMs = performance.now();
   headroom.frame({ frameId, atMs, cpuMs: renderEndMs - updateStartMs, frameMs });
+  comparison?.frame({ frameId, atMs, cpuMs: renderEndMs - updateStartMs });
   if (current && renderToken !== undefined) {
     current.render.end(renderToken);
     current.profiler.endFrame({
@@ -223,6 +249,7 @@ function renderReadout(): void {
   element<HTMLButtonElement>("add-event").disabled = instrumentation === null;
   element("profiler-state").textContent = instrumentation ? "Running" : "Stopped";
   headroom.refresh();
+  comparison?.refresh();
 }
 
 // Event delegation keeps teardown to one listener; each action still calls the public API directly.
@@ -327,6 +354,8 @@ function dispose(): void {
   if (!disposed) {
     disposed = true;
     cancelAnimationFrame(frameRequest);
+    comparison?.dispose();
+    comparison = null;
     headroom.dispose();
     stopProfiler();
     scene?.dispose();
