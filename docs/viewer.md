@@ -304,3 +304,12 @@ The rebuilt standalone viewer was checked against the delivered Red Skies
 4.18 s after, explicitly identifies the sampled-out trigger GPU, and initially exposes the
 Coverage 50% event and following CPU rise. No browser errors were observed. This verifies
 orientation against the supplied evidence; it does not make incomplete GPU timing complete.
+
+The header separates GPU sampled frames, frames with usable timing, and complete frames.
+Sampled means retained accepted/rejected timestamp pairs, a complete empty interval bracket,
+or reported duration evidence. Usable timing requires at least one accepted interval or reported
+duration; partial frames can therefore remain useful without a complete total. Counts deduplicate
+frame IDs and exclude unlinked observations. **GPU coverage & timestamp evidence** shows accepted
+and rejected retained pairs, omitted passes (including rejections), sampled-out frames and absent
+observations. Pair counts include repeated brackets; duration-only sources have no timestamp pairs.
+These distinctions have unit tests and cross-browser partial/rejected/sampled-out regressions.

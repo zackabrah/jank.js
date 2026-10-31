@@ -1,6 +1,7 @@
 import { summarizeComparisonTrial } from "../analysis/comparison.ts";
 import { compareFrameWork, workCatalog } from "../analysis/frame-comparison.ts";
 import { summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";
+import { summarizeGpuEvidence } from "../analysis/gpu-evidence.ts";
 import { inspectFrame } from "../analysis/summary.ts";
 import type { ComparisonTrial } from "../comparison/comparison.ts";
 import type { FrameSample } from "../core/frames.ts";
@@ -169,6 +170,7 @@ export function renderRecordingEvidence(
   );
   const metrics = trial ?? summarizeComparisonTrial(recording, duration || 1);
   const coverage = summarizeGpuCoverage(recording);
+  const evidence = summarizeGpuEvidence(recording);
   write(
     root,
     "evidence",
@@ -177,7 +179,15 @@ export function renderRecordingEvidence(
   write(
     root,
     "coverage",
-    `CPU ${percent(metrics.cpuCoverage)} · GPU ${percent(metrics.gpuCoverage)}${recording.truncated ? " · TRUNCATED" : ""}`,
+    `CPU ${percent(metrics.cpuCoverage)} · GPU ${evidence.sampledFrames}/${evidence.totalFrames} sampled · ${evidence.validFrames} with timing · ${evidence.completeFrames} complete${recording.truncated ? " · TRUNCATED" : ""}`,
+  );
+  const coverageNode = element<HTMLElement>(root, "[data-viewer-coverage]");
+  coverageNode.title =
+    "Sampled frames retain timestamp pairs (accepted or rejected), complete empty brackets, or reported duration evidence. With timing means at least one valid duration; complete means all associated observations have complete totals. Counts refer to this recording, not the selected frame.";
+  write(
+    root,
+    "gpu-evidence",
+    `${evidence.validPairs} valid / ${evidence.validPairs + evidence.rejectedPairs} retained timestamp pairs · ${evidence.rejectedPairs} rejected · ${evidence.omittedPasses} omitted passes (includes rejected pairs). ${evidence.sampledOutFrames} frames deliberately sampled out · ${evidence.missingFrames} without GPU observations. Timestamp pairs count observations; repeated brackets can contribute more than once. Duration-only sources do not provide timestamp pairs. Unknown totals remain unknown.`,
   );
   const metadata = recording.metadata;
   write(
