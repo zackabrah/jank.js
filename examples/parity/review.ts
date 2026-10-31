@@ -8,6 +8,10 @@ const status = document.querySelector<HTMLElement>("#status");
 if (!view || !size || !scale || !status) {
   throw new Error("Missing comparison controls");
 }
+const requestedView = new URLSearchParams(location.search).get("view");
+if ([...view.options].some((option) => option.value === requestedView)) {
+  view.value = requestedView ?? "viewer";
+}
 let generation = 0;
 function fitViews(): void {
   const desktopWidth = view?.value === "viewer" ? 1440 : 640;
@@ -54,7 +58,7 @@ async function load(): Promise<void> {
     );
     if (epoch === generation) {
       status.textContent =
-        "Ready. Both viewers start at spike #243. Switch View to compare FULL, MINI or LINE panels. Both panes are interactive; Reset restores the matched sample.";
+        "Ready. Both panes are interactive. Viewers start at spike #243; Loading uses matched cold and repeat runs. Reset restores the synthetic sample.";
     }
   } catch (cause) {
     status.textContent = cause instanceof Error ? cause.message : "Unable to load comparison";

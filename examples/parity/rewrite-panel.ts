@@ -1,4 +1,8 @@
-import { createPanel, createProfiler } from "../../packages/jank/src/index.ts";
+import {
+  createLoadingProfiler,
+  createPanel,
+  createProfiler,
+} from "../../packages/jank/src/index.ts";
 
 import { readRecording } from "../../packages/jank/src/recordings/codec.ts";
 
@@ -14,7 +18,37 @@ const release = profiler.requestScopes();
 const channels = new Map(
   sample.channels.map((channel) => [channel.id, profiler.createChannel(channel)]),
 );
-const panel = createPanel({ container: document.body, profiler, mode, corner: "top-left" });
+let loadingTimeMs = 0;
+const loading = createLoadingProfiler({ now: () => loadingTimeMs });
+for (const kind of ["fresh-context", "repeat-session"] as const) {
+  const run = loading.beginRun({ label: "Synthetic scene", kind });
+  const fetch = run.startStage("fetch");
+  fetch.recordCache(kind === "fresh-context" ? "miss" : "hit");
+  if (kind === "fresh-context") {
+    fetch.addReceivedBytes(2048);
+    loadingTimeMs += 100;
+    const shared = run.startStage("fetch");
+    shared.recordCache("in-flight");
+    loadingTimeMs += 200;
+    fetch.finish();
+    loadingTimeMs += 200;
+    shared.finish();
+  } else {
+    loadingTimeMs += 50;
+    fetch.finish();
+  }
+  const decode = run.startStage("decode");
+  loadingTimeMs += kind === "fresh-context" ? 100 : 50;
+  decode.finish();
+  run.finish("ready");
+}
+const panel = createPanel({
+  container: document.body,
+  profiler,
+  loading,
+  mode,
+  corner: "top-left",
+});
 panel.setMode(mode);
 for (const frame of sample.frames) {
   nowMs = frame.startedAtMs;
@@ -39,12 +73,16 @@ for (const frame of sample.frames) {
 nowMs = sample.frames.at(-1)?.endedAtMs ?? 0;
 profiler.beginFrame(nowMs);
 panel.refresh(nowMs);
+if (selected === "loading") {
+  document.querySelector<HTMLButtonElement>('[data-tab="loading"]')?.click();
+}
 window.addEventListener(
   "pagehide",
   () => {
     panel.dispose();
     release();
     profiler.dispose();
+    loading.dispose();
   },
   { once: true },
 );

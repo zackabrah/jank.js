@@ -1,7 +1,10 @@
 const path = "/reference/index.js";
-const { createDiagnostics, createPerformanceTray } = await import(/* @vite-ignore */ path);
+const { createDiagnostics, createPerformanceTray, createPreparationProfiler } = await import(
+  /* @vite-ignore */ path
+);
 const sample = await (await fetch("/samples/rewrite.json")).json();
-const mode = new URLSearchParams(location.search).get("mode") ?? "full";
+const selected = new URLSearchParams(location.search).get("mode") ?? "full";
+const mode = selected === "loading" ? "full" : selected;
 localStorage.setItem("jank.js:panel-mode", mode);
 let now = 0;
 const monitor = createDiagnostics({
@@ -13,7 +16,40 @@ monitor.setExpanded(true);
 const channels = new Map(
   sample.channels.map((channel) => [channel.id, monitor.register(channel.id, channel.label)]),
 );
-const tray = createPerformanceTray({ shell: document.body, monitor, mode, corner: "top-left" });
+let loadingTimeMs = 0;
+const preparation = createPreparationProfiler({
+  now: () => loadingTimeMs,
+  stages: ["fetch", "decode"],
+});
+for (const kind of ["fresh-context", "repeat-session"]) {
+  preparation.start({ label: "Synthetic scene", kind });
+  const fetch = preparation.begin("fetch");
+  preparation.cache("fetch", kind === "fresh-context" ? "miss" : "hit");
+  if (kind === "fresh-context") {
+    preparation.bytes("fetch", 2048);
+    loadingTimeMs += 100;
+    const shared = preparation.begin("fetch");
+    preparation.cache("fetch", "inflight");
+    loadingTimeMs += 200;
+    fetch();
+    loadingTimeMs += 200;
+    shared();
+  } else {
+    loadingTimeMs += 50;
+    fetch();
+  }
+  const decode = preparation.begin("decode");
+  loadingTimeMs += kind === "fresh-context" ? 100 : 50;
+  decode();
+  preparation.finish("ready");
+}
+const tray = createPerformanceTray({
+  shell: document.body,
+  monitor,
+  mode,
+  corner: "top-left",
+  preparation: { read: () => preparation.snapshot(), history: () => preparation.history() },
+});
 for (const frame of sample.frames) {
   now = frame.startedAtMs;
   monitor.beginFrame(now);
@@ -32,6 +68,10 @@ for (const frame of sample.frames) {
 now = sample.frames.at(-1).endedAtMs;
 monitor.beginFrame(now);
 tray.refresh(now);
+if (selected === "loading") {
+  document.querySelector('[data-tab="loading"]')?.click();
+  tray.refresh(now + 1000);
+}
 window.addEventListener(
   "pagehide",
   () => {
