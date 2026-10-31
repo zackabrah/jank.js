@@ -148,3 +148,40 @@ it("aligns independent CPU origins and shares each counter's scale across A/B wi
   expect(counterScale(lane, right.lanes[0], window)).toEqual({ minimum: 0, maximum: 30 });
   expect(buildCounterTimeline(null, catalog, window).lanes[0]?.points).toEqual([]);
 });
+
+it("reports changes from the previous valid sample without hiding invalid polls or overflow", () => {
+  const lane = {
+    identity: { channelId: "cpu", name: "count", label: "Count" },
+    endsAtMs: 50,
+    points: [
+      { elapsedMs: 0, value: 10, note: "Observed" },
+      { elapsedMs: 10, value: null, note: "Provider error" },
+      { elapsedMs: 20, value: 0, note: "Observed" },
+      { elapsedMs: 30, value: -Number.MAX_VALUE, note: "Observed" },
+      { elapsedMs: 40, value: Number.MAX_VALUE, note: "Observed" },
+    ],
+  };
+  expect(counterAtTime(lane, 0).change).toMatchObject({
+    value: null,
+    note: "No previous valid sample",
+  });
+  expect(counterAtTime(lane, 10).change).toMatchObject({
+    value: null,
+    note: "Current sample unavailable",
+  });
+  expect(counterAtTime(lane, 25).change).toEqual({
+    value: -10,
+    previousElapsedMs: 0,
+    intervalMs: 20,
+    skippedSamples: 1,
+    note: "1 invalid poll(s) skipped",
+  });
+  expect(counterAtTime(lane, 30).change).toMatchObject({
+    value: -Number.MAX_VALUE,
+    skippedSamples: 0,
+  });
+  expect(counterAtTime(lane, 40).change).toMatchObject({
+    value: null,
+    note: "Change exceeds numeric range",
+  });
+});

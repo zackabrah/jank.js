@@ -224,7 +224,28 @@ import path additionally enforces the encoded-byte limit before parsing. Snapsho
 Repeated disposal and late load/selection calls after disposal do not remount the viewer.
 
 This slice provides local import, A/B review and individual-frame investigation. It does not add
-live-window handoff, editing, statistical significance estimates or
-full parity with the older viewer's frame-copy controls and nearby-event inspector.
+live-window handoff, editing or statistical significance estimates.
 The session overview covers the imported recording or selected A/B pair. Single-recording orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.
+
+
+## Frame evidence and nearby events
+
+COPY FRAME copies diagnostic JSON for the selected frame and trial, independently of hover.
+It includes raw CPU measurements, budget, scope coverage, collection overhead, recording GPU
+coverage, every correlated GPU observation (including exact rejected timestamp strings), counter
+observations at frame start with age and changes, raw counter polls within the frame, and nearby
+events. This excerpt is for diagnostics; use recording/capture export for an importable recording.
+Clipboard denial or unavailability reveals a selected, read-only report for manual copying.
+Changing selection or replacing/disposal of the viewer prevents late clipboard feedback from
+restoring stale evidence. Copy is disabled when elapsed time has no recorded frame.
+
+Nearby events span ten retained frames on either side of the selected time. They retain stable
+chronological order, duplicate events and signed millisecond offsets. Buttons jump to the exact
+event timestamp; an event in a frame gap leaves the frame unselected. In A/B mode this list belongs
+to the selected trial and uses its CPU origin.
+
+Counter cells show Δ prev from the previous valid numeric sample in that same trial. The number
+of skipped invalid polls is visible; the full tooltip includes elapsed sample spacing. Missing
+current values and numeric overflow produce unknown changes. The first valid sample has no
+previous delta. Poll gaps never establish continuity, and these deltas are not A/B differences.

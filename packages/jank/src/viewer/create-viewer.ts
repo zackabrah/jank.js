@@ -13,6 +13,7 @@ import { renderComparison, renderSettings } from "./comparison-view.ts";
 import { initialViewerState, parseViewerDocument } from "./document.ts";
 import { element, write } from "./dom.ts";
 import { renderFrame, renderNoRecording, renderRecordingEvidence } from "./frame-view.ts";
+import { copyFrameEvidence, renderInspectorActions } from "./inspector-actions.ts";
 import { viewerMarkup } from "./markup.ts";
 import { drawPairedCharts, pairedWindow, renderPaired, selectedPair } from "./paired-view.ts";
 import { drawSession, sessionDuration } from "./session-view.ts";
@@ -47,6 +48,7 @@ export const createViewer: CreateViewer = ({ container }) => {
   });
   let disposed = false;
   let generation = 0;
+  let copyRequest = 0;
 
   function error(cause: unknown): void {
     if (disposed) {
@@ -126,6 +128,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     timeline.render(catalog, recordingCatalog);
     if (!recording) {
       renderNoRecording(root);
+      renderInspectorActions(root, state);
       draw();
       return;
     }
@@ -200,6 +203,7 @@ export const createViewer: CreateViewer = ({ container }) => {
         : "No frames to display.",
     );
     updateCaptureSelection(root, state, captures);
+    renderInspectorActions(root, state);
     renderFrame(root, state.recording, state.selectedFrameId, gpuIndex);
     if (state.comparison) {
       renderPaired(root, state, catalog);
@@ -510,8 +514,36 @@ export const createViewer: CreateViewer = ({ container }) => {
         return;
     }
   }
+  function inspectorClick(target: Element): boolean {
+    if (target.closest("[data-copy-frame]")) {
+      const capturedState = state;
+      const request = ++copyRequest;
+      void copyFrameEvidence(
+        root,
+        capturedState,
+        () => !disposed && state === capturedState && request === copyRequest,
+      );
+      return true;
+    }
+    const nearby = target.closest<HTMLButtonElement>("[data-nearby-event]");
+    if (nearby && state.status === "loaded" && state.recording) {
+      const index = Number(nearby.dataset.nearbyEvent);
+      const observation = state.recording.events[index];
+      if (observation) {
+        selectTimelineTime(observation.atMs - (state.recording.frames[0]?.startedAtMs ?? 0));
+        root
+          .querySelector<HTMLButtonElement>(`[data-nearby-event="${index}"]`)
+          ?.focus({ preventScroll: true });
+      }
+      return true;
+    }
+    return false;
+  }
   function click(event: Event): void {
     if (!(event instanceof MouseEvent) || !(event.target instanceof Element)) {
+      return;
+    }
+    if (inspectorClick(event.target)) {
       return;
     }
     const captureButton = event.target.closest<HTMLButtonElement>("[data-capture-action]");

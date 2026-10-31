@@ -66,12 +66,12 @@ export function viewerMarkup(): string {
           <div data-comparison-only hidden class="jank-viewer-paired-frames"><p class="jank-series-a" data-paired-title="a"></p><p data-paired-frame="a"></p><p class="jank-series-b" data-paired-title="b"></p><p data-paired-frame="b"></p></div>
           <section class="jank-viewer-inspector-section"><h3>CPU <span>scope union / ms</span></h3><div data-inspector-cpu></div></section>
           <section class="jank-viewer-inspector-section"><h3>GPU <span>observed / ms</span></h3><div data-inspector-gpu></div></section>
-          <section class="jank-viewer-inspector-section"><h3>COUNTERS <span data-counter-time></span></h3><p class="jank-viewer-counter-note">Last observations · units not recorded</p><div class="jank-viewer-counters" data-counter-inspector></div></section>
-          <section class="jank-viewer-inspector-section"><h3>EVENTS &amp; COUNTERS</h3><div data-viewer-events></div></section>
+          <section class="jank-viewer-inspector-section"><h3>COUNTERS <span data-counter-time></span></h3><p class="jank-viewer-counter-note">Last observations · Δ prev valid sample · units not recorded</p><div class="jank-viewer-counters" data-counter-inspector></div></section>
+          <section class="jank-viewer-inspector-section"><h3>NEARBY EVENTS <span>±10 retained frames</span></h3><div data-nearby-events></div></section>
           <details><summary>FRAME DETAILS</summary>
             <label>Frame position <input class="jl-input" type="number" min="1" step="1" data-viewer-frame-position></label>
             <button type="button" class="jl-btn" data-viewer-action="worst">Jump to worst frame</button>
-            <h3>CPU INTERVALS</h3><div data-viewer-cpu></div><h3>GPU PASSES &amp; DIAGNOSTICS</h3><div data-viewer-gpu></div>
+            <h3>EVENTS &amp; COUNTERS IN FRAME</h3><div data-viewer-events></div><h3>CPU INTERVALS</h3><div data-viewer-cpu></div><h3>GPU PASSES &amp; DIAGNOSTICS</h3><div data-viewer-gpu></div>
           </details>
           <details data-viewer-comparison hidden><summary>COMPARISON DETAILS</summary>
             <p data-viewer-experiment></p><div class="jank-viewer-table" tabindex="0" role="region" aria-label="Comparison measurements" data-viewer-results></div>
@@ -81,7 +81,8 @@ export function viewerMarkup(): string {
             <p>Results are recalculated from recordings, with equal weight per trial. Paired B − A may differ from the displayed median difference. A range crossing zero means mixed results. Unknown is never zero.</p>
           </details>
           <details><summary>RECORDING &amp; COVERAGE</summary><h3 data-viewer-recording-title></h3><p data-viewer-evidence></p></details>
-          <div class="jank-viewer-capture-actions"><p data-capture-selection>No capture at this frame</p><button type="button" class="jl-btn" data-capture-action="previous" aria-label="Previous capture" disabled>◂</button><button type="button" class="jl-btn" data-capture-action="next" aria-label="Next capture" disabled>▸</button><button type="button" class="jl-btn" data-capture-action="export" aria-label="Export selected capture" disabled>EXPORT CAPTURE</button></div>
+          <div class="jank-viewer-capture-actions"><p data-capture-selection>No capture at this frame</p><button type="button" class="jl-btn" data-capture-action="previous" aria-label="Previous capture" disabled>◂</button><button type="button" class="jl-btn" data-capture-action="next" aria-label="Next capture" disabled>▸</button><button type="button" class="jl-btn" data-capture-action="export" aria-label="Export selected capture" disabled>EXPORT CAPTURE</button><button type="button" class="jl-btn" data-copy-frame aria-label="Copy frame" disabled>COPY FRAME</button></div>
+          <div data-copy-fallback hidden><p>Clipboard unavailable. Select this report and copy it manually.</p><pre tabindex="0" aria-label="Frame evidence for manual copy" data-frame-report></pre></div>
           <p class="jank-viewer-mixed" data-viewer-mixed hidden></p>
         </aside>
       </div>

@@ -162,12 +162,22 @@ function annotateObservation(
   const note = cell.ownerDocument.createElement("small");
   const age = point.ageMs === null ? "" : `${point.ageMs.toFixed(2)} ms old`;
   note.textContent = point.value === null ? `${point.note}${age ? ` · ${age}` : ""}` : age;
-  cell.title = `${counterText(point.value)} · ${point.note} · ${age}`;
+  const change = point.change;
+  const delta = change.value === null ? "Unknown" : `${change.value > 0 ? "+" : ""}${change.value}`;
+  const changeText = `Δ prev ${delta} · ${change.note}`;
+  const deltaLabel = cell.ownerDocument.createElement("span");
+  deltaLabel.className = "jank-viewer-counter-delta";
+  deltaLabel.textContent = `Δ prev ${delta}${change.skippedSamples ? ` · ${change.skippedSamples} invalid` : ""}`;
+  deltaLabel.title = changeText;
+  if (change.value === null) {
+    note.textContent += ` · ${change.note}`;
+  }
+  cell.title = `${counterText(point.value)} · ${point.note} · ${age} · ${changeText}${change.intervalMs === null ? "" : ` · over ${change.intervalMs} ms`}`;
   cell.classList.toggle("jank-viewer-unknown", point.value === null);
   const value = cell.ownerDocument.createElement("span");
   value.className = "jank-viewer-counter-value";
   value.textContent = counterText(point.value);
-  cell.replaceChildren(value, note);
+  cell.replaceChildren(value, deltaLabel, note);
 }
 
 function isCurrent(point: ReturnType<typeof counterAtTime>): boolean {

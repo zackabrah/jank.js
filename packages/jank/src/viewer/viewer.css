@@ -751,7 +751,7 @@
   width: 38%;
 }
 .jank-viewer .jank-viewer-counters td {
-  height: 60px;
+  height: 80px;
 }
 .jank-viewer-counters small {
   display: -webkit-box;
@@ -788,4 +788,27 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.jank-viewer-counter-delta {
+  display: block;
+  color: var(--jl-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jank-viewer .jank-viewer-nearby-event {
+  display: block;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  margin-block: 4px;
+}
+.jank-viewer [data-frame-report] {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
 }

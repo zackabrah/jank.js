@@ -12,6 +12,17 @@ export interface CounterPoint {
   readonly value: number | null;
   readonly note: string;
 }
+export interface CounterChange {
+  readonly value: number | null;
+  readonly previousElapsedMs: number | null;
+  readonly intervalMs: number | null;
+  readonly skippedSamples: number;
+  readonly note: string;
+}
+export interface CounterObservation extends CounterPoint {
+  readonly ageMs: number | null;
+  readonly change: CounterChange;
+}
 export interface CounterLane {
   readonly identity: CounterIdentity;
   readonly points: readonly CounterPoint[];
@@ -121,11 +132,14 @@ function missingValue(value: unknown): string {
   }
   return "Non-numeric value";
 }
-export function counterAtTime(
-  lane: CounterLane,
-  elapsedMs: number,
-): CounterPoint & { ageMs: number | null } {
-  const unknown = { elapsedMs, value: null, ageMs: null, note: "No earlier sample" };
+export function counterAtTime(lane: CounterLane, elapsedMs: number): CounterObservation {
+  const unknown = {
+    elapsedMs,
+    value: null,
+    ageMs: null,
+    note: "No earlier sample",
+    change: unknownChange("Current sample unavailable"),
+  };
   if (elapsedMs < 0 || elapsedMs > lane.endsAtMs) {
     return { ...unknown, note: "Outside recorded time range" };
   }
@@ -140,7 +154,9 @@ export function counterAtTime(
     }
   }
   const point = lane.points[low - 1];
-  return point ? { ...point, ageMs: elapsedMs - point.elapsedMs } : unknown;
+  return point
+    ? { ...point, ageMs: elapsedMs - point.elapsedMs, change: counterChange(lane, low - 1) }
+    : unknown;
 }
 export function counterScale(
   a: CounterLane,
@@ -163,4 +179,34 @@ export function counterScale(
     }
   }
   return { minimum, maximum: minimum === maximum ? 1 : maximum };
+}
+
+function unknownChange(note: string): CounterChange {
+  return { value: null, previousElapsedMs: null, intervalMs: null, skippedSamples: 0, note };
+}
+function counterChange(lane: CounterLane, index: number): CounterChange {
+  const point = lane.points[index];
+  if (!point || point.value === null) {
+    return unknownChange("Current sample unavailable");
+  }
+  let skippedSamples = 0;
+  for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+    const previous = lane.points[previousIndex];
+    if (!previous || previous.value === null) {
+      skippedSamples += 1;
+      continue;
+    }
+    const delta = point.value - previous.value;
+    const note = skippedSamples
+      ? `${skippedSamples} invalid poll(s) skipped`
+      : "Previous valid sample";
+    return {
+      value: Number.isFinite(delta) ? delta : null,
+      previousElapsedMs: previous.elapsedMs,
+      intervalMs: point.elapsedMs - previous.elapsedMs,
+      skippedSamples,
+      note: Number.isFinite(delta) ? note : "Change exceeds numeric range",
+    };
+  }
+  return { ...unknownChange("No previous valid sample"), skippedSamples };
 }
