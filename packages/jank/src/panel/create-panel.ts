@@ -10,6 +10,7 @@ import {
 } from "./capture-view.ts";
 import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
+import { createRecordingExporter } from "./export-recording.ts";
 import { createGpuView } from "./gpu-view.ts";
 import { createLiveView, renderOverhead } from "./live-view.ts";
 import { renderLoading } from "./loading-view.ts";
@@ -38,6 +39,14 @@ export function createPanel(options: PanelOptions): Panel {
   const { container, profiler } = options;
   const document = container.ownerDocument;
   const window = document.defaultView;
+  const download = createDownload(document);
+  const exporter = createRecordingExporter({
+    profiler,
+    ...(options.gpuResolver ? { resolver: options.gpuResolver } : {}),
+    timeoutMs: options.exportTimeoutMs ?? 2000,
+    save: download.save,
+    changed: safelyRedraw,
+  });
   const root = document.createElement("aside");
   root.className = "jl jank";
   root.setAttribute("aria-label", "jank.js performance");
@@ -60,11 +69,13 @@ export function createPanel(options: PanelOptions): Panel {
   let lastRefreshMs = -Infinity;
   let refreshIntervalMs = 100;
   let current = profiler.snapshot();
-  const download = createDownload(document);
-  const renderCaptures = createCaptureView(root, profiler);
+  const renderCaptures = createCaptureView(root, profiler, exporter);
   initializeCapture(root, profiler);
 
   function showError(error: unknown): void {
+    if (disposed) {
+      return;
+    }
     const alert = element<HTMLElement>(root, '[role="alert"]');
     alert.textContent = error instanceof Error ? error.message : "The panel action failed.";
     alert.hidden = false;
@@ -116,6 +127,7 @@ export function createPanel(options: PanelOptions): Panel {
     const recordButton = element<HTMLButtonElement>(root, '[data-action="record"]');
     recordButton.textContent = recording ? "STOP REC" : "REC";
     recordButton.setAttribute("aria-pressed", String(recording));
+    renderExportState(root, exporter.state(), recording);
     renderFreezeControls(root, frozen !== null);
     write(root, "header-budget", (1000 / (frozen ?? current).targetFps).toFixed(1));
     for (const button of root.querySelectorAll<HTMLButtonElement>("[data-fps]")) {
@@ -199,14 +211,14 @@ export function createPanel(options: PanelOptions): Panel {
       }
     },
     clear: () => {
+      exporter.clear();
       liveView.clear();
       profiler.clear();
       gpuView.clear();
       frozen = null;
     },
     export: () => {
-      const latest = profiler.capture.list().at(-1);
-      download.save((latest && profiler.capture.read(latest.id)) || profiler.capture.recent());
+      exporter.export().catch(showError);
     },
     arm: () => profiler.capture.arm(readCaptureOptions(root)),
     disarm: () => profiler.capture.disarm(),
@@ -254,11 +266,7 @@ export function createPanel(options: PanelOptions): Panel {
         profiler.setTargetFps(targetFps);
         element<HTMLInputElement>(root, '[data-input="fps"]').value = String(targetFps);
       } else if (button.dataset.action === "export-capture") {
-        const recording = profiler.capture.read(Number(button.dataset.captureId));
-        if (!recording) {
-          throw new Error("This capture is no longer retained.");
-        }
-        download.save(recording);
+        exporter.export(Number(button.dataset.captureId)).catch(showError);
       } else {
         actions[button.dataset.action ?? ""]?.();
       }
@@ -291,6 +299,7 @@ export function createPanel(options: PanelOptions): Panel {
         liveView.dispose();
         tabs.dispose();
         root.removeEventListener("click", click);
+        exporter.dispose();
         download.dispose();
         gpuView.clear();
         root.remove();
@@ -325,5 +334,23 @@ function renderFreezeControls(root: HTMLElement, frozen: boolean): void {
     } else {
       button.textContent = frozen ? "RESUME" : "FREEZE";
     }
+  }
+}
+
+function renderExportState(
+  root: HTMLElement,
+  exporting: { busy: boolean; message: string },
+  recording: boolean,
+): void {
+  const exportButton = element<HTMLButtonElement>(root, '[data-action="export"]');
+  exportButton.textContent = recording ? "STOP & EXPORT" : "EXPORT JSON";
+  if (exporting.busy) {
+    exportButton.textContent = "FINALIZING…";
+  }
+  exportButton.disabled = exporting.busy;
+  const exportStatus = element<HTMLElement>(root, "[data-export-status]");
+  exportStatus.hidden = exporting.message === "";
+  if (exportStatus.textContent !== exporting.message) {
+    exportStatus.textContent = exporting.message;
   }
 }

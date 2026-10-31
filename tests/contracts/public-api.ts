@@ -1,6 +1,7 @@
 import type {
   CreateLoadingProfiler,
   CreateViewer,
+  GpuFrameResolver,
   GpuState,
 } from "../../packages/jank/src/index.ts";
 import {
@@ -15,13 +16,20 @@ import { createTabs } from "../../packages/junkui/src/index.ts";
 declare const createViewer: CreateViewer;
 declare const createLoadingProfiler: CreateLoadingProfiler;
 declare const container: HTMLElement;
+declare const gpuResolver: GpuFrameResolver;
 declare const tablist: HTMLElement;
 declare const firstTab: HTMLButtonElement;
 declare const firstPanel: HTMLElement;
 
 const profiler = createProfiler({ targetFps: 60, now: () => performance.now() });
 const channel = profiler.createChannel({ id: "physics", label: "Physics" });
-const panel = createPanel({ container, profiler, mode: "mini" });
+const panel = createPanel({
+  container,
+  profiler,
+  mode: "mini",
+  gpuResolver,
+  exportTimeoutMs: 2000,
+});
 const releaseScopes = profiler.requestScopes();
 const frameId = profiler.beginFrame(performance.now());
 const token = channel.begin();

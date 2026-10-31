@@ -3,7 +3,9 @@ import { drawFrameChart } from "../charts/frame-chart.ts";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import type { Profiler } from "../profiler.ts";
 import type { CaptureOptions, SavedCapture } from "../recordings/capture.ts";
+import { gpuCoverageText } from "./capture-description.ts";
 import { element, milliseconds, rows, write } from "./dom.ts";
+import type { RecordingExporter } from "./export-recording.ts";
 
 export function initializeCapture(root: HTMLElement, profiler: Profiler): void {
   for (const [key, value] of Object.entries(profiler.capture.getOptions())) {
@@ -31,7 +33,7 @@ export function renderCaptureProgress(
   const progress = profiler.capture.getProgress();
   const health = element<HTMLElement>(root, '[data-value="capture-health"]');
   health.hidden = progress.kind === "recent";
-  const coverage = coverageText(progress.gpu);
+  const coverage = gpuCoverageText(progress.gpu);
   write(root, "capture-health", `${coverage} · ${progress.remainingFrames} frames remaining`);
   write(
     root,
@@ -45,17 +47,11 @@ export function renderCaptureProgress(
   );
 }
 
-function coverageText(coverage: GpuCoverage): string {
-  const percent =
-    coverage.coveragePercent === null ? "—" : `${coverage.coveragePercent.toFixed(1)}%`;
-  const reasons = coverage.reasons.map((entry) => `${entry.reason}: ${entry.frames}`).join("; ");
-  return `GPU interval coverage ${percent} (${coverage.completeFrames}/${coverage.totalFrames} complete). ${coverage.incompleteFrames} incomplete; ${coverage.sampledFrames} deliberately skipped; ${coverage.missingFrames} without interval evidence.${reasons ? ` ${reasons}.` : ""}`;
-}
-
 /** Cache only DOM for retained IDs; full recordings are read once when adding a thumbnail. */
 export function createCaptureView(
   root: HTMLElement,
   profiler: Profiler,
+  exporter: RecordingExporter,
 ): (snapshot: ProfilerSnapshot) => void {
   const list = element<HTMLElement>(root, "[data-captures]");
   const entries = new Map<number, HTMLElement>();
@@ -72,6 +68,9 @@ export function createCaptureView(
         continue;
       }
       entries.set(capture.id, appendCapture(list, profiler, capture));
+    }
+    for (const [id, card] of entries) {
+      renderExportNotice(card, id, exporter);
     }
     write(
       root,
@@ -112,13 +111,19 @@ function appendCapture(list: HTMLElement, profiler: Profiler, capture: SavedCapt
   exportButton.setAttribute("aria-label", `Export capture ${capture.id}`);
   exportButton.dataset.captureId = String(capture.id);
   exportButton.dataset.action = "export-capture";
-  card.append(title, chart, exportButton);
+  const notice = document.createElement("p");
+  notice.className = "jank-note";
+  notice.dataset.exportNotice = String(capture.id);
+  notice.setAttribute("aria-live", "polite");
+  notice.hidden = true;
+  card.append(title, chart, exportButton, notice);
   list.append(card);
   const recording = profiler.capture.read(capture.id);
   if (recording) {
     const coverage = document.createElement("p");
     coverage.className = "jank-note";
-    coverage.textContent = coverageText(summarizeGpuCoverage(recording));
+    coverage.dataset.captureCoverage = "";
+    coverage.textContent = gpuCoverageText(summarizeGpuCoverage(recording));
     title.after(coverage);
     const stats = summarizeFrames(recording.frames, recording.targetFps);
     drawFrameChart(chart, {
@@ -130,4 +135,16 @@ function appendCapture(list: HTMLElement, profiler: Profiler, capture: SavedCapt
   return card;
 }
 
-import { type GpuCoverage, summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";
+import { summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";
+
+function renderExportNotice(card: HTMLElement, id: number, exporter: RecordingExporter): void {
+  const text = exporter.notice(id);
+  const notice = element<HTMLElement>(card, "[data-export-notice]");
+  notice.hidden = text === "";
+  if (notice.textContent !== text) {
+    notice.textContent = text;
+  }
+  element<HTMLElement>(card, "[data-capture-coverage]").hidden = text !== "";
+  element<HTMLButtonElement>(card, '[data-action="export-capture"]').disabled =
+    exporter.state().busy;
+}

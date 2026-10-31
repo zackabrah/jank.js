@@ -76,10 +76,49 @@ IDs; `capture.read(id)` copies one recording or returns null after eviction/clea
 repeat during a profiler's lifetime. The panel reads a saved recording when creating its
 thumbnail or exporting it, rather than copying the entire archive at every refresh.
 
-EXPORT JSON selects the latest saved capture, falling back to recent sealed history when no
-capture exists. Each saved capture also has its own export button. Serialization is validated;
-download failures display a readable error without changing stored data. A panel retains at
-most one object URL, revoked on replacement or disposal.
+The primary action becomes **STOP & EXPORT** during a manual recording. It stops that capture
+and exports its sealed frames, rather than selecting an older saved capture. **STOP REC** remains
+available to archive without downloading. Otherwise **EXPORT JSON** selects the latest saved
+capture, falling back to recent sealed history. Each saved capture has its own export button;
+exporting an older capture does not stop a different active recording.
+
+Connect an interval resolver to finalize pending GPU results through the same action:
+
+```ts
+const panel = createPanel({
+  container: document.body,
+  profiler,
+  gpu: gpuSource,
+  gpuResolver: gpuSource, // e.g. the Three WebGPU adapter implements both contracts
+  exportTimeoutMs: 2000, // default; integer 0–10000 ms
+});
+```
+
+Export freezes a detached recording before awaiting `finalizeRecording`. The host loop and
+collection continue. Duplicate exports are disabled while the resolver settles or reaches its
+bounded timeout. The panel then requests one JSON download and shows finalization status,
+interval coverage, incomplete/missing/sampled-out frames, known loss reasons, merge omissions
+and the recording's truncation flag. The last export notice is also shown beside its saved
+capture. The open host frame is excluded; stopping never invents a closing CPU boundary.
+
+No resolver is required for ordinary export. Without one, the panel immediately exports captured
+data and explicitly says pending results were not finalized. The WebGL2 adapter currently reports
+durations and has no interval resolver; duration-only samples remain in the file but cannot claim
+interval coverage. Timeout, cancellation and resolver failure still export available evidence;
+unknown timing stays unknown. An error from the download itself is reported separately.
+
+Finalization does not mutate the profiler's original archive. The exported file and **last export**
+notice describe the merged copy. A panel keeps at most one finalized copy for retry, and at most
+ten per-capture notices. A subsequent export of that same capture starts from the retained merged
+copy, preserving late data even if the resolver has since evicted it; existing truncation flags
+remain conservative. Replacing/discarding the panel releases this retry state. The archive remains
+available independently. CLEAR and disposal invalidate pending downloads; results for an archived
+capture that was externally cleared or evicted are also suppressed. Borrowed resolvers are never
+disposed by the panel and may finish their own bounded work after invalidation.
+
+Serialization is validated. A failed download retains the capture and retry data. A panel keeps
+at most one object URL, revoked on replacement or disposal. “Download requested” describes the
+browser handoff; the panel cannot verify that a user accepted a save dialog.
 
 `create-panel.ts` owns lifecycle and presentation state. `live-view.ts` renders measured data;
 `capture-view.ts` owns settings and archive DOM; `loading-view.ts` renders an optional source's

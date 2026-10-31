@@ -1,3 +1,4 @@
+import type { GpuFrameResolver } from "../core/gpu.ts";
 import type { Profiler } from "../profiler.ts";
 import type { GpuSource, LoadingSource, TemporalSource, VisibilitySource } from "../sources.ts";
 
@@ -10,6 +11,10 @@ export interface PanelOptions {
   readonly corner?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   readonly viewerUrl?: string;
   readonly gpu?: GpuSource;
+  /** Borrowed interval resolver, such as the Three WebGPU adapter; used only during export. */
+  readonly gpuResolver?: GpuFrameResolver;
+  /** Bounded GPU finalization wait in milliseconds, 0–10000; defaults to 2000. */
+  readonly exportTimeoutMs?: number;
   /** Stable GPU pass-ID order; unlisted passes follow in first-seen order. */
   readonly gpuPassOrder?: readonly string[];
   readonly visibility?: VisibilitySource;

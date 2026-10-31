@@ -16,8 +16,11 @@ cubes share geometry and two materials. This example is outside both shipped pac
    threshold with 30 preceding / 10 following frames, then blocks the next frame for 80ms.
    Export the saved capture. Automatic capture remains armed after its five-second cooldown;
    use DISARM to stop future triggers. A window can contain fewer preceding frames near startup.
-3. On **LIVE**, try REC, FREEZE, RESUME, STOP REC and EXPORT JSON. Freeze affects presentation,
-   not collection. CLEAR clears the profiler's history and capture archive.
+3. On **LIVE**, try REC, FREEZE, RESUME and **STOP & EXPORT**. One action stops the manual
+   recording and downloads it. **STOP REC** archives without downloading; **EXPORT JSON** exports
+   saved/recent data. Freeze affects presentation, not collection. CLEAR clears the profiler's
+   history and capture archive. The WebGL2 demo has no interval resolver, so its export notice
+   explicitly reports that pending GPU results were not finalized.
 4. Edit the event label and add a marker. Events appear on LIVE and in recordings.
 5. Open **Sources & files**. Exercise GPU states, run the loading example,
    enable TRACE in CAPTURE, or deliberately fail and recover the counter provider.

@@ -68,6 +68,7 @@ export function panelMarkup(): string {
               <button type="button" class="jl-btn" data-action="clear">CLEAR</button>
               <button type="button" class="jl-btn jl-primary" data-action="export">EXPORT JSON</button>
             </div>
+            <p class="jank-note" data-export-status role="status" hidden></p>
           </div>
         </section>
         <section data-tabpanel="loading" class="jank-scroll"><details class="jank-section" data-section="loading" open>
