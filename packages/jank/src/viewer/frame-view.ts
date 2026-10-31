@@ -14,7 +14,7 @@ export function renderFrame(
   root: HTMLElement,
   recording: Recording,
   frameId: number | null,
-  gpuIndex: number,
+  options: { gpuIndex: number; compact: boolean },
 ): void {
   const frame = recording.frames.find((frame) => frame.id === frameId);
   const cpu = element<HTMLElement>(root, "[data-viewer-cpu]");
@@ -23,15 +23,17 @@ export function renderFrame(
   cpu.replaceChildren();
   gpu.replaceChildren();
   events.replaceChildren();
-  renderCompactWork(
-    root,
-    compareFrameWork(
-      workCatalog(recording, null),
-      { recording, frame: frame ?? null },
-      { recording: null, frame: null },
-    ),
-    false,
-  );
+  if (options.compact) {
+    renderCompactWork(
+      root,
+      compareFrameWork(
+        workCatalog(recording, null),
+        { recording, frame: frame ?? null },
+        { recording: null, frame: null },
+      ),
+      false,
+    );
+  }
   renderHeadline(root, recording, frame);
   if (!frame) {
     write(
@@ -68,7 +70,7 @@ export function renderFrame(
   renderGpu(
     gpu,
     recording.gpu.filter((sample) => sample.frameId === frame.id),
-    gpuIndex,
+    options.gpuIndex,
   );
   const rows = recording.events
     .filter((event) => event.atMs >= frame.startedAtMs && event.atMs < frame.endedAtMs)

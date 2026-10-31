@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { comparisonReportFixture } from "../fixtures/comparison-report.ts";
 import { gpuIntervalFixture } from "../fixtures/gpu-sample.ts";
 import { recordingFixture } from "../fixtures/recording.ts";
 
@@ -83,4 +84,26 @@ test("same labels do not merge different GPU IDs or pass types", async ({ page }
     3,
   );
   await expect(page.locator("details[data-gpu-group]")).toHaveCount(0);
+});
+
+test("B-only GPU group expansion survives comparison frame navigation", async ({ page }) => {
+  const report = comparisonReportFixture();
+  const comparison = {
+    ...report,
+    trials: report.trials.map((trial) => ({
+      ...trial,
+      recording: { ...trial.recording, gpu: trial.variant === "B" ? [gpuIntervalFixture()] : [] },
+    })),
+  };
+  await page.goto("/examples/viewer/");
+  await page.getByLabel("Open recording or comparison").setInputFiles({
+    name: "b-only.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(comparison)),
+  });
+  const group = page.locator("[data-inspector-gpu] details[data-gpu-group]");
+  await group.locator("summary").click();
+  await expect(group.locator("summary")).toContainText("B 6.00 ms observed sum");
+  await page.getByRole("button", { name: "Next frame", exact: true }).click();
+  await expect(group).toHaveAttribute("open", "");
 });

@@ -232,7 +232,10 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
     );
     updateCaptureSelection(root, state, captures);
     renderInspectorActions(root, state);
-    renderFrame(root, state.recording, state.selectedFrameId, gpuIndex);
+    renderFrame(root, state.recording, state.selectedFrameId, {
+      gpuIndex,
+      compact: !state.comparison,
+    });
     if (state.comparison) {
       renderPaired(root, state, catalog);
     }
@@ -489,7 +492,10 @@ export const createViewer: CreateViewer = ({ container, receiveFromOpener = fals
       selectFrame(frame.id);
     } else if (target.matches("[data-viewer-gpu-observation]")) {
       gpuIndex = Number(element<HTMLSelectElement>(root, "[data-viewer-gpu-observation]").value);
-      renderFrame(root, state.recording, state.selectedFrameId, gpuIndex);
+      renderFrame(root, state.recording, state.selectedFrameId, {
+        gpuIndex,
+        compact: !state.comparison,
+      });
       refreshCompactComparison();
       element<HTMLSelectElement>(root, "[data-viewer-gpu-observation]").focus({
         preventScroll: true,
