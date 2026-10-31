@@ -119,6 +119,32 @@ event selector. Selecting an event moves to its exact time, including an unknown
 falls in a gap. Events on the right boundary belong to the next window. Imported labels remain
 text and are never interpreted as HTML. No background refresh or animation loop is added.
 
+## Counter lanes
+
+Numeric counters appear below CPU/GPU lanes, in configured provider order and first-recorded
+field order. B-only fields follow A's fields within each provider. Catalogs cover the whole
+recording, so panning, hovering and missing polls never remove or reorder rows. Text, booleans
+and fields that were never numeric remain available in raw frame evidence rather than graphs.
+
+Each stem and point is an actual timestamped sample. There are no interpolated or held graph
+segments between polls; zero is a visible point, negative values have a signed scale, and
+unavailable values leave gaps. Each field has its own visible-value scale, shared by A and B.
+Empty windows say **no samples**. Pointer, keyboard, zoom and scrolling use the shared elapsed
+axis; A/B series toggles also apply to counters.
+
+A/B identity is provider ID plus exact field name. Schema 5 has no counter unit metadata, so
+these are **raw-value overlays**, not verified unit conversions or cross-trial deltas. Check
+that host definitions remain consistent across recordings. Each recording uses its own first
+retained frame as elapsed zero.
+
+The counter inspector follows selection or hover and shows the latest earlier provider sample
+with its age. This is a last observation, not a claim that the counter remained unchanged. A
+null value, omitted field, non-numeric value, provider error or duplicate provider timestamp
+invalidates the old value until another valid sample arrives. Before the first sample and
+outside the recorded time range, values remain unknown. Row labels dim when neither series
+has an exact sample at the cursor. Inspector rows retain their height through these changes;
+full error details are available in cell titles.
+
 ## Captures and excerpts
 
 The **CAPTURES** list restores the original spike-review workflow. A schema-5 automatic file
@@ -199,6 +225,6 @@ Repeated disposal and late load/selection calls after disposal do not remount th
 
 This slice provides local import, A/B review and individual-frame investigation. It does not add
 live-window handoff, editing, statistical significance estimates or
-full parity with the older viewer's counter lanes and frame-copy controls.
+full parity with the older viewer's frame-copy controls and nearby-event inspector.
 The session overview covers the imported recording or selected A/B pair. Single-recording orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.

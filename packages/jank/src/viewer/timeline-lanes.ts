@@ -2,7 +2,7 @@ import type { LaneSample, TimelineModel, TimelineWindow } from "../analysis/time
 import { milliseconds } from "./dom.ts";
 
 const svgNamespace = "http://www.w3.org/2000/svg";
-function svgElement<K extends keyof SVGElementTagNameMap>(
+export function svgElement<K extends keyof SVGElementTagNameMap>(
   document: Document,
   name: K,
   attributes: Record<string, string | number>,
@@ -13,10 +13,10 @@ function svgElement<K extends keyof SVGElementTagNameMap>(
   }
   return node;
 }
-function percent(atMs: number, window: TimelineWindow): string {
+export function percent(atMs: number, window: TimelineWindow): string {
   return `${(100 * (atMs - window.fromMs)) / (window.toMs - window.fromMs)}%`;
 }
-function surface(container: HTMLElement, label: string): SVGSVGElement {
+export function surface(container: HTMLElement, label: string): SVGSVGElement {
   const svg = svgElement(container.ownerDocument, "svg", {
     width: "100%",
     height: 26,

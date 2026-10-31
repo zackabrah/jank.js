@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { comparisonReportFixture } from "../fixtures/comparison-report.ts";
+import { counterComparisonFixture } from "../fixtures/counter-comparison.ts";
 import { viewerReferenceFixture } from "../fixtures/viewer-reference.ts";
 
 const artifact = resolve("artifacts/jank-viewer.html");
@@ -48,6 +49,13 @@ test("standalone viewer imports a comparison offline without requesting network 
   await expect(page.locator("[data-capture-list] tbody tr")).toHaveCount(3);
   await page.getByRole("button", { name: "Open capture 2", exact: true }).click();
   await expect(page.locator("[data-viewer-frame]")).toContainText("#168");
+  await page.getByLabel("Open recording or comparison").setInputFiles({
+    name: "counters.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(counterComparisonFixture())),
+  });
+  await expect(page.locator('[data-lane-kind="counter"]')).toHaveCount(3);
+  await expect(page.locator("[data-counter-inspector]")).toContainText("drawCalls");
   expect(requests).toEqual([]);
   expect(readFileSync(artifact, "utf8")).not.toMatch(
     /<script[^>]+src=|<link[^>]+rel=["']stylesheet|@import\s/,

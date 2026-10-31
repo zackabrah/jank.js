@@ -707,3 +707,85 @@
 .jank-viewer [data-capture-list] th:nth-child(-n + 3) {
   white-space: nowrap;
 }
+.jank-viewer [data-counter-name] {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.jank-viewer [data-counter-point] line {
+  stroke: var(--jl-muted);
+  stroke-width: 1px;
+}
+.jank-viewer [data-counter-point] circle {
+  fill: var(--jl-muted);
+}
+.jank-viewer [data-series="a"] [data-counter-point] line {
+  stroke: var(--jank-series-a);
+}
+.jank-viewer [data-series="a"] [data-counter-point] circle {
+  fill: var(--jank-series-a);
+}
+.jank-viewer [data-series="b"] [data-counter-point] line {
+  stroke: var(--jank-series-b);
+  stroke-dasharray: 2 2;
+}
+.jank-viewer [data-series="b"] [data-counter-point] circle {
+  fill: var(--jl-ink);
+  stroke: var(--jank-series-b);
+}
+.jank-viewer [data-counter-scale] {
+  font-size: 9px;
+  opacity: 0.8;
+}
+.jank-viewer .jank-viewer-counter-note {
+  color: var(--jl-muted);
+  font-size: 10px;
+}
+.jank-viewer-counters {
+  font-size: 11px;
+}
+.jank-viewer .jank-viewer-counters table {
+  table-layout: fixed;
+}
+.jank-viewer-counters th:first-child {
+  width: 38%;
+}
+.jank-viewer .jank-viewer-counters td {
+  height: 60px;
+}
+.jank-viewer-counters small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 10px;
+  color: var(--jl-muted);
+}
+.jank-viewer-counters td:first-child span,
+.jank-viewer-counters td:first-child small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jank-viewer .jank-viewer-counters caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.jank-viewer-counters td:first-child {
+  max-width: 140px;
+}
+.jank-viewer-counters td:not(:first-child),
+.jank-viewer-counters th:not(:first-child) {
+  text-align: right;
+}
+
+.jank-viewer-counter-value {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

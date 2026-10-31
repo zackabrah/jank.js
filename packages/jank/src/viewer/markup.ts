@@ -52,6 +52,7 @@ export function viewerMarkup(): string {
           <details class="jank-viewer-help"><summary>NAVIGATION &amp; MEASUREMENT NOTES</summary>
             <p>Click to select; hover previews without changing selection. Focus a lane and use Left/Right, Home/End. Ctrl/⌘ + wheel zooms; horizontal or Shift + wheel scrolls.</p>
             <p>A is cyan and solid; B is violet and dashed. Each overlay uses shared time and height scales. Aligning elapsed time does not guarantee identical scene state. Missing samples stay gaps. GPU durations are placed at their correlated CPU frame; CPU and GPU clocks remain separate.</p>
+            <p>Counter points show actual sample timestamps, without interpolation. Counter identity is provider ID plus field name; units are not recorded, so verify definitions before comparing raw A/B values. The inspector shows last observed samples and age, not an assertion that a value remained unchanged. Missing fields, non-numeric values, errors and duplicate timestamps invalidate the previous value.</p>
             <p>Scope intervals use their union per channel; channels can overlap. Partial CPU observations have no comparison delta. Individual frames do not establish statistical significance.</p>
             <p class="jank-viewer-capture-note">Detected spikes are grouped within 10 frames and ranked by duration (up to 50). Exported excerpts preserve timestamps; clipped context and omitted unlinked GPU samples mark the excerpt truncated.</p>
           </details>
@@ -65,6 +66,7 @@ export function viewerMarkup(): string {
           <div data-comparison-only hidden class="jank-viewer-paired-frames"><p class="jank-series-a" data-paired-title="a"></p><p data-paired-frame="a"></p><p class="jank-series-b" data-paired-title="b"></p><p data-paired-frame="b"></p></div>
           <section class="jank-viewer-inspector-section"><h3>CPU <span>scope union / ms</span></h3><div data-inspector-cpu></div></section>
           <section class="jank-viewer-inspector-section"><h3>GPU <span>observed / ms</span></h3><div data-inspector-gpu></div></section>
+          <section class="jank-viewer-inspector-section"><h3>COUNTERS <span data-counter-time></span></h3><p class="jank-viewer-counter-note">Last observations · units not recorded</p><div class="jank-viewer-counters" data-counter-inspector></div></section>
           <section class="jank-viewer-inspector-section"><h3>EVENTS &amp; COUNTERS</h3><div data-viewer-events></div></section>
           <details><summary>FRAME DETAILS</summary>
             <label>Frame position <input class="jl-input" type="number" min="1" step="1" data-viewer-frame-position></label>

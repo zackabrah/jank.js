@@ -1,3 +1,8 @@
+import {
+  buildCounterTimeline,
+  type CounterTimeline,
+  counterCatalog,
+} from "../analysis/counter-timeline.ts";
 import type { WorkIdentity } from "../analysis/frame-comparison.ts";
 import {
   buildTimeline,
@@ -7,6 +12,7 @@ import {
   zoomTimelineWindow,
 } from "../analysis/timeline.ts";
 import type { FrameSample } from "../core/frames.ts";
+import { renderCounterLanes, updateCounterReadout } from "./counter-view.ts";
 import { element } from "./dom.ts";
 import { pairedWindow, selectedPair } from "./paired-view.ts";
 import { renderTimelineLanes, updateLaneCursor } from "./timeline-lanes.ts";
@@ -37,6 +43,7 @@ export function recordingWindow(state: ViewerState): TimelineWindow {
 /** Owns derived lane models and transient hover; the viewer remains the owner of selection and ranges. */
 export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) {
   const timelines = new Map<string, TimelineModel>();
+  const counters = new Map<string, CounterTimeline>();
   let hoverMs: number | null = null;
   let hoverSide = "single";
   function renderLanes(
@@ -49,18 +56,34 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     }
     hoverMs = null;
     timelines.clear();
+    counters.clear();
     const single = buildTimeline(state.recording, recordingCatalog, recordingWindow(state));
     timelines.set("single", single);
     if (state.comparison) {
       const pair = selectedPair(state);
+      const identities = counterCatalog(pair.a?.recording ?? null, pair.b?.recording ?? null);
       for (const side of ["a", "b"] as const) {
+        counters.set(
+          side,
+          buildCounterTimeline(pair[side]?.recording ?? null, identities, pairedWindow(state)),
+        );
         timelines.set(
           side,
           buildTimeline(pair[side]?.recording ?? null, catalog, pairedWindow(state)),
         );
       }
     }
-    renderModels(root, timelines, 1000 / (state.recording?.targetFps ?? 60));
+    if (!state.comparison) {
+      counters.set(
+        "single",
+        buildCounterTimeline(
+          state.recording,
+          counterCatalog(state.recording, null),
+          recordingWindow(state),
+        ),
+      );
+    }
+    renderModels(root, timelines, 1000 / (state.recording?.targetFps ?? 60), counters);
     const scroll = element<HTMLInputElement>(root, "[data-recording-scroll]");
     scroll.max = String(Math.max(0, (state.recording?.frames.length ?? 0) - 1));
     scroll.value = String(state.firstVisibleIndex);
@@ -72,7 +95,8 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     if (state.status !== "loaded") {
       return;
     }
-    const model = timelines.get(state.comparison ? "a" : "single");
+    const activeSide = state.comparison ? "a" : "single";
+    const model = timelines.get(activeSide);
     if (model) {
       updateLaneCursor(
         element<HTMLElement>(
@@ -86,6 +110,14 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
           overlay: timelines.get("b"),
         },
       );
+    }
+    const counterModel = counters.get(activeSide);
+    if (counterModel) {
+      updateCounterReadout(root, counterModel, {
+        selectedMs: state.comparisonElapsedMs,
+        hoverMs,
+        overlay: counters.get("b"),
+      });
     }
   }
 
@@ -307,6 +339,7 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     handle,
     clear: () => {
       timelines.clear();
+      counters.clear();
       hoverMs = null;
     },
   };
@@ -325,6 +358,7 @@ function renderModels(
   root: HTMLElement,
   timelines: ReadonlyMap<string, TimelineModel>,
   budgetMs: number,
+  counters: ReadonlyMap<string, CounterTimeline>,
 ): void {
   const a = timelines.get("a");
   const b = timelines.get("b");
@@ -335,11 +369,26 @@ function renderModels(
       maximumMs: Math.max(timelinePeak(a, budgetMs), timelinePeak(b, budgetMs)),
       overlay: b,
     });
+    const counterModel = counters.get("a");
+    if (counterModel) {
+      renderCounterLanes(
+        element<HTMLElement>(root, '[data-timeline-lanes="overlay"]'),
+        counterModel,
+        counters.get("b"),
+      );
+    }
   } else if (single) {
     renderTimelineLanes(element<HTMLElement>(root, '[data-timeline-lanes="single"]'), single, {
       name: "Recording",
       maximumMs: timelinePeak(single, budgetMs),
     });
+    const counterModel = counters.get("single");
+    if (counterModel) {
+      renderCounterLanes(
+        element<HTMLElement>(root, '[data-timeline-lanes="single"]'),
+        counterModel,
+      );
+    }
   }
 }
 
