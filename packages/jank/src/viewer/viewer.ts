@@ -19,6 +19,7 @@ export type ViewerState =
       readonly visibleFrameCount: number;
       readonly comparisonElapsedMs: number;
       readonly comparisonWindowMs: number;
+      readonly comparisonWindowStartMs: number;
     };
 export interface Viewer {
   /** Validates and detaches data before replacing the current document. */

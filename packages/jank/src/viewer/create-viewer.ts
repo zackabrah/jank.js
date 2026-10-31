@@ -1,5 +1,6 @@
 import { frameAtElapsed, type WorkIdentity, workCatalog } from "../analysis/frame-comparison.ts";
 import { summarizeFrames } from "../analysis/statistics.ts";
+import { fitTimelineWindow } from "../analysis/timeline.ts";
 import { drawRecordingChart } from "../charts/recording-chart.ts";
 import { readComparison } from "../comparison/codec.ts";
 import { createDownload } from "../panel/download.ts";
@@ -11,6 +12,7 @@ import { element, write } from "./dom.ts";
 import { renderFrame, renderRecordingEvidence } from "./frame-view.ts";
 import { viewerMarkup } from "./markup.ts";
 import { drawPairedCharts, pairedWindow, renderPaired, selectedPair } from "./paired-view.ts";
+import { createTimelineNavigation, recordingWindow } from "./timeline-navigation.ts";
 import type { CreateViewer, ViewerDocument, ViewerImportResult, ViewerState } from "./viewer.ts";
 
 export const createViewer: CreateViewer = ({ container }) => {
@@ -25,6 +27,19 @@ export const createViewer: CreateViewer = ({ container }) => {
   let state: ViewerState = { status: "empty" };
   let gpuIndex = 0;
   let catalog: readonly WorkIdentity[] = [];
+  let recordingCatalog: readonly WorkIdentity[] = [];
+  const timeline = createTimelineNavigation(root, {
+    state: () => state,
+    select: (elapsedMs) => selectTimelineTime(elapsedMs),
+    range: (firstIndex, count) => setRange(firstIndex, count),
+    window: (fromMs, durationMs) => {
+      if (state.status !== "loaded") {
+        return;
+      }
+      state = { ...state, comparisonWindowStartMs: fromMs, comparisonWindowMs: durationMs };
+      renderNavigation();
+    },
+  });
   let disposed = false;
   let generation = 0;
 
@@ -43,6 +58,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     }
     generation += 1;
     state = initialViewerState(input);
+    timeline.clear();
     const { comparison, recording } = state;
     element<HTMLElement>(root, '[role="alert"]').hidden = true;
     element<HTMLElement>(root, "[data-viewer-comparison]").hidden = !comparison;
@@ -80,6 +96,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     }
     const { recording, comparison, selectedTrialIndex } = state;
     gpuIndex = 0;
+    recordingCatalog = workCatalog(recording, null);
     element<HTMLElement>(root, "[data-viewer-recording]").hidden = !recording;
     element<HTMLButtonElement>(root, '[data-viewer-action="export"]').disabled = !recording;
     if (comparison) {
@@ -91,6 +108,7 @@ export const createViewer: CreateViewer = ({ container }) => {
       catalog = workCatalog(pair.a?.recording ?? null, pair.b?.recording ?? null);
       renderPaired(root, state, catalog);
     }
+    timeline.render(catalog, recordingCatalog);
     if (!recording) {
       return;
     }
@@ -117,6 +135,11 @@ export const createViewer: CreateViewer = ({ container }) => {
       ),
       budgetMs: 1000 / state.recording.targetFps,
       selectedFrameId: state.selectedFrameId,
+      timeline: {
+        ...recordingWindow(state),
+        originMs: state.recording.frames[0]?.startedAtMs ?? 0,
+        selectedMs: state.comparisonElapsedMs,
+      },
     });
   }
   function renderNavigation(): void {
@@ -158,6 +181,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     if (state.comparison) {
       renderPaired(root, state, catalog);
     }
+    timeline.render(catalog, recordingCatalog);
     draw();
   }
   function selectTrial(index: number): void {
@@ -204,6 +228,7 @@ export const createViewer: CreateViewer = ({ container }) => {
         ? state.firstVisibleIndex
         : Math.floor(index / state.visibleFrameCount) * state.visibleFrameCount,
     };
+    followComparisonSelection();
     gpuIndex = 0;
     renderNavigation();
   }
@@ -218,21 +243,59 @@ export const createViewer: CreateViewer = ({ container }) => {
     ) {
       throw new RangeError("Choose an elapsed time inside the measurement window");
     }
+    applyElapsedSelection(elapsedMs);
+  }
+  function applyElapsedSelection(elapsedMs: number): void {
+    if (state.status !== "loaded") {
+      return;
+    }
     const frame = frameAtElapsed(state.recording, elapsedMs);
     const index =
       state.recording?.frames.findIndex((candidate) => candidate.id === frame?.id) ?? -1;
+    const inRange =
+      index >= state.firstVisibleIndex && index < state.firstVisibleIndex + state.visibleFrameCount;
     state = {
       ...state,
       comparisonElapsedMs: elapsedMs,
       selectedFrameId: frame?.id ?? null,
       firstVisibleIndex:
-        index < 0
+        index < 0 || inRange
           ? state.firstVisibleIndex
           : Math.floor(index / state.visibleFrameCount) * state.visibleFrameCount,
     };
+    followComparisonSelection();
     gpuIndex = 0;
     renderNavigation();
   }
+  function followComparisonSelection(): void {
+    if (state.status !== "loaded" || !state.comparison) {
+      return;
+    }
+    const window = pairedWindow(state);
+    const time = state.comparisonElapsedMs;
+    if (
+      time < window.fromMs ||
+      (time >= window.toMs && time < state.comparison.options.measureMs)
+    ) {
+      const next = fitTimelineWindow(
+        Math.floor(time / state.comparisonWindowMs) * state.comparisonWindowMs,
+        state.comparisonWindowMs,
+        state.comparison.options.measureMs,
+      );
+      state = { ...state, comparisonWindowStartMs: next.fromMs };
+    }
+  }
+  function selectTimelineTime(elapsedMs: number): void {
+    if (state.status !== "loaded") {
+      return;
+    }
+    if (state.comparison) {
+      selectComparisonTime(elapsedMs);
+      return;
+    }
+    applyElapsedSelection(elapsedMs);
+  }
+
   function setRange(firstIndex: number, frameCount: number): void {
     if (disposed || state.status !== "loaded" || !state.recording) {
       return;
@@ -333,7 +396,13 @@ export const createViewer: CreateViewer = ({ container }) => {
       return;
     }
     if (target instanceof HTMLSelectElement && target.matches("[data-paired-window]")) {
-      state = { ...state, comparisonWindowMs: Number(target.value) };
+      const durationMs = Number(target.value);
+      const window = fitTimelineWindow(
+        Math.floor(state.comparisonElapsedMs / durationMs) * durationMs,
+        durationMs,
+        state.comparison?.options.measureMs ?? 1000,
+      );
+      state = { ...state, comparisonWindowMs: durationMs, comparisonWindowStartMs: window.fromMs };
       renderNavigation();
       return;
     }
@@ -365,13 +434,6 @@ export const createViewer: CreateViewer = ({ container }) => {
     if (!(event instanceof MouseEvent) || !(event.target instanceof Element)) {
       return;
     }
-    if (event.target.matches("[data-paired-chart]") && state.status === "loaded") {
-      const bounds = event.target.getBoundingClientRect();
-      const window = pairedWindow(state);
-      const fraction = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
-      selectComparisonTime(window.fromMs + fraction * (window.toMs - window.fromMs));
-      return;
-    }
     if (event.target === canvas) {
       selectChartFrame(event);
       return;
@@ -396,7 +458,13 @@ export const createViewer: CreateViewer = ({ container }) => {
       return;
     }
     try {
-      if (event.type === "change") {
+      if (timeline.handle(event)) {
+        return;
+      }
+      if (
+        event.type === "change" ||
+        (event.type === "input" && event.target.matches("input[type=range]"))
+      ) {
         change(event.target);
       }
       if (event.type === "click") {
@@ -413,18 +481,10 @@ export const createViewer: CreateViewer = ({ container }) => {
     if (state.status !== "loaded" || !state.recording) {
       return;
     }
-    const count = Math.min(
-      state.visibleFrameCount,
-      state.recording.frames.length - state.firstVisibleIndex,
-    );
     const bounds = canvas.getBoundingClientRect();
-    const index =
-      state.firstVisibleIndex +
-      Math.min(count - 1, Math.floor(((event.clientX - bounds.left) / bounds.width) * count));
-    const frame = state.recording.frames[index];
-    if (frame) {
-      selectFrame(frame.id);
-    }
+    const window = recordingWindow(state);
+    const fraction = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    selectTimelineTime(window.fromMs + fraction * (window.toMs - window.fromMs));
   }
   const drag = (event: DragEvent) => {
     if (event.dataTransfer?.types.includes("Files")) {
@@ -438,7 +498,15 @@ export const createViewer: CreateViewer = ({ container }) => {
       void readFile(file);
     }
   };
-  for (const type of ["click", "change", "keydown"]) {
+  for (const type of [
+    "click",
+    "change",
+    "input",
+    "keydown",
+    "pointermove",
+    "pointerout",
+    "wheel",
+  ]) {
     root.addEventListener(type, onEvent);
   }
   root.addEventListener("dragover", drag);
@@ -473,7 +541,15 @@ export const createViewer: CreateViewer = ({ container }) => {
       }
       disposed = true;
       generation += 1;
-      for (const type of ["click", "change", "keydown"]) {
+      for (const type of [
+        "click",
+        "change",
+        "input",
+        "keydown",
+        "pointermove",
+        "pointerout",
+        "wheel",
+      ]) {
         root.removeEventListener(type, onEvent);
       }
       root.removeEventListener("dragover", drag);
@@ -481,6 +557,8 @@ export const createViewer: CreateViewer = ({ container }) => {
       resize.disconnect();
       download.dispose();
       catalog = [];
+      recordingCatalog = [];
+      timeline.clear();
       state = { status: "empty" };
       root.remove();
     },

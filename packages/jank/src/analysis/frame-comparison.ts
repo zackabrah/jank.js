@@ -106,15 +106,15 @@ function cpuMeasurement(frame: FrameSample, channelId: string): WorkMeasurement 
   };
 }
 
-function measurements(
-  evidence: FrameEvidence,
+/** Shared per-frame semantics for comparison tables and timeline lanes. */
+export function measureFrameWork(
+  frame: FrameSample | null,
+  samples: readonly GpuSample[],
   catalog: readonly WorkIdentity[],
 ): WorkMeasurement[] {
-  const { frame, recording } = evidence;
-  if (!frame || !recording) {
+  if (!frame) {
     return catalog.map(() => unknown("No frame at this elapsed time"));
   }
-  const samples = recording.gpu.filter((sample) => sample.frameId === frame.id);
   const sample = samples.length === 1 ? samples[0] : undefined;
   const passes = sample ? gpuPasses(sample) : [];
   return catalog.map((identity) => {
@@ -137,8 +137,16 @@ export function compareFrameWork(
   a: FrameEvidence,
   b: FrameEvidence,
 ): ComparedWork[] {
-  const left = measurements(a, catalog);
-  const right = measurements(b, catalog);
+  const left = measureFrameWork(
+    a.frame,
+    a.recording?.gpu.filter((sample) => sample.frameId === a.frame?.id) ?? [],
+    catalog,
+  );
+  const right = measureFrameWork(
+    b.frame,
+    b.recording?.gpu.filter((sample) => sample.frameId === b.frame?.id) ?? [],
+    catalog,
+  );
   return catalog.map((identity, index) => {
     const a = left[index] ?? unknown("Not observed");
     const b = right[index] ?? unknown("Not observed");

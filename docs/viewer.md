@@ -47,7 +47,7 @@ was lost. Check scene settings and coverage before interpreting differences.
 
 Enter **Comparison elapsed time (ms)** or click either timeline to move both cursors. The single
 recording inspector follows the active trial. Its frame controls also move the paired cursor.
-Choose a 250, 1000 or 5000 ms window; both charts move together to contain the cursor. Switching
+Choose a window size or zoom with the buttons/wheel; both charts move together. Switching
 trials or pairs preserves elapsed time; loading another document resets it. Invalid input preserves
 the current selection. The API exposes `selectComparisonTime(elapsedMs)` and detached snapshot
 fields `comparisonElapsedMs` and `comparisonWindowMs`.
@@ -68,6 +68,42 @@ pair. Labels come from the first recording containing the identity. Unobserved v
 removing their row. B − A uses explicit longer/shorter text and highlights nonzero differences;
 these are individual frame comparisons, not evidence of statistical significance. The flat,
 compact timeline layout follows the pre-rewrite viewer's visual reference.
+
+## CPU/GPU lanes, events and navigation
+
+Both the A/B view and the single-recording timeline include fixed CPU/GPU lanes. Their row
+identities and missing-data rules are shared with the frame comparison tables. A bar represents
+one correlated frame's duration measurement, not the precise start of GPU execution on the CPU
+clock. CPU rows show scope interval unions. Unknown/rejected/ambiguous samples leave gaps;
+measured zero remains a one-pixel mark. Outlined bars identify GPU measurements or partial CPU
+coverage. A and B use the same height scale across their visible samples, with the frame budget
+as its minimum. The displayed scale states its range; no values are silently capped.
+
+Hovering previews values and a dashed cursor on both A/B lane plots without changing selection.
+Clicking selects a time and updates both inspectors. A solid cursor marks the selection. Lane
+labels and unknown-value readouts remain visible. With a lane focused, Left/Right selects the
+previous/next recorded frame, Home/End selects the first/last, and focus stays on that lane.
+A gap has no interpolated or reused measurement.
+
+The A/B window selector and zoom buttons move both plots together. Ctrl/Command + wheel zooms
+around the pointer's elapsed time. Horizontal wheel movement or Shift + wheel pans; ordinary
+vertical wheel scrolling remains available for the page. **Comparison horizontal scroll** is a
+labelled keyboard-accessible range control. Panning leaves selection unchanged, and selecting a
+time outside the window brings it back into view. `comparisonWindowStartMs` in the viewer
+snapshot records the visible window's start; zoom is bounded to at least 1 ms and at most the
+measurement window.
+
+The single-recording view uses its existing 50/100/200-frame range controls for zoom. Its lane
+and frame charts share an elapsed-time axis, including any gaps between recorded frames.
+Ctrl/Command + wheel steps through those frame counts; horizontal/Shift + wheel and **Recording
+horizontal scroll** move the range without changing selection. At the recording's tail a range
+can contain fewer frames than requested.
+
+Events have exact elapsed-time markers and readable labels when space permits. Labels may be
+thinned to avoid overlap; markers and the full event names remain available in the labelled
+event selector. Selecting an event moves to its exact time, including an unknown frame if it
+falls in a gap. Events on the right boundary belong to the next window. Imported labels remain
+text and are never interpreted as HTML. No background refresh or animation loop is added.
 
 ## Frame inspection
 
@@ -122,5 +158,5 @@ Repeated disposal and late load/selection calls after disposal do not remount th
 
 This slice provides local import, A/B review and individual-frame investigation. It does not add
 live-window handoff, editing, statistical significance estimates or
-full parity with the older viewer's advanced timeline interactions. Frame-chart orange bars use
+full parity with the older viewer's capture-session overview and counter lanes. Frame-chart orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.

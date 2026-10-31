@@ -214,6 +214,75 @@
   font-weight: 600;
   box-shadow: inset 2px 0 var(--jl-text);
 }
+
+.jank-viewer [data-timeline-lanes] {
+  border-top: 1px solid var(--jl-line);
+  padding-top: 8px;
+  min-width: 0;
+}
+.jank-viewer [data-timeline-lanes] select {
+  max-width: min(100%, 320px);
+}
+.jank-viewer-lane {
+  margin-block: 8px;
+}
+.jank-viewer-lane-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 18px 18px;
+  font-size: 11px;
+  line-height: 18px;
+}
+.jank-viewer [data-lane-name],
+.jank-viewer [data-lane-readout] {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.jank-viewer [data-lane-readout] {
+  color: var(--jl-muted);
+}
+.jank-viewer [data-lane-surface] {
+  display: block;
+  height: 26px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--jl-line);
+  cursor: crosshair;
+}
+.jank-viewer [data-lane-surface]:focus-visible {
+  outline: 1px dotted var(--jl-text);
+  outline-offset: 2px;
+}
+.jank-viewer [data-lane-surface] rect {
+  fill: var(--jl-control);
+  stroke: var(--jl-muted);
+  stroke-width: 0.5px;
+}
+.jank-viewer [data-lane-kind="gpu"] rect,
+.jank-viewer [data-lane-surface] rect[data-partial="true"] {
+  fill: none;
+  stroke-dasharray: 2 2;
+}
+.jank-viewer [data-lane-surface] line {
+  stroke: var(--jl-muted);
+}
+.jank-viewer [data-lane-surface] text {
+  fill: var(--jl-muted);
+  font: 11px var(--jl-font);
+  pointer-events: none;
+}
+.jank-viewer [data-lane-surface] [data-lane-cursor="selected"] {
+  stroke: var(--jl-text);
+  stroke-width: 2px;
+  pointer-events: none;
+}
+.jank-viewer [data-lane-surface] [data-lane-cursor="hover"] {
+  stroke-dasharray: 3 2;
+  pointer-events: none;
+}
+.jank-viewer input[type="range"] {
+  max-width: 100%;
+}
 @media (max-width: 760px) {
   .jank-viewer-pair {
     grid-template-columns: minmax(0, 1fr);

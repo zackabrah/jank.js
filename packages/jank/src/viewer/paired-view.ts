@@ -5,6 +5,7 @@ import {
   type WorkIdentity,
   type WorkMeasurement,
 } from "../analysis/frame-comparison.ts";
+import { fitTimelineWindow } from "../analysis/timeline.ts";
 import { drawRecordingChart } from "../charts/recording-chart.ts";
 import { element, milliseconds, renderTable } from "./dom.ts";
 import type { ViewerState } from "./viewer.ts";
@@ -24,15 +25,11 @@ export function selectedPair(state: LoadedState) {
   };
 }
 export function pairedWindow(state: LoadedState) {
-  const durationMs = Math.min(
+  return fitTimelineWindow(
+    state.comparisonWindowStartMs,
     state.comparisonWindowMs,
     state.comparison?.options.measureMs ?? 1000,
   );
-  const fromMs = Math.min(
-    Math.floor(state.comparisonElapsedMs / durationMs) * durationMs,
-    Math.max(0, (state.comparison?.options.measureMs ?? 1000) - durationMs),
-  );
-  return { fromMs, toMs: fromMs + durationMs };
 }
 export function drawPairedCharts(root: HTMLElement, state: LoadedState): void {
   const pair = selectedPair(state);
@@ -90,7 +87,23 @@ export function renderPaired(
   input.value = String(elapsedMs);
   input.max = String(state.comparison?.options.measureMs ?? 0);
   input.disabled = !pair.a && !pair.b;
-  element<HTMLSelectElement>(root, "[data-paired-window]").value = String(state.comparisonWindowMs);
+  const zoom = element<HTMLSelectElement>(root, "[data-paired-window]");
+  const duration = String(state.comparisonWindowMs);
+  zoom.querySelector("[data-custom-window]")?.remove();
+  if (![...zoom.options].some((option) => option.value === duration)) {
+    const option = root.ownerDocument.createElement("option");
+    option.value = duration;
+    option.textContent = duration;
+    option.dataset.customWindow = "";
+    zoom.append(option);
+  }
+  zoom.value = duration;
+  const scroll = element<HTMLInputElement>(root, "[data-paired-scroll]");
+  scroll.max = String(
+    Math.max(0, (state.comparison?.options.measureMs ?? 0) - (window.toMs - window.fromMs)),
+  );
+  scroll.value = String(window.fromMs);
+  scroll.disabled = Number(scroll.max) === 0;
   element<HTMLElement>(root, "[data-paired-range]").textContent =
     `Elapsed window ${window.fromMs.toFixed(2)}–${window.toMs.toFixed(2)} ms · cursor ${milliseconds(elapsedMs)} · shared horizontal and vertical scales.`;
   for (const side of ["a", "b"] as const) {

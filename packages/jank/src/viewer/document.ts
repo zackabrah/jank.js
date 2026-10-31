@@ -29,5 +29,6 @@ export function initialViewerState(
     visibleFrameCount: 100,
     comparisonElapsedMs: 0,
     comparisonWindowMs: 1000,
+    comparisonWindowStartMs: 0,
   };
 }

@@ -24,12 +24,18 @@ export function viewerMarkup(): string {
         <p class="jank-viewer-note">Trials align by elapsed time from their first sealed measured frame, not frame ID or GPU clock. This is a time alignment, not proof of identical scene state. Gaps stay unknown. Click either timeline or use the elapsed-time field.</p>
         <div class="jank-viewer-actions">
           <label>Comparison elapsed time (ms) <input class="jl-input" type="number" min="0" step="any" data-paired-time></label>
-          <label>Comparison window (ms) <select class="jl-select" data-paired-window><option>250</option><option selected>1000</option><option>5000</option></select></label>
+          <label>Comparison window (ms) <select class="jl-select" data-paired-window><option>50</option><option>100</option><option>250</option><option>500</option><option selected>1000</option><option>2500</option><option>5000</option></select></label>
+        </div>
+        <div class="jank-viewer-actions">
+          <button type="button" class="jl-btn" data-timeline-zoom="in" data-timeline-side="a">Zoom in comparison</button>
+          <button type="button" class="jl-btn" data-timeline-zoom="out" data-timeline-side="a">Zoom out comparison</button>
+          <label>Comparison horizontal scroll <input type="range" min="0" step="any" value="0" data-paired-scroll></label>
         </div>
         <p data-paired-range></p>
+        <p class="jank-viewer-note">Hover previews both trials without changing selection. Click to select; arrow keys navigate a focused lane. Ctrl/⌘ + wheel zooms; horizontal or Shift + wheel scrolls. Ordinary vertical scrolling moves the page.</p>
         <div class="jank-viewer-pair">
-          <section aria-label="Trial A frame"><h2 data-paired-title="a">A</h2><canvas data-paired-chart="a" role="img" aria-label="Trial A elapsed timeline"></canvas><p data-paired-frame="a"></p></section>
-          <section aria-label="Trial B frame"><h2 data-paired-title="b">B</h2><canvas data-paired-chart="b" role="img" aria-label="Trial B elapsed timeline"></canvas><p data-paired-frame="b"></p></section>
+          <section aria-label="Trial A frame"><h2 data-paired-title="a">A</h2><canvas data-paired-chart="a" role="img" aria-label="Trial A elapsed timeline"></canvas><p data-paired-frame="a"></p><div data-timeline-lanes="a"></div></section>
+          <section aria-label="Trial B frame"><h2 data-paired-title="b">B</h2><canvas data-paired-chart="b" role="img" aria-label="Trial B elapsed timeline"></canvas><p data-paired-frame="b"></p><div data-timeline-lanes="b"></div></section>
         </div>
         <p class="jank-viewer-note">B − A: positive means longer, negative means shorter. Frame samples are exploratory, not a statistical result. CPU rows use each channel's interval union; rows may overlap. Partial CPU coverage has no delta. GPU matches stable pass ID, kind and invocation; duration-only labels must be unique. Multiple GPU observations remain ambiguous.</p>
         <div class="jank-viewer-table" tabindex="0" role="region" aria-label="Paired CPU measurements" data-paired-cpu></div>
@@ -48,6 +54,8 @@ export function viewerMarkup(): string {
         </div>
         <canvas data-viewer-chart role="img" aria-label="Frame durations"></canvas>
         <p class="jank-viewer-note" data-viewer-range-note></p>
+        <label>Recording horizontal scroll <input type="range" min="0" step="1" value="0" data-recording-scroll></label>
+        <div data-timeline-lanes="single"></div>
         <div class="jank-viewer-actions">
           <button type="button" class="jl-btn" data-viewer-action="previous">Previous frame</button>
           <label>Frame position <input class="jl-input" type="number" min="1" step="1" data-viewer-frame-position></label>
