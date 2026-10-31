@@ -321,3 +321,11 @@ and resets on a new imported document. The inspector's group sum includes only o
 shows their count, and remains unknown when none have timing. It is explicitly an observed pass
 sum, not interval-union busy time or a complete frame total. Raw diagnostic tables are retained.
 Keyboard, unknown-frame, replacement, identity and narrow/desktop visual checks cover grouping.
+
+**PIN COUNTERS** provides labelled checkboxes for provider/field identities. Pinned plots move
+above the work lanes in their existing time coordinate system; matching readouts sit before CPU
+and GPU evidence. Pins preserve catalog order, sample timestamps, invalid observations, ages and
+A/B colors/scales. They do not interpolate values or invent units. Pin preferences survive frame,
+range and trial navigation within one document and reset when another document is opened.
+Cross-browser tests cover desktop/narrow operation, unpinning, A/B invalid/zero observations and
+replacement. The full counter inspector remains available below the work evidence.

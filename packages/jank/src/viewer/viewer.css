@@ -184,6 +184,7 @@
   padding: 0 20px 12px;
 }
 .jank-viewer-toolbar {
+  position: relative;
   height: 28px;
   display: flex;
   align-items: center;
@@ -866,4 +867,37 @@
 }
 .jank-viewer-gpu-group > .jank-viewer-lane .jank-viewer-lane-heading {
   padding-left: 10px;
+}
+
+.jank-counter-pin-controls {
+  position: static;
+  margin-left: auto;
+}
+.jank-counter-pin-controls > summary {
+  cursor: pointer;
+  color: var(--jl-muted);
+  font-size: 10px;
+}
+.jank-counter-pin-controls [data-counter-pin-options] {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  top: 28px;
+  width: min(320px, 70vw);
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--jl-line);
+  background: var(--jl-ink);
+}
+.jank-counter-pin-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+.jank-viewer [data-pinned-counter-lanes] {
+  border-bottom: 1px solid var(--jl-line);
+  margin-bottom: 8px;
 }

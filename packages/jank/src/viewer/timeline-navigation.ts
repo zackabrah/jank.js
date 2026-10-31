@@ -12,6 +12,7 @@ import {
   zoomTimelineWindow,
 } from "../analysis/timeline.ts";
 import type { FrameSample } from "../core/frames.ts";
+import { createCounterPins } from "./counter-pins.ts";
 import { renderCounterLanes, updateCounterReadout } from "./counter-view.ts";
 import { element } from "./dom.ts";
 import { pairedWindow, selectedPair } from "./paired-view.ts";
@@ -42,6 +43,7 @@ export function recordingWindow(state: ViewerState): TimelineWindow {
 
 /** Owns derived lane models and transient hover; the viewer remains the owner of selection and ranges. */
 export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) {
+  const pins = createCounterPins(root);
   const timelines = new Map<string, TimelineModel>();
   const counters = new Map<string, CounterTimeline>();
   let hoverMs: number | null = null;
@@ -84,11 +86,22 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
       );
     }
     renderModels(root, timelines, 1000 / (state.recording?.targetFps ?? 60), counters);
+    renderPins();
     const scroll = element<HTMLInputElement>(root, "[data-recording-scroll]");
     scroll.max = String(Math.max(0, (state.recording?.frames.length ?? 0) - 1));
     scroll.value = String(state.firstVisibleIndex);
     scroll.disabled = Number(scroll.max) === 0;
     updateLaneCursors();
+  }
+  function renderPins(): void {
+    const comparison = host.state().status === "loaded" && timelines.has("a");
+    const model = counters.get(comparison ? "a" : "single");
+    if (model) {
+      pins.configure(model);
+    }
+    pins.placeLanes(
+      element<HTMLElement>(root, `[data-timeline-lanes="${comparison ? "overlay" : "single"}"]`),
+    );
   }
   function updateLaneCursors(): void {
     const state = host.state();
@@ -118,6 +131,7 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
         hoverMs,
         overlay: counters.get("b"),
       });
+      pins.updateReadout();
     }
   }
 
@@ -293,16 +307,35 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     focusLane(root, key);
   }
 
-  function handle(event: Event): boolean {
-    if (!(event.target instanceof Element)) {
-      return false;
+  function changeControl(event: Event, target: Element): boolean {
+    if (
+      event.type === "change" &&
+      target instanceof HTMLInputElement &&
+      target.matches("[data-pin-counter]")
+    ) {
+      pins.change(target);
+      const state = host.state();
+      const budget = state.status === "loaded" ? 1000 / (state.recording?.targetFps ?? 60) : 16.67;
+      renderModels(root, timelines, budget, counters);
+      renderPins();
+      updateLaneCursors();
+      return true;
     }
-    const target = event.target;
     if (
       (event.type === "change" || event.type === "input") &&
       target.matches("[data-paired-scroll], [data-recording-scroll], [data-timeline-event]")
     ) {
       changeTimelineControl(target);
+      return true;
+    }
+    return false;
+  }
+  function handle(event: Event): boolean {
+    if (!(event.target instanceof Element)) {
+      return false;
+    }
+    const target = event.target;
+    if (changeControl(event, target)) {
       return true;
     }
     if (event instanceof KeyboardEvent && target.matches("[data-lane-surface]")) {
@@ -338,6 +371,7 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     render: renderLanes,
     handle,
     clear: () => {
+      pins.clear();
       timelines.clear();
       counters.clear();
       hoverMs = null;

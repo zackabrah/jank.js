@@ -19,6 +19,7 @@ export function renderCounterLanes(
   const heading = container.ownerDocument.createElement("div");
   heading.className = "jank-viewer-lane-group";
   heading.textContent = "COUNTERS · raw values · sample points";
+  heading.dataset.counterLaneHeading = "";
   container.append(heading);
   for (const [index, lane] of model.lanes.entries()) {
     const other = overlay?.lanes[index];
@@ -26,6 +27,7 @@ export function renderCounterLanes(
     const row = container.ownerDocument.createElement("div");
     row.className = "jank-viewer-lane";
     row.dataset.laneKind = "counter";
+    row.dataset.counterKey = JSON.stringify([lane.identity.channelId, lane.identity.name]);
     const label = container.ownerDocument.createElement("div");
     label.className = "jank-viewer-lane-heading";
     const name = container.ownerDocument.createElement("span");
@@ -134,6 +136,10 @@ export function updateCounterReadout(
     const cells = rows[index]?.querySelectorAll("td");
     const identity = model.lanes[index]?.identity;
     if (cells?.[0] && identity) {
+      rows[index]?.setAttribute(
+        "data-counter-key",
+        JSON.stringify([identity.channelId, identity.name]),
+      );
       cells[0].title = identity.label;
       const name = root.ownerDocument.createElement("span");
       name.textContent = identity.name;
@@ -142,7 +148,10 @@ export function updateCounterReadout(
       cells[0].replaceChildren(name, provider);
     }
     const current = isCurrent(sample.a) || (sample.b !== null && isCurrent(sample.b));
-    laneRows[index]?.classList.toggle("jank-viewer-unknown", !current);
+    const key = identity ? JSON.stringify([identity.channelId, identity.name]) : "";
+    [...laneRows]
+      .find((row) => row.dataset.counterKey === key)
+      ?.classList.toggle("jank-viewer-unknown", !current);
     annotateObservation(cells?.[1], sample.a);
     if (sample.b) {
       annotateObservation(cells?.[2], sample.b);

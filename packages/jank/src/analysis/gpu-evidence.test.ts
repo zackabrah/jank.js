@@ -102,3 +102,27 @@ it("counts frame identities once, excludes unlinked evidence and keeps missing t
     missingFrames: 0,
   });
 });
+
+it("retains duration-only partial passes and does not treat an unavailable duration as sampled", () => {
+  const source = recordingFixture();
+  const partial = {
+    frameId: 1,
+    rendererFrameId: 8,
+    measurement: "pass-sum" as const,
+    durationMs: null,
+    passes: [{ label: "valid zero", durationMs: 0 }],
+    omittedPasses: 1,
+  };
+  expect(summarizeGpuEvidence({ ...source, gpu: [partial] })).toMatchObject({
+    sampledFrames: 1,
+    validFrames: 1,
+    completeFrames: 0,
+    validPairs: 0,
+  });
+  expect(
+    summarizeGpuEvidence({
+      ...source,
+      gpu: [{ ...partial, passes: [{ label: "unknown", durationMs: null }] }],
+    }),
+  ).toMatchObject({ sampledFrames: 0, validFrames: 0, completeFrames: 0 });
+});

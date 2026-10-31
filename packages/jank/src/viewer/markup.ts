@@ -17,6 +17,7 @@ export function viewerMarkup(): string {
         <section class="jank-viewer-timeline" aria-label="Timeline workspace">
           <div class="jank-viewer-toolbar">
             <span class="jank-viewer-track">TIMELINE</span>
+            <details class="jank-counter-pin-controls"><summary>PIN COUNTERS</summary><div data-counter-pin-options></div></details>
             <div class="jank-viewer-legend" data-comparison-only hidden>
               <label class="jank-series-a"><input type="checkbox" data-series-visibility="a" aria-label="Show A" checked> A —</label>
               <label class="jank-series-b"><input type="checkbox" data-series-visibility="b" aria-label="Show B" checked> B ┄</label>
@@ -65,6 +66,7 @@ export function viewerMarkup(): string {
           <p class="jank-viewer-likely" data-viewer-likely></p>
           <div class="jank-trigger-summary" data-trigger-summary hidden><button type="button" class="jl-btn" data-capture-action="open" data-go-trigger>Go to trigger</button><p data-trigger-context></p></div>
           <div data-comparison-only hidden class="jank-viewer-paired-frames"><p class="jank-series-a" data-paired-title="a"></p><p data-paired-frame="a"></p><p class="jank-series-b" data-paired-title="b"></p><p data-paired-frame="b"></p></div>
+          <section class="jank-viewer-inspector-section jank-viewer-counters" data-pinned-counter-readout hidden></section>
           <section class="jank-viewer-inspector-section"><h3>CPU <span>scope union / ms</span></h3><div data-inspector-cpu></div></section>
           <section class="jank-viewer-inspector-section"><h3>GPU <span>observed / ms</span></h3><div data-inspector-gpu></div><details class="jank-viewer-gpu-evidence"><summary>GPU coverage &amp; timestamp evidence</summary><p data-viewer-gpu-evidence></p></details></section>
           <section class="jank-viewer-inspector-section"><h3>COUNTERS <span data-counter-time></span></h3><p class="jank-viewer-counter-note">Last observations · Δ prev valid sample · units not recorded</p><div class="jank-viewer-counters" data-counter-inspector></div></section>
