@@ -1,4 +1,4 @@
-# Usage guide · jank.js 0.2.1-rewrite.4
+# Usage guide · jank.js 0.2.1-rewrite.5
 
 Jank helps inspect frame pacing, CPU work, asynchronous GPU observations and recorded A/B
 experiments. It runs locally. Host integration is described in [INTEGRATION.md](INTEGRATION.md).
@@ -9,9 +9,9 @@ This is a private preview: recording schemas 5/6/7, comparison format version 1.
 - Open `jank-ui-library.html` in a browser to explore the controls, theme, animation and panel
   modes. Its sample stream and diagnostic sources are explicitly **simulated**.
 - Open `jank-viewer.html` to inspect exported files offline. Choose **Open recording or
-  comparison**, or drop a file onto the page. The bundle's `samples/example-recording.json`
-  provides a synthetic frame spike to explore; it is not a device benchmark.
-- Install `packages/jank.js-0.2.1-rewrite.4.tgz` into a host application to measure real work.
+  comparison**, or drop a file onto the page. The bundle's `samples/example-sustained-episode.json`
+  provides a synthetic sustained slowdown to explore; it is not a device benchmark.
+- Install `packages/jank.js-0.2.1-rewrite.5.tgz` into a host application to measure real work.
   `junkui` is independent and optional; Jank already bundles the UI code it needs.
 
 The HTML files include their scripts and styles and require no server or network access.
@@ -149,3 +149,7 @@ For sustained slowdowns, choose **CAPTURE → Trigger mode → Sustained over bu
 **Sustained ms** (250 by default), choose a window and press **ARM**. This mode uses Jank’s FPS
 budget and requires consecutive over-budget frames; it replaces the single-frame spike rule.
 The inspector shows onset and confirmation. Sustained exports use schema 7; use the new viewer.
+
+The panel footer and viewer status bar show the build version and source commit. Recordings
+retain the same identifier in `metadata.toolVersion` (for example, `0.2.1-rewrite.5+<commit>`).
+`+source` means a source/development run; `-dirty` means uncommitted changes were present at build.

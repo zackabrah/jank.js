@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
+import { readBuildIdentity } from "./build-identity.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const target = process.argv[2] ?? "ui-library";
@@ -27,6 +28,7 @@ const source = `${root}examples/${target}/`;
 const result = await build({
   root,
   configFile: false,
+  define: { __JANK_BUILD_REVISION__: JSON.stringify(readBuildIdentity().revision) },
   logLevel: "silent",
   resolve: {
     alias: [

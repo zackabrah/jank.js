@@ -1,3 +1,5 @@
+import { buildVersion } from "../build.ts";
+
 export function viewerMarkup(): string {
   return `
     <header class="jank-viewer-header">
@@ -91,6 +93,6 @@ export function viewerMarkup(): string {
         </aside>
       </div>
     </section>
-    <footer class="jank-viewer-status"><span data-viewer-status role="status">Ready · local files only</span><span>jank.js · offline</span></footer>
+    <footer class="jank-viewer-status"><span data-viewer-status role="status">Ready · local files only</span><span aria-label="jank.js viewer build" title="jank.js ${buildVersion}">v${buildVersion}</span></footer>
   `;
 }

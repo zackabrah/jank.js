@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
+import { readBuildIdentity } from "../../scripts/build-identity.ts";
 
 export default defineConfig({
+  define: { __JANK_BUILD_REVISION__: JSON.stringify(readBuildIdentity().revision) },
   build: {
     lib: {
       entry: {

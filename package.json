@@ -29,7 +29,8 @@
     "prepare": "git config core.hooksPath .githooks && pnpm --filter junkui build",
     "check:full": "pnpm check && pnpm test:coverage && pnpm test:package && pnpm test:browser && pnpm test:visual",
     "build:ui-library": "node scripts/build-standalone.mjs ui-library",
-    "build:viewer": "node scripts/build-standalone.mjs viewer"
+    "build:viewer": "node scripts/build-standalone.mjs viewer",
+    "build:bundle": "node scripts/build-bundle.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

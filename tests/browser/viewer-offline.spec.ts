@@ -28,6 +28,9 @@ test("standalone viewer imports a comparison offline without requesting network 
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(pathToFileURL(artifact).href);
+  await expect(page.getByLabel("jank.js viewer build", { exact: true })).toHaveText(
+    /^v0\.2\.1-rewrite\.5\+[a-f0-9]{12}(-dirty)?$/,
+  );
   await page.getByLabel("Open recording or comparison").setInputFiles({
     name: "comparison.json",
     mimeType: "application/json",

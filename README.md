@@ -83,3 +83,13 @@ Selectable simulated GPU states remain labelled examples. Loading and trace sour
 The pinned development stack is retained. No old runtime code, UI CSS, screenshots or demo
 assets were copied. Complete feature/visual parity and release gates arrive with
 their implementation slices.
+
+## Versioned local previews
+
+Versions are bumped deliberately in the package manifest; GitHub Actions runs checks and does
+not increment versions or publish. After verifying and committing a release slice, run
+`pnpm build:bundle`. It builds both packages and offline pages, includes usage/integration docs
+and a synthetic sustained episode, writes BUILD.json and SHA256SUMS, then creates a ZIP under
+`artifacts/bundles`. It refuses dirty source or an existing versioned output directory.
+Production builds embed a Git revision in the panel, viewer and recording `metadata.toolVersion`.
+Source/development runs identify themselves as `+source`; ad hoc dirty builds include `-dirty`.

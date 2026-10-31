@@ -1,6 +1,6 @@
-# Integration guide · jank.js 0.2.1-rewrite.4
+# Integration guide · jank.js 0.2.1-rewrite.5
 
-Version **0.2.1-rewrite.4** is a local test build of the readability rewrite. It includes the
+Version **0.2.1-rewrite.5** is a local test build of the readability rewrite. It includes the
 profiler, live panel, recording capture/export, optional GPU timers, bundled UI styles and TypeScript declarations.
 It has zero runtime dependencies. The package contains no demo scene, Three.js, private assets
 or development tooling. It is ESM and targets modern browsers.
@@ -10,7 +10,7 @@ or development tooling. It is ESM and targets modern browsers.
 From the application where you want to test it:
 
 ```sh
-pnpm add /path/to/jank.js-0.2.1-rewrite.4.tgz
+pnpm add /path/to/jank.js-0.2.1-rewrite.5.tgz
 ```
 
 Use the actual downloaded archive path. npm and other package managers can also install this
@@ -377,3 +377,7 @@ existing `capture.arm` options. `thresholdMs` remains required for spike-mode co
 is ignored while sustained mode is selected. Omit `sustainedMs` to return to spike mode.
 Sustained captures use schema 7 and retain the actual triggering budget and onset evidence.
 Use the matching updated offline viewer; schemas 5 and 6 remain readable.
+
+Include `metadata.toolVersion` when reporting a recording. Its build-metadata suffix identifies
+the source commit; the package version itself remains `0.2.1-rewrite.5`. A `-dirty` suffix means
+the build contains uncommitted changes. The versioned bundle is built only from clean source.

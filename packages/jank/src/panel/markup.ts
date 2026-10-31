@@ -1,4 +1,4 @@
-import manifest from "../../package.json" with { type: "json" };
+import { buildVersion } from "../build.ts";
 import { integrationMarkup } from "./integration-markup.ts";
 
 const icon = (action: string, label: string, text: string) =>
@@ -161,7 +161,7 @@ export function panelMarkup(): string {
           </details>
         </section>
       </div>
-      <footer class="jank-overhead"><div class="jank-cost"><span>COLLECTION</span><span data-value="collection-cost"></span></div><div class="jank-cost"><span>PANEL REFRESH</span><span data-value="refresh-cost"></span></div><div class="jl-muted">MS AVG / PEAK · excludes browser paint and GPU work</div><div class="jl-muted" data-value="precision"></div><div class="jl-muted" data-value="isolation"></div><div class="jl-muted" aria-label="jank.js build">v${manifest.version}</div></footer>
+      <footer class="jank-overhead"><div class="jank-cost"><span>COLLECTION</span><span data-value="collection-cost"></span></div><div class="jank-cost"><span>PANEL REFRESH</span><span data-value="refresh-cost"></span></div><div class="jl-muted">MS AVG / PEAK · excludes browser paint and GPU work</div><div class="jl-muted" data-value="precision"></div><div class="jl-muted" data-value="isolation"></div><div class="jl-muted" aria-label="jank.js build">v${buildVersion}</div></footer>
     </div>
     <p role="alert" class="jank-error" hidden></p>
   `;

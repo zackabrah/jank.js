@@ -180,7 +180,8 @@ assert.equal(inspectFrame(recording, -1), null);
 assert.equal(summarizeGpuCoverage(recording).missingFrames, 1);
 assert.equal(profiler.capture.getProgress().kind, "recent");
 const manifest = JSON.parse(readFileSync(new URL("node_modules/jank.js/package.json", import.meta.url), "utf8"));
-assert.equal(recording.metadata.toolVersion, manifest.version);
+assert.equal(recording.metadata.toolVersion.split("+")[0], manifest.version);
+assert.match(recording.metadata.toolVersion.split("+")[1] ?? "", /^[a-f0-9]{12}(-dirty)?$/);
 assert.deepEqual(parseRecording(serializeRecording(recording)), { ok: true, recording });
 assert.equal(parseRecording('{').problem.code, "invalid-json");
 const finalized = await finalizeRecording(recording, {
@@ -188,6 +189,12 @@ const finalized = await finalizeRecording(recording, {
 });
 assert.equal(finalized.complete, false);
 assert.equal(finalized.status, "unavailable");
+profiler.capture.arm({ thresholdMs: 50, sustainedMs: 100, beforeFrames: 10, afterFrames: 0, cooldownMs: 0 });
+for (let i = 0; i < 3; i++) { timeMs += 35; profiler.beginFrame(timeMs); }
+const sustained = profiler.capture.completed().at(-1);
+assert.equal(sustained.schemaVersion, 7);
+assert.equal(sustained.capture.sustained.frameCount, 3);
+assert.equal(parseRecording(serializeRecording(sustained)).ok, true);
 assert.deepEqual(finalized.missingFrameIds, [recording.frames[0].id]);
 assert.equal(parseRecording(serializeRecording(finalized.recording)).ok, true);
 profiler.dispose();

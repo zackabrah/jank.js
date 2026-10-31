@@ -1,4 +1,4 @@
-import manifest from "../../package.json" with { type: "json" };
+import { buildVersion } from "../build.ts";
 import { createProfilerRuntime, type Profiler, type ProfilerOptions } from "../profiler.ts";
 import { readMetadata } from "../recordings/read-metadata.ts";
 import type { RecordingEnvironment } from "../recordings/recording.ts";
@@ -24,7 +24,7 @@ export function createProfiler(options: ProfilerOptions = {}): Profiler {
   };
   const metadata = readMetadata({
     createdAt: new Date().toISOString(),
-    toolVersion: manifest.version,
+    toolVersion: buildVersion,
     application: options.application
       ? { name: options.application.name, version: options.application.version ?? null }
       : null,
