@@ -71,7 +71,8 @@ does not prove the OS/browser/driver cache was cold. Compare like workloads.
 
 The Loading tab shows total/cold/cache tiles, current and dim cold stage bars on one scale,
 combined durations, failures/cancellations, cache/bytes and recent sessions. Each main section
-collapses independently. Freeze captures loading data without stopping host work. The frame
+collapses independently. Stage rows disclose combined timings, failures and cancellations; timing
+and cache explanations are available through labelled disclosures to keep the default view compact. Freeze captures loading data without stopping host work. The frame
 profiler's CLEAR clears frame data and resumes display; loading has its own explicit clear.
 Loading snapshots are not embedded in frame recording exports or the offline viewer schema.
 

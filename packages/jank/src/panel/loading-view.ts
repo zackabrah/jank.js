@@ -86,10 +86,10 @@ function renderStages(root: HTMLElement, state: LoadingViewSnapshot): void {
   stages.forEach((stage, index) => {
     let row = container.children[index];
     if (!row) {
-      row = root.ownerDocument.createElement("div");
+      row = root.ownerDocument.createElement("details");
       row.className = "jank-loading-stage";
       row.innerHTML =
-        '<div class="jank-row"><span data-stage-name></span><span data-stage-time></span></div><div class="jank-loading-bars" aria-hidden="true"><i data-loading-cold-bar></i><i data-loading-current-bar></i></div><p class="jank-note" data-stage-detail></p>';
+        '<summary><div class="jank-row"><span data-stage-name></span><span data-stage-time></span></div><div class="jank-loading-bars" aria-hidden="true"><i data-loading-cold-bar></i><i data-loading-current-bar></i></div></summary><p class="jank-note" data-stage-detail></p>';
       container.append(row);
     }
     element(row, "[data-stage-name]").textContent = stage.name;

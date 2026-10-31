@@ -576,3 +576,31 @@
 .jank .jank-loading-stage .jank-note {
   padding: 3px 0 0;
 }
+
+.jank .jank-loading-stage > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.jank .jank-loading-stage > summary::-webkit-details-marker {
+  display: none;
+}
+.jank .jank-loading-stage [data-stage-name]::before {
+  content: "▸ ";
+  color: var(--jl-muted);
+}
+.jank .jank-loading-stage[open] [data-stage-name]::before {
+  content: "▾ ";
+}
+.jank .jank-loading-notes {
+  color: var(--jl-muted);
+  font-size: 10px;
+}
+.jank .jank-loading-notes > summary {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.jank .jank-loading-stage > summary:focus-visible,
+.jank .jank-loading-notes > summary:focus-visible {
+  outline: 2px solid var(--jl-text);
+  outline-offset: -2px;
+}

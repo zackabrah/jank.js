@@ -42,7 +42,14 @@ test("loading panel shows cold ghosts, honest overlap/cache totals, frozen sessi
   await page.evaluate(() => window.loadingFixture.cold());
   await expect(page.locator('[data-value="loading-total"]')).toHaveText("500.0 ms");
   await expect(page.locator('[data-value="loading-cold"]')).toHaveText("500.0 ms");
-  await expect(page.locator('[data-list="loading"]')).toContainText("700.0 ms combined");
+  const stageDetail = page.locator("[data-stage-detail]").first();
+  await expect(stageDetail).toBeHidden();
+  const stageHeader = page.locator(".jank-loading-stage > summary").first();
+  await stageHeader.focus();
+  await page.keyboard.press("Enter");
+  await expect(stageDetail).toBeVisible();
+  await expect(stageDetail).toContainText("700.0 ms combined");
+  await page.keyboard.press("Enter");
   await expect(page.locator('[data-list="loading-cache"]')).toContainText("2048 bytes");
   await page.evaluate(() => {
     const { loading, at } = window.loadingFixture;
