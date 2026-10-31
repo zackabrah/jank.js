@@ -14,7 +14,7 @@ Use the sample controls to add a spike or event, pause the stream, or show absen
 rejected timestamps, pending results and errors. Rows retain their order and unavailable timing
 stays unknown. A seeded capture is ready to export. Exports explicitly identify their application
 as **SIMULATED DATA**; this page is an interface showcase, not a device benchmark. Loading values
-are a static source example, not an implementation of the pending loading runtime.
+remain a labelled static source example; the basic demo exercises the real loading runtime.
 
 The gallery adds layout around the existing components; it does not reimplement or copy their
 styles or behavior. Vite bundles the actual sources and the build script inlines its two outputs.

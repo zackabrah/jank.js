@@ -74,9 +74,20 @@ export function panelMarkup(): string {
             <p class="jank-note" data-export-status role="status" hidden></p>
           </div>
         </section>
-        <section data-tabpanel="loading" class="jank-scroll"><details class="jank-section" data-section="loading" open>
-            <summary><h2>LOADING</h2></summary>
-            <div><p class="jank-note" data-value="loading-state">No loading source connected.</p><div data-list="loading" class="jank-list"></div></div>
+        <section data-tabpanel="loading" class="jank-scroll">
+          <div class="jank-metrics jank-loading-metrics">${metric("loading-total", "TOTAL")}${metric("loading-cold", "COLD")}${metric("loading-cache-rate", "CACHE")}</div>
+          <p class="jank-note jank-loading-status" data-value="loading-state">No loading source connected.</p>
+          <details class="jank-section" data-section="loading" open>
+            <summary><h2>STAGES <span data-value="loading-axis"></span></h2></summary>
+            <div><div data-list="loading" class="jank-list"></div><p class="jank-note">Bars show elapsed interval union; dim bars show the first completed fresh-context run. Combined operation times include overlap and waiting, not CPU/GPU execution.</p></div>
+          </details>
+          <details class="jank-section" data-section="loading-cache" open>
+            <summary><h2>CACHE <span>THIS RUN</span></h2></summary>
+            <div><div data-list="loading-cache" class="jank-list"></div><p class="jank-note">Hit rate uses hits / (hits + misses). Shared in-flight requests are separate. Bytes are host-reported received bytes, not inferred network traffic.</p></div>
+          </details>
+          <details class="jank-section" data-section="loading-sessions" open>
+            <summary><h2>SESSIONS <span>ELAPSED TOTAL</span></h2></summary>
+            <div><div data-list="loading-sessions" class="jank-list"></div></div>
           </details>
         </section>
         <section data-tabpanel="capture" class="jank-scroll">

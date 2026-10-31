@@ -1,10 +1,4 @@
-import type {
-  GpuSource,
-  GpuState,
-  LoadingSnapshot,
-  LoadingSource,
-  TraceSink,
-} from "../../packages/jank/src/index.ts";
+import type { GpuSource, GpuState, TraceSink } from "../../packages/jank/src/index.ts";
 
 export type GpuExample = "disabled" | "synthetic" | "pending" | "unsupported" | "error";
 
@@ -63,66 +57,6 @@ export function createGpuExample() {
         };
       }
       return source.read();
-    },
-  };
-}
-
-/** A small host-owned source: one synchronous reset followed by a measured elapsed wait. */
-export function createLoadingExample() {
-  let nextId = 1;
-  let run: {
-    id: number;
-    startedAtMs: number;
-    preparedAtMs: number;
-    finishedAtMs: number | null;
-  } | null = null;
-  const completed: LoadingSnapshot[] = [];
-  function snapshot(): LoadingSnapshot | null {
-    if (!run) {
-      return null;
-    }
-    const endMs = run.finishedAtMs ?? performance.now();
-    return {
-      id: run.id,
-      label: "Host loading example",
-      kind: "repeat-session",
-      status: run.finishedAtMs === null ? "loading" : "ready",
-      pendingOperations: run.finishedAtMs === null ? 1 : 0,
-      elapsedMs: endMs - run.startedAtMs,
-      stages: [
-        { name: "reset cubes", durationMs: run.preparedAtMs - run.startedAtMs },
-        { name: "host wait", durationMs: endMs - run.preparedAtMs },
-      ].map((stage) => ({
-        name: stage.name,
-        totalMs: stage.durationMs,
-        busyMs: stage.durationMs,
-        operationCount: 1,
-        failedCount: 0,
-        cancelledCount: 0,
-        receivedBytes: 0,
-        cache: { hits: 0, misses: 0, inFlight: 0 },
-      })),
-    };
-  }
-  const source: LoadingSource = { snapshot, history: () => structuredClone(completed) };
-  return {
-    source,
-    start: (prepare: () => void) => {
-      const startedAtMs = performance.now();
-      prepare();
-      run = { id: nextId++, startedAtMs, preparedAtMs: performance.now(), finishedAtMs: null };
-    },
-    step: (atMs: number) => {
-      if (run && run.finishedAtMs === null && atMs - run.preparedAtMs >= 200) {
-        run.finishedAtMs = atMs;
-        const finished = snapshot();
-        if (finished) {
-          completed.push(finished);
-          if (completed.length > 10) {
-            completed.shift();
-          }
-        }
-      }
     },
   };
 }

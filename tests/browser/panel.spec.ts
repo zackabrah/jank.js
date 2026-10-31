@@ -152,7 +152,7 @@ test("LIVE keeps its summary pinned while details scroll from CPU scopes", async
   await page.setViewportSize({ width: 1280, height: 560 });
   await page.goto("/tests/fixtures/panel/?mode=full");
   await page.evaluate(() => window.panelFixture.advance(70));
-  const metrics = page.locator(".jank-metrics");
+  const metrics = page.locator('[data-tabpanel="live"] .jank-metrics');
   const chart = page.locator(".jank-chart");
   const scopes = page.getByRole("heading", { name: "CPU SCOPES MS / FRAME" });
   const metricBefore = await metrics.boundingBox();

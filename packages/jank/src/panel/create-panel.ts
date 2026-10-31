@@ -15,7 +15,7 @@ import { createDownload } from "./download.ts";
 import { createRecordingExporter } from "./export-recording.ts";
 import { createGpuView } from "./gpu-view.ts";
 import { createLiveView, renderOverhead } from "./live-view.ts";
-import { renderLoading } from "./loading-view.ts";
+import { createLoadingView } from "./loading-view.ts";
 import { panelMarkup } from "./markup.ts";
 import type { Panel, PanelMode, PanelOptions } from "./panel.ts";
 
@@ -71,6 +71,7 @@ export function createPanel(options: PanelOptions): Panel {
   const gpuView = createGpuView(root, options.gpuPassOrder);
   container.append(root);
   const liveView = createLiveView(root);
+  const loadingView = createLoadingView(root, options.loading);
   let disposed = false;
   let mode = rememberedMode(window, options.mode ?? "line");
   let selectedTab = "live";
@@ -111,7 +112,7 @@ export function createPanel(options: PanelOptions): Panel {
           return;
         }
         if (selectedTab === "loading") {
-          renderLoading(root, options.loading);
+          loadingView.render();
           return;
         }
       }
@@ -278,6 +279,7 @@ export function createPanel(options: PanelOptions): Panel {
     full: () => setMode("full", true),
     freeze: () => {
       liveView.stop();
+      loadingView.freeze(frozen === null);
       frozen = frozen ? null : profiler.snapshot();
     },
     record: () => {
@@ -295,6 +297,7 @@ export function createPanel(options: PanelOptions): Panel {
       profiler.clear();
       gpuView.clear();
       frozen = null;
+      loadingView.freeze(false);
     },
     "open-viewer": () => openViewer(),
     "retry-viewer-download": () => handoff.retry(),

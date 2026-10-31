@@ -517,3 +517,62 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.jank .jank-loading-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.jank .jank-loading-metrics strong {
+  font-size: 18px;
+  white-space: nowrap;
+}
+.jank .jank-loading-status {
+  padding: 8px 10px;
+}
+.jank .jank-loading-stage {
+  padding-bottom: 8px;
+}
+.jank .jank-loading-bars {
+  position: relative;
+  height: 9px;
+  margin: 3px 0;
+}
+.jank .jank-loading-bars i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--jl-dim);
+}
+.jank .jank-loading-bars [data-loading-current-bar] {
+  top: 3px;
+  bottom: 3px;
+  background: var(--jl-text);
+}
+.jank [data-list="loading-cache"] .jank-row,
+.jank [data-list="loading-sessions"] .jank-row {
+  display: block;
+  padding-bottom: 7px;
+}
+.jank [data-list="loading-cache"] .jank-row > span,
+.jank [data-list="loading-sessions"] .jank-row > span {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.jank [data-list="loading-cache"] .jank-row > span:last-child,
+.jank [data-list="loading-sessions"] .jank-row > span:last-child {
+  color: var(--jl-muted);
+  font-size: 10px;
+}
+
+.jank [data-list="loading-cache"] .jank-row > span:last-child,
+.jank [data-list="loading-sessions"] .jank-row > span:last-child {
+  max-width: none;
+  text-align: left;
+}
+.jank [data-list="loading-cache"] .jank-row::after,
+.jank [data-list="loading-sessions"] .jank-row::after {
+  display: none;
+}
+.jank .jank-loading-stage .jank-note {
+  padding: 3px 0 0;
+}

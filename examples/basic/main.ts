@@ -5,9 +5,10 @@ import {
   type PanelMode,
 } from "../../packages/jank/src/index.ts";
 import { createComparison } from "./comparison.ts";
-import { createLoadingExample, createTraceExample } from "./example-sources.ts";
+import { createTraceExample } from "./example-sources.ts";
 import { createDemoGpu, type DemoGpuMode } from "./gpu-source.ts";
 import { createHeadroomTest } from "./headroom.ts";
+import { createLoadingExample } from "./loading-example.ts";
 import { bindRecordingFile } from "./recording-file.ts";
 import { createScene } from "./scene.ts";
 
@@ -53,7 +54,7 @@ function reportError(cause: unknown): void {
 
 function startScene() {
   try {
-    return createScene(canvas);
+    return loading.initialize(() => createScene(canvas));
   } catch (cause) {
     reportError(cause);
     return null;
@@ -289,6 +290,7 @@ function click(event: MouseEvent): void {
       );
       status.textContent = "Marker added.";
     },
+    "cancel-loading": () => loading.cancel(),
     loading: () => {
       loading.start(() => scene?.setCount(Number(objectCount.value)));
       loadingButton.disabled = true;
@@ -358,6 +360,7 @@ function dispose(): void {
     comparison?.dispose();
     comparison = null;
     headroom.dispose();
+    loading.source.dispose();
     stopProfiler();
     scene?.dispose();
     unbindFile();

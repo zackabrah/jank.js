@@ -48,7 +48,7 @@ available until the complete parity matrix and release checks pass.
 5. **Core live panel implemented.** LINE, MINI and FULL, live statistics, native tabs, freeze,
    recording/export, labelled automatic capture, archive thumbnails and scope ownership now
    have browser, accessibility and visual checks. See [panel evidence](panel.md). Loading run
-   detail and optional integration views remain with slice 7; viewer handoff is implemented in slice 6.
+   detail is implemented; optional integration views remain with slice 7; viewer handoff is implemented in slice 6.
    New visual baselines do not constitute final reference-feature acceptance.
 6. **Analysis and offline viewer implemented; core reference audit completed.** CPU/GPU lanes,
    counter overlays, A/B inspection, navigation, captures, frame copy, nearby events and safe
@@ -60,8 +60,9 @@ available until the complete parity matrix and release checks pass.
 7. **Loading and optional integrations, partly implemented.** WebGL2 and Three r186 WebGPU
    timing were brought forward for the standalone preview. Their optional exports, delayed
    frame association and resource ownership are implemented with TDD; see [GPU evidence](gpu-adapters.md).
-   Loading handles, renderer counter helpers, visibility/temporal controls and the bounded
-   overlay remain pending. Keep each renderer optional and preserve limitations in the readout.
+   [Loading runs](loading.md), overlapping stages, retained cold baseline, cache/byte observations
+   and bounded session history are implemented with a real demo and panel tests. Renderer counter
+   helpers, visibility/temporal controls and the bounded overlay remain pending. Keep each renderer optional and preserve limitations in the readout.
 8. **Acceptance and packaging.** Complete all retained-feature tests, independent package builds,
    exports, docs, visual comparisons and overhead benchmarks. Review package size and dependency
    boundaries. Only then consider making the rewrite the primary branch or a release candidate.

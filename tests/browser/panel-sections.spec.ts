@@ -8,7 +8,7 @@ test("main sections collapse independently with pointer and keyboard while colle
   await page.goto("/tests/fixtures/panel/?mode=full");
   const tabs = [
     { name: "LIVE", sections: ["scopes", "gpu", "counters", "events"] },
-    { name: "LOADING", sections: ["loading"] },
+    { name: "LOADING", sections: ["loading", "loading-cache", "loading-sessions"] },
     {
       name: "CAPTURE",
       sections: ["completeness", "budget", "automatic", "instrumentation", "captures"],

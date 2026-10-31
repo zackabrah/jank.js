@@ -143,9 +143,9 @@ They were visually reviewed on macOS 26 arm64. Only the two variable overhead va
 masked; layout and labels remain visible. These are regression baselines for the new
 implementation, not a claim of completed reference parity or remote CI execution.
 
-The loading runtime and its full run/history, cache and overlap displays remain in slice 7.
-The current loading tab can display an injected source's stage summary or an explicit empty
-state. Visibility/temporal controls remain in slice 7. Optional [GPU timing adapters](gpu-adapters.md)
+The [loading runtime](loading.md) and its run/history, cache, cold-baseline and overlap
+displays are implemented. The panel borrows the source and freezing copies its display data.
+Empty/disconnected sources remain explicit. Visibility/temporal controls remain in slice 7. Optional [GPU timing adapters](gpu-adapters.md)
 are implemented. `viewerUrl` enables [viewer handoff](viewer.md#open-directly-from-the-panel).
 `visibility` and `temporal` are still draft contract options without panel behavior. GPU observations render explicit
 unavailable states; an optional borrowed GPU source provides enable/disable controls. The host
@@ -215,8 +215,8 @@ values, visible-window coverage, FPS range and keyboard controls, and counter ov
 reference-parity screenshot includes an event, a slow frame, CPU meters and both measured and
 unknown GPU passes. Pure chart-layout tests cover frame geometry, tie-breaking, gaps, marker
 collisions and lifecycle glyphs. Existing panel, GPU, accessibility and visual suites remain
-required. This is live-panel parity work; offline viewer, loading-runtime and optional
-visibility/temporal functionality remain separate implementation slices.
+required. Offline viewer and loading behavior now have their own verified slices; optional
+visibility/temporal functionality remains pending.
 
 The [local parity benchmark](verification/panel-parity.json) measured median incremental
 synchronous costs of 0.0094ms (LINE), 0.1385ms (MINI), and 0.2087ms (FULL) per host frame on

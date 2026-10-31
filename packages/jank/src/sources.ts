@@ -58,6 +58,8 @@ export interface TemporalSource {
 }
 
 export interface LoadingSource {
+  /** Optional retained first successful cold run; older sources fall back to history. */
+  baseline?(): LoadingSnapshot | null;
   snapshot(): LoadingSnapshot | null;
   history(): readonly LoadingSnapshot[];
 }

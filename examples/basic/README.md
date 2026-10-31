@@ -53,15 +53,19 @@ error examples. Simulated measurements are opt-in and retain their labels in exp
 They delay correlation by two host frames. Missing real timings are never replaced with these
 examples or invented zeros. See [GPU measurement limits](../../docs/gpu-adapters.md).
 
-Loading is a small **host-provided source**, not the pending loading-profiler implementation.
-It measures a synchronous cube reset and an elapsed wait of at least 200ms. There is no asset
-download, byte count or cache hit to invent. The source retains ten completed run summaries.
+Loading uses the public `createLoadingProfiler` runtime. Initial scene construction is the
+fresh-context baseline; repeat runs measure a cube reset and two overlapping host waits
+(100ms and 200ms minimum, resolved by the host frame loop). These are different workloads,
+not a controlled cold/warm benchmark. Cancel seals the current run at its cutoff. The source
+retains eight completed sessions. There is no asset download, byte count or cache hit to invent.
+The Loading tab shows elapsed union versus combined operation time, baseline bars, cache
+observations and session history. See [loading semantics](../../docs/loading.md).
 
 The host-provided trace sink converts profiler-relative times to navigation-relative User
 Timing entries. It keeps at most 200 entries and only clears its own names. The dedicated
 clear button and profiler restart remove them; unrelated browser/host entries remain intact.
 
-The offline viewer and visibility/temporal integrations remain
+The offline viewer is available through panel handoff. Visibility/temporal integrations remain
 pending and are not represented by fake controls here.
 
 ## Read the integration
@@ -69,7 +73,8 @@ pending and are not represented by fake controls here.
 - `main.ts`: creates the profiler/channels/panel, owns the single loop, and wires native controls.
 - `scene.ts`: owns the Three.js scene, resize observer and GPU resource cleanup. No profiler imports.
 - `gpu-source.ts`: selects the real timer or labelled examples and owns adapter replacement/disposal.
-- `example-sources.ts`: explicit GPU sample generator, host loading source and bounded trace sink.
+- `example-sources.ts`: explicit GPU sample generator and bounded trace sink.
+- `loading-example.ts`: real loading runs around scene preparation and overlapping host waits.
 - `recording-file.ts`: file reading, validation and stale-result protection.
 
 Imports use the profiler's public source entry while developing this worktree. An installed
