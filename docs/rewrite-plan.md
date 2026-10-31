@@ -90,3 +90,15 @@ cloud panorama/shadows, ocean FFT, reflection, bloom and temporal-resolve passes
 Red Skies integration slice; labels belong at those actual submission sites. Reusable A/B run
 control and unified stop/finalize/export are implemented; production adoption remains follow-up work. No production integration or
 archived preview has been updated by these source changes.
+
+## Product follow-up todo
+
+- [ ] Make automatic hitch capture a primary workflow: expose a clear **Capture slow frames**
+  control, visible armed/disarmed status and a notice when a hitch is captured, with a direct
+  path to inspect or export it. Preserve before/after context, bounded retention and truthful
+  completeness reporting. Make it clear that captures remain in memory until exported.
+  This is a discoverability improvement to the existing automatic capture behavior; changing
+  whether it is armed by default is an open design decision.
+- [ ] Review the incoming user report before implementing the capture UX changes. Record
+  reproduction steps and supporting evidence, then use the findings to refine scope and priority.
+  Report pending; no findings assumed yet.
