@@ -1,3 +1,4 @@
+export type { BoundsSnapshot, DebugBounds } from "./analysis/bounds.ts";
 export { type GpuCoverage, summarizeGpuCoverage } from "./analysis/gpu-coverage.ts";
 export { type FrameSummary, type InspectFrame, inspectFrame } from "./analysis/summary.ts";
 export { createComparison } from "./browser/create-comparison.ts";
@@ -53,6 +54,7 @@ export type {
   LoadingSnapshot,
   LoadingStage,
 } from "./loading/loading.ts";
+export { createBoundsOverlay } from "./panel/bounds-overlay.ts";
 export { createPanel } from "./panel/create-panel.ts";
 export type { CreatePanel, Panel, PanelMode, PanelOptions } from "./panel/panel.ts";
 export type {
@@ -87,7 +89,6 @@ export type {
   VisibilitySnapshot,
   VisibilitySource,
 } from "./sources.ts";
-
 export { createViewer } from "./viewer/create-viewer.ts";
 export type {
   CreateViewer,
