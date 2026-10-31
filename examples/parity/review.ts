@@ -54,7 +54,7 @@ async function load(): Promise<void> {
     );
     if (epoch === generation) {
       status.textContent =
-        "Ready. Both views are interactive. Use their capture controls to inspect the same spikes (#168, #243, #336). Loading, visibility and temporal integrations remain separate pending milestones.";
+        "Ready. Both viewers start at spike #243. Switch View to compare FULL, MINI or LINE panels. Both panes are interactive; Reset restores the matched sample.";
     }
   } catch (cause) {
     status.textContent = cause instanceof Error ? cause.message : "Unable to load comparison";
@@ -84,4 +84,27 @@ async function importSample(frame: HTMLIFrameElement, original: boolean): Promis
   );
   input.files = transfer.files;
   input.dispatchEvent(new Event("change", { bubbles: true }));
+  if (!original) {
+    await alignRewrite(frame);
+  }
+}
+
+async function alignRewrite(frame: HTMLIFrameElement): Promise<void> {
+  const document = frame.contentDocument;
+  const deadline = performance.now() + 5_000;
+  while (performance.now() < deadline) {
+    const capture = document?.querySelector<HTMLButtonElement>('[data-capture-action="open"]');
+    const count = document?.querySelector<HTMLSelectElement>("[data-viewer-range-count]");
+    const start = document?.querySelector<HTMLInputElement>("[data-viewer-range-start]");
+    if (capture && count && start) {
+      count.value = "200";
+      count.dispatchEvent(new Event("change", { bubbles: true }));
+      capture.click();
+      start.value = "146";
+      start.dispatchEvent(new Event("change", { bubbles: true }));
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("The rewrite viewer did not finish opening the matched sample.");
 }

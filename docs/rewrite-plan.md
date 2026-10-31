@@ -50,11 +50,13 @@ available until the complete parity matrix and release checks pass.
    have browser, accessibility and visual checks. See [panel evidence](panel.md). Loading run
    detail and optional integration views remain with slice 7; viewer handoff is implemented in slice 6.
    New visual baselines do not constitute final reference-feature acceptance.
-6. **Analysis and offline viewer implemented; final reference audit pending.** CPU/GPU lanes,
+6. **Analysis and offline viewer implemented; core reference audit completed.** CPU/GPU lanes,
    counter overlays, A/B inspection, navigation, captures, frame copy, nearby events and safe
    panel handoff have behavior tests. The single HTML viewer works offline with local imports;
    hosted same-origin handoff has validated messages and download fallbacks. See
-   [viewer behavior](viewer.md) and [analysis semantics](analysis.md).
+   [viewer behavior](viewer.md), [analysis semantics](analysis.md) and the
+   [reference audit](verification/ui-parity.md). Remaining integration views and final release acceptance
+   stay in slices 7–8.
 7. **Loading and optional integrations, partly implemented.** WebGL2 and Three r186 WebGPU
    timing were brought forward for the standalone preview. Their optional exports, delayed
    frame association and resource ownership are implemented with TDD; see [GPU evidence](gpu-adapters.md).
