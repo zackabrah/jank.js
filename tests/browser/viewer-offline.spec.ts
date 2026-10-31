@@ -4,11 +4,14 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import manifest from "../../packages/jank/package.json" with { type: "json" };
+import { readBuildIdentity } from "../../scripts/build-identity.ts";
 import { comparisonReportFixture } from "../fixtures/comparison-report.ts";
 import { counterComparisonFixture } from "../fixtures/counter-comparison.ts";
 import { viewerReferenceFixture } from "../fixtures/viewer-reference.ts";
 
 const artifact = resolve("artifacts/jank-viewer.html");
+const expectedBuild = `v${manifest.version}+${readBuildIdentity().revision}`;
 test.beforeAll(() => {
   execFileSync(process.execPath, ["scripts/build-standalone.mjs", "viewer"], { stdio: "pipe" });
 });
@@ -28,9 +31,7 @@ test("standalone viewer imports a comparison offline without requesting network 
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(pathToFileURL(artifact).href);
-  await expect(page.getByLabel("jank.js viewer build", { exact: true })).toHaveText(
-    /^v0\.2\.1-rewrite\.5\+[a-f0-9]{12}(-dirty)?$/,
-  );
+  await expect(page.getByLabel("jank.js viewer build", { exact: true })).toHaveText(expectedBuild);
   await page.getByLabel("Open recording or comparison").setInputFiles({
     name: "comparison.json",
     mimeType: "application/json",

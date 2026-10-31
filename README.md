@@ -44,7 +44,7 @@ Build and pack from this checkout:
 
 ```sh
 pnpm build
-pnpm --filter jank.js pack --pack-destination ../../artifacts
+pnpm --filter jank.js pack --pack-destination artifacts
 ```
 
 Then, from your application's directory, install the generated archive:
