@@ -1,9 +1,29 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
+
+test("installable profiler archive includes usage and integration guides", () => {
+  const directory = mkdtempSync(join(tmpdir(), "jank-package-docs-"));
+  try {
+    const packed = spawnSync("pnpm", ["pack", "--pack-destination", directory], {
+      cwd: resolve("packages/jank"),
+      encoding: "utf8",
+    });
+    assert.equal(packed.status, 0, packed.stdout + packed.stderr);
+    const archive = readdirSync(directory).find((name) => name.endsWith(".tgz"));
+    assert.ok(archive, "Package archive exists");
+    const contents = spawnSync("tar", ["-tzf", join(directory, archive)], { encoding: "utf8" });
+    assert.equal(contents.status, 0, contents.stderr);
+    for (const file of ["docs/USAGE.md", "docs/INTEGRATION.md", "LICENSE", "dist/index.js"]) {
+      assert.ok(contents.stdout.split("\n").includes(`package/${file}`), `${file} is shipped`);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("built profiler and both declaration packages work without workspace source files", () => {
   const directory = mkdtempSync(join(tmpdir(), "jank-package-consumer-"));
