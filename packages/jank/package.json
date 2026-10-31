@@ -28,6 +28,10 @@
     "./adapters/three-counters": {
       "types": "./dist/adapters/three-counters.d.ts",
       "import": "./dist/adapters/three-counters.js"
+    },
+    "./adapters/webgpu-diagnostic": {
+      "types": "./dist/adapters/webgpu-diagnostic.d.ts",
+      "import": "./dist/adapters/webgpu-diagnostic.js"
     }
   },
   "files": [

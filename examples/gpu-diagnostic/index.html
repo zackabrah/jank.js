@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jank · GPU timestamp diagnostic</title>
+    <!-- diagnostic-styles -->
+  </head>
+  <body class="jl">
+    <main>
+      <h1>GPU timestamp diagnostic</h1>
+      <p>Compare drawn and clear-only render passes, including a fresh query pair. This submits six tiny passes on a separate device. Run while other GPU work is idle.</p>
+      <p>A completed probe does not validate every timestamp or measure your scene’s GPU cost. Rejected timing stays unknown.</p>
+      <div class="actions">
+        <button class="jl-btn jl-primary" id="run" type="button">Run timestamp diagnostic</button>
+        <button class="jl-btn" id="download" type="button" disabled>Download report</button>
+      </div>
+      <p id="status" role="status">Ready. No GPU work has been submitted.</p>
+      <div class="table-scroll">
+        <table>
+          <caption>Raw nanosecond endpoints, preserved exactly as decimal strings</caption>
+          <thead><tr><th scope="col">Probe</th><th scope="col">Query set</th><th scope="col">Start (ns)</th><th scope="col">End (ns)</th><th scope="col">Result</th><th scope="col">Duration (ms)</th></tr></thead>
+          <tbody id="pairs"></tbody>
+        </table>
+      </div>
+      <p>The first set runs draw → clear → clear → draw. A separate, unused set runs clear → draw. Repeated endpoints alone are not proof of stale data: timestamp quantization can also produce equal values.</p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

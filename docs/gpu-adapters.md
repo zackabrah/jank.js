@@ -197,3 +197,28 @@ not streaming.
 A [clear-only timestamp investigation](verification/timestamp-clear-2026-11-01.md) reproduces
 stale end values with native WebGPU and confirms exact adapter readback for PMREM. This remains
 a measurement limitation; rejected passes and null totals are preserved.
+
+## Explicit timestamp diagnostic
+
+`runWebGpuTimestampDiagnostic` is an opt-in native probe exported from
+`jank.js/adapters/webgpu-diagnostic`. It does not attach to or rewrite a renderer. Run it
+while the host is idle, before attaching a timestamp adapter, on a device created with
+`timestamp-query` enabled. It borrows that device and releases its own query sets,
+readback buffers and 16×16 texture on completion, failure or timeout.
+
+The six probes are draw → clear → clear → draw on one query pair, then clear → draw on
+an independent, unused query pair. Every result retains the raw decimal nanosecond
+endpoints and uses the live collector's rejection policy. Rejected durations are `null`.
+Equal nonzero endpoints can legitimately produce zero after timer quantization.
+`status: "finished"` means the probes completed; inspect each `reason`. It is not a
+calibration or an assurance that every plausible positive interval is trustworthy.
+
+The default read timeout is 3 seconds per probe, configurable up to 30 seconds. A failed
+run retains earlier completed pairs. GPU/device errors should also be collected through
+the host's existing device error handling; this diagnostic does not take ownership of it.
+
+The demo links to `examples/gpu-diagnostic/`, with a Run button, endpoint table and JSON
+report download. This page owns a separate device, collects its uncaptured errors, and
+destroys it after the probe. It does not validate the demo renderer's existing device.
+Build the offline page with `node scripts/build-standalone.mjs gpu-diagnostic`; output is
+`artifacts/jank-gpu-diagnostic.html`, containing all code and styles with no network imports.

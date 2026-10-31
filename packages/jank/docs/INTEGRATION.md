@@ -381,3 +381,24 @@ Use the matching updated offline viewer; schemas 5 and 6 remain readable.
 Include `metadata.toolVersion` when reporting a recording. Its build-metadata suffix identifies
 the source commit; the package version itself remains `0.2.1-rewrite.5`. A `-dirty` suffix means
 the build contains uncommitted changes. The versioned bundle is built only from clean source.
+
+## Explicit native timestamp probe
+
+Before attaching a GPU adapter, while your host rendering is idle:
+
+```ts
+import { runWebGpuTimestampDiagnostic } from "jank.js/adapters/webgpu-diagnostic";
+
+// device was created with requiredFeatures: ['timestamp-query'].
+const diagnostic = await runWebGpuTimestampDiagnostic(device, { timeoutMs: 3000 });
+// Retain diagnostic.pairs, including reason and raw startNs/endNs strings.
+```
+
+This submits six tiny native render passes, comparing drawn and clear-only work with
+reused and fresh query storage. It owns and releases only its probe resources; you retain
+the device. Timeout applies per read. `finished` means all six probes ran, not that their
+pairs passed. Check each rejection reason; unknown duration is `null`. Keep your device
+error handler active. A successful probe is not whole-scene timing validation.
+
+The standalone `jank-gpu-diagnostic.html` provides labelled Run/Download controls for
+support reports. It uses a separate owned device and needs no app integration or network.

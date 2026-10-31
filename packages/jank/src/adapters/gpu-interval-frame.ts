@@ -6,6 +6,7 @@ import {
   type GpuRejectedPass,
   gpuIntervalLimits,
 } from "../core/gpu.ts";
+import { timestampPairRejection } from "./timestamp-pair.ts";
 
 export interface GpuFrameTiming {
   readonly frameId: number | null;
@@ -84,16 +85,8 @@ function rejectPair(
   start: bigint | undefined,
   end: bigint | undefined,
 ): GpuRejectedPass | null {
-  let reason: GpuRejectedPass["reason"];
-  if (start === undefined || end === undefined) {
-    reason = "missing-timestamp";
-  } else if (start === 0n || end === 0n) {
-    reason = "zero-timestamp";
-  } else if (end < start) {
-    reason = "reversed-timestamp";
-  } else if (end - start > BigInt(gpuIntervalLimits.spanNs)) {
-    reason = "out-of-range-timestamp";
-  } else {
+  const reason = timestampPairRejection(start, end);
+  if (!reason) {
     return null;
   }
   return { ...pass, reason, startNs: start?.toString() ?? null, endNs: end?.toString() ?? null };

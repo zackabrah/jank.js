@@ -1,0 +1,46 @@
+body {
+  margin: 0;
+  background: #0a0a0a;
+  color: #ddd;
+  font: 13px / 1.6 monospace;
+}
+main {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 24px;
+}
+h1 {
+  font-size: 22px;
+}
+p {
+  max-width: 850px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+caption {
+  text-align: left;
+  margin-bottom: 12px;
+  color: #aaa;
+}
+th,
+td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+  white-space: nowrap;
+}
+th {
+  color: #aaa;
+}

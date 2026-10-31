@@ -6,6 +6,12 @@ import { readBuildIdentity } from "./build-identity.ts";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const target = process.argv[2] ?? "ui-library";
 const targets = {
+  "gpu-diagnostic": {
+    entry: "main.ts",
+    marker: "diagnostic-styles",
+    name: "JankGpuDiagnostic",
+    filename: "jank-gpu-diagnostic.html",
+  },
   "ui-library": {
     entry: "showcase.ts",
     marker: "library-styles",
@@ -21,7 +27,7 @@ const targets = {
 };
 const configuration = targets[target];
 if (!configuration) {
-  throw new Error("Choose ui-library or viewer");
+  throw new Error("Choose ui-library, viewer or gpu-diagnostic");
 }
 const source = `${root}examples/${target}/`;
 // Resolve the actual source in this artifact; no stale dist output or external runtime dependencies.

@@ -7,6 +7,7 @@ export default defineConfig({
     lib: {
       entry: {
         index: "src/index.ts",
+        "adapters/webgpu-diagnostic": "src/adapters/webgpu-diagnostic.ts",
         "adapters/three-counters": "src/adapters/three-counters.ts",
         "adapters/webgl2": "src/adapters/webgl2.ts",
         "adapters/three-webgpu": "src/adapters/three-webgpu.ts",

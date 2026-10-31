@@ -66,6 +66,9 @@ import { createPanel, createProfiler, createLoadingProfiler, createViewer, parse
 import { readThreeRendererCounters } from "jank.js/adapters/three-counters";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
+import { runWebGpuTimestampDiagnostic } from "jank.js/adapters/webgpu-diagnostic";
+declare const diagnosticDevice: GPUDevice;
+runWebGpuTimestampDiagnostic(diagnosticDevice, { timeoutMs: 1000 }).then(report => report.pairs.forEach(pair => pair.reason));
 declare const gl: WebGL2RenderingContext;
 declare const renderer: ThreeTimestampRenderer;
 const webgl = createWebGl2GpuSource(gl);
