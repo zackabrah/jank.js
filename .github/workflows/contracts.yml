@@ -28,7 +28,10 @@ jobs:
       - run: pnpm test:coverage
       - run: pnpm test:package
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
-      - run: pnpm test:browser
+      - run: pnpm test:browser --project=chromium --project=webkit
+      # Linux headless Firefox cannot create the WebGL contexts used by the demo.
+      # Xvfb provides a display for real rendering tests without requiring a physical GPU.
+      - run: xvfb-run -a pnpm test:browser --project=firefox --headed
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
