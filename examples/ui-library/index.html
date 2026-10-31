@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>junkui / Jank — UI library</title>
+    <!-- library-styles -->
+  </head>
+  <body class="jl library">
+    <a class="jl-skip" href="#main">Skip to library</a>
+    <header class="site-header">
+      <a class="brand" href="#main">junkui <span>/ Jank</span></a
+      ><span class="jl-chip">STANDALONE · OFFLINE</span>
+    </header>
+    <div class="shell">
+      <nav class="contents" aria-label="Library sections">
+        <span class="eyebrow">COMPONENT INDEX</span>
+        <a href="#foundation"><span>01</span> Foundation</a>
+        <a href="#controls"><span>02</span> Controls</a>
+        <a href="#profiler"><span>03</span> Profiler</a>
+        <a href="#behavior"><span>04</span> Motion &amp; states</a>
+        <p>Current rewrite<br>Real components<br>No external assets</p>
+      </nav>
+      <main id="main">
+        <div class="intro">
+          <p class="eyebrow">THE INTERFACE, IN ONE FILE</p>
+          <h1>UI library</h1>
+          <p class="lead">
+            A working specimen of junkui and Jank. Every shade, control, graph and interaction,
+            drawn from the current library.
+          </p>
+          <div class="intro-rule"><span>MONOSPACE / SQUARE / COMPACT</span><span>01—04</span></div>
+        </div>
+        <section id="foundation" class="section" aria-labelledby="foundation-title">
+          <div class="section-title">
+            <span class="index">01</span>
+            <div>
+              <h2 id="foundation-title">Foundation</h2>
+              <p>Neutral surfaces. Precise hierarchy. Orange means over budget.</p>
+            </div>
+          </div>
+          <div id="palette" class="palette"></div>
+          <div class="two-column foundation-details">
+            <article class="specimen">
+              <h3>TYPE &amp; RHYTHM</h3>
+              <p class="type-display">16.7<span> ms</span></p>
+              <p class="type-body">The frame is the unit.</p>
+              <p class="type-label">LABEL / 0123456789</p>
+              <p class="caption">
+                System monospace · tabular numerals<br>Square corners · compact native controls
+              </p>
+            </article>
+            <article class="specimen">
+              <h3>LIBRARY TOKENS</h3>
+              <dl id="dimensions" class="token-list"></dl>
+              <p class="caption">Values read from the same CSS that styles these components.</p>
+            </article>
+          </div>
+        </section>
+        <section id="controls" class="section" aria-labelledby="controls-title">
+          <div class="section-title">
+            <span class="index">02</span>
+            <div>
+              <h2 id="controls-title">Controls</h2>
+              <p>Native elements, explicit labels and keyboard focus.</p>
+            </div>
+          </div>
+          <div class="specimen controls-specimen">
+            <div id="control-tabs" class="jl-tabs" role="tablist" aria-label="Control examples">
+              <button id="buttons-tab" class="jl-tab" type="button">Buttons</button
+              ><button id="fields-tab" class="jl-tab" type="button">Fields</button
+              ><button id="details-tab" class="jl-tab" type="button">Disclosure</button
+              ><button id="disabled-tab" class="jl-tab" type="button" disabled>Disabled</button>
+            </div>
+            <div id="buttons-panel" class="control-panel">
+              <h3>BUTTONS &amp; STATES</h3>
+              <div class="control-row">
+                <button id="primary-example" class="jl-btn jl-primary" type="button">
+                  Primary action
+                </button><button id="secondary-example" class="jl-btn" type="button">
+                  Secondary
+                </button><button class="jl-btn" type="button" disabled>Disabled</button>
+              </div>
+              <div class="control-row">
+                <button id="small-example" class="jl-btn jl-small" type="button">Small</button
+                ><button
+                  id="icon-example"
+                  class="jl-btn jl-icon"
+                  type="button"
+                  aria-label="Add example marker"
+                >
+                  +
+                </button><button
+                  id="guides"
+                  class="jl-btn jl-toggle"
+                  type="button"
+                  aria-label="Toggle preview guides"
+                  aria-pressed="false"
+                >
+                  G
+                </button><span class="jl-chip">STATUS CHIP</span>
+              </div>
+              <p id="button-result" class="feedback" role="status">
+                Try an action, or press Tab to inspect focus.
+              </p>
+            </div>
+            <div id="fields-panel" class="control-panel" hidden>
+              <h3>LABELLED FIELDS</h3>
+              <form id="example-form" class="field-grid">
+                <label
+                  >Project name<input
+                    class="jl-input"
+                    name="project"
+                    required
+                    value="Untitled scene"
+                  ></label
+                >
+                <label
+                  >Frame budget (ms)<input
+                    class="jl-input"
+                    type="number"
+                    name="budget"
+                    min="1"
+                    max="100"
+                    step="0.1"
+                    value="16.7"
+                    required
+                  ></label
+                >
+                <label
+                  >Quality<select class="jl-select" name="quality">
+                    <option>Balanced</option>
+                    <option>High</option>
+                    <option>Low</option>
+                  </select></label
+                >
+                <label
+                  >Read-only value<input class="jl-input" value="Local preview" readonly></label
+                >
+                <label>Disabled field<input class="jl-input" value="Unavailable" disabled></label>
+                <label
+                  >Example invalid value<input
+                    class="jl-input"
+                    value="Too many"
+                    aria-invalid="true"
+                    aria-describedby="invalid-help"
+                  ><span id="invalid-help" class="caption"
+                    >Example error: enter a number.</span
+                  ></label
+                >
+                <label class="wide"
+                  >Notes<textarea
+                    class="jl-input"
+                    rows="3"
+                    placeholder="Describe your scene…"
+                  ></textarea></label
+                >
+                <label class="check-label"><input type="checkbox" checked> Show annotations</label>
+                <fieldset>
+                  <legend>Display density</legend>
+                  <label class="check-label"
+                    ><input type="radio" name="density" value="compact" checked>
+                    Compact</label
+                  ><label class="check-label"
+                    ><input type="radio" name="density" value="comfortable">
+                    Comfortable</label
+                  >
+                </fieldset>
+                <div class="wide">
+                  <button class="jl-btn jl-primary" type="submit">Validate fields</button>
+                  <p id="field-result" class="feedback" role="status">
+                    Required fields use native validation.
+                  </p>
+                </div>
+              </form>
+            </div>
+            <div id="details-panel" class="control-panel" hidden>
+              <h3>DISCLOSURE &amp; HIERARCHY</h3>
+              <details open>
+                <summary>Measurements</summary>
+                <p>Unknown timing remains unknown. A missing measurement never becomes zero.</p>
+                <details>
+                  <summary>Diagnostic detail</summary>
+                  <p>
+                    Timestamp rejection reasons and pass identifiers remain available in recording
+                    exports.
+                  </p>
+                </details>
+              </details>
+              <details>
+                <summary>Keyboard interaction</summary>
+                <p>
+                  Use Enter or Space to toggle a disclosure. Use arrow keys, Home and End to
+                  navigate tabs.
+                </p>
+              </details>
+            </div>
+            <div id="disabled-panel" hidden>Unavailable example.</div>
+          </div>
+        </section>
+        <section id="profiler" class="section" aria-labelledby="profiler-title">
+          <div class="section-title">
+            <span class="index">03</span>
+            <div>
+              <h2 id="profiler-title">Profiler</h2>
+              <p>Three densities. One shared stream. All panel controls are live.</p>
+            </div>
+          </div>
+          <div class="simulation-note">
+            <span class="jl-chip">SIMULATED DATA</span>
+            <p>
+              These are interface examples, not measurements of your device. CPU, GPU and loading
+              values are generated locally. Recording and export operate on that sample data.
+            </p>
+          </div>
+          <div class="preview-toolbar">
+            <button id="stream-toggle" class="jl-btn" type="button">Pause sample stream</button
+            ><button id="spike" class="jl-btn" type="button">Add sample spike</button
+            ><button id="marker" class="jl-btn" type="button">Add event marker</button
+            ><label
+              >GPU example<select id="gpu-example" class="jl-select">
+                <option value="valid">Complete intervals</option>
+                <option value="missing">Pass not observed</option>
+                <option value="rejected">Rejected timestamp</option>
+                <option value="pending">Pending readback</option>
+                <option value="unsupported">Unsupported</option>
+                <option value="error">Readback error</option>
+              </select></label
+            >
+          </div>
+          <div class="preview-grid">
+            <article>
+              <div class="preview-label">
+                <h3>FULL</h3>
+                <span>360 PX</span>
+              </div>
+              <div id="full-preview" class="preview-stage"></div>
+              <p class="caption">
+                Scrollable sections · graph annotations · CPU/GPU meters · capture history · loading
+                · budgets
+              </p>
+            </article>
+            <div class="compact-previews">
+              <article>
+                <div class="preview-label">
+                  <h3>MINI</h3>
+                  <span>240 PX</span>
+                </div>
+                <div id="mini-preview" class="preview-stage"></div>
+                <p class="caption">Live chart, frame statistics and freeze control.</p>
+              </article>
+              <article>
+                <div class="preview-label">
+                  <h3>LINE</h3>
+                  <span>28 PX HIGH</span>
+                </div>
+                <div id="line-preview" class="preview-stage"></div>
+                <p class="caption">
+                  A single line of monitoring. Expand any preview with its header controls.
+                </p>
+              </article>
+              <article class="specimen">
+                <h3>INSPECT THE DETAILS</h3>
+                <ul class="feature-list">
+                  <li>Fixed budget, worst-frame and event labels over a scrolling graph.</li>
+                  <li>Orange missed-frame bars and warning indicators.</li>
+                  <li>Dotted CPU meters, dashed GPU meters and FPS range markers.</li>
+                  <li>Configured row order, with absent passes dimmed.</li>
+                  <li>Collapsible sections and thin internal scrollbars.</li>
+                  <li>LIVE, LOADING and CAPTURE views, with a sample recording ready to export.</li>
+                </ul>
+              </article>
+            </div>
+          </div>
+        </section>
+        <section id="behavior" class="section" aria-labelledby="behavior-title">
+          <div class="section-title">
+            <span class="index">04</span>
+            <div>
+              <h2 id="behavior-title">Motion &amp; states</h2>
+              <p>Feedback with a purpose, using the library’s existing effects.</p>
+            </div>
+          </div>
+          <div class="behavior-grid">
+            <article class="specimen">
+              <h3>CONTINUOUS MOTION</h3>
+              <p>
+                Graphs glide between refreshes while their labels stay still. Freeze stops the
+                display; pause stops the sample stream.
+              </p>
+            </article>
+            <article class="specimen">
+              <h3>STATE FEEDBACK</h3>
+              <p>
+                Hover brightens controls. Pressed controls invert. Focus stays visible. Missing
+                observations dim in place, while rejected totals remain unknown.
+              </p>
+            </article>
+            <article class="specimen">
+              <h3>REDUCED MOTION</h3>
+              <p id="motion-status">Checking your motion preference…</p>
+              <p>
+                Graph motion follows your system preference. You can always pause the stream above.
+              </p>
+            </article>
+          </div>
+        </section>
+        <footer class="site-footer">
+          <span>junkui + Jank / current library</span
+          ><span>One HTML file. No server, fonts or network needed.</span>
+        </footer>
+      </main>
+    </div>
+    <script type="module" src="./showcase.ts"></script>
+  </body>
+</html>

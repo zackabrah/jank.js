@@ -20,6 +20,7 @@ theme tokens and accessible tabs. Both packages remain private during the rewrit
 - [GPU adapters, ownership and measurement limits](docs/gpu-adapters.md)
 - [Basic interactive demo and feature walkthrough](examples/basic/README.md)
 - [Independent UI package and gallery](packages/junkui/README.md)
+- [Standalone UI library: one offline HTML file](examples/ui-library/README.md)
 - [jank.js public type contracts](packages/jank/src/index.ts)
 - [junkui public type contracts](packages/junkui/src/index.ts)
 
