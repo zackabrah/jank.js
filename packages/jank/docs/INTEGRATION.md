@@ -77,6 +77,12 @@ Return your actual measurements. Values may be numbers, strings, booleans or nul
 
 ## Record and export
 
+LIVE provides **Capture slow frames** and a saved-capture inspector, without requiring a
+separate viewer URL. The inspector reuses the configured GPU resolver and export timeout,
+then displays a detached recording. Collection continues; panel removal releases its modal.
+Custom and budget-relative presets are applied explicitly; the default remains disarmed at
+50 ms. Changing the budget does not silently re-arm an existing threshold.
+
 The panel provides REC / STOP REC, automatic hitch capture, FREEZE / RESUME, CLEAR, and
 EXPORT JSON. Freezing affects the display while collection continues. Removing the panel
 preserves captures; disposing the profiler ends that profiler's lifetime.

@@ -281,3 +281,26 @@ Session-strip dragging pans the visible range, including A/B windows, without ch
 selected frame. Clicking still selects the corresponding elapsed time. Focus a timeline lane
 and use Shift + Left/Right to step ten retained frames, or `[` / `]` to cycle ranked captures.
 Home/End retain the rewrite's whole-recording navigation; inputs keep their normal editing keys.
+
+
+## Automatic capture orientation
+
+A single automatic recording opens at its recorded trigger with surrounding frames visible.
+Captures longer than 100 frames initially show a 200-frame window to expose nearby onset.
+Manual/recent recordings still open at the first frame; comparison imports retain their elapsed
+alignment behavior. A prominent **Go to trigger** action returns to the original trigger,
+independent of the worst frame. The inspector shows actual retained elapsed seconds before
+and after that frame, excluding the trigger's own interval. These are observed spans, not a
+promise that frame-count windows always cover the same duration or are gap-free.
+
+When all GPU observations associated with the trigger explicitly mark it sampled out, the
+inspector states **Trigger GPU not sampled**. Neighbouring samples cannot reconstruct its timing. Missing observations are
+not relabelled as intentional sampling. The existing raw GPU evidence and unknown totals are
+preserved. Narrow layouts stack normally inside the live panel's optional modal inspector;
+the file input remains keyboard-accessible without leaking native control overflow.
+
+The rebuilt standalone viewer was checked against the delivered Red Skies
+`automatic/auto-25-05.json`: it opens frame #7476 (27.80 ms), shows 2.10 s before and
+4.18 s after, explicitly identifies the sampled-out trigger GPU, and initially exposes the
+Coverage 50% event and following CPU rise. No browser errors were observed. This verifies
+orientation against the supplied evidence; it does not make incomplete GPU timing complete.

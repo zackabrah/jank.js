@@ -53,6 +53,7 @@ export function renderCaptures(
   marks: readonly CaptureMark[],
 ): void {
   const recording = state.recording;
+  renderTriggerContext(root, state, marks);
   const container = element<HTMLElement>(root, "[data-capture-list]");
   const rule = element<HTMLElement>(root, "[data-capture-rule]");
   const trial = state.comparison?.trials[state.selectedTrialIndex ?? 0];
@@ -141,4 +142,37 @@ export function updateCaptureSelection(
   element<HTMLElement>(root, "[data-capture-selection]").textContent = mark
     ? `Capture #${mark.rank} · ${mark.source}${clipped ? " · clipped context" : ""}${state.recording?.truncated ? " · source truncated" : ""}`
     : "No capture at this frame";
+}
+
+function renderTriggerContext(
+  root: HTMLElement,
+  state: LoadedState,
+  marks: readonly CaptureMark[],
+): void {
+  const mark = marks.find((value) => value.source === "recorded");
+  const summary = element<HTMLElement>(root, "[data-trigger-summary]");
+  summary.hidden = !mark;
+  const recording = state.recording;
+  if (!mark || !recording) {
+    return;
+  }
+  const trigger = recording.frames[mark.frameIndex];
+  const first = recording.frames[0];
+  const last = recording.frames.at(-1);
+  if (!trigger || !first || !last) {
+    return;
+  }
+  const before = ((trigger.startedAtMs - first.startedAtMs) / 1000).toFixed(2);
+  const after = ((last.endedAtMs - trigger.endedAtMs) / 1000).toFixed(2);
+  const samples = recording.gpu.filter((sample) => sample.frameId === trigger.id);
+  const sampledOut =
+    samples.length > 0 &&
+    samples.every(
+      (sample) => sample.measurement === "intervals" && sample.issues.includes("sampled-out"),
+    );
+  element<HTMLButtonElement>(summary, "[data-go-trigger]").dataset.captureFrame = String(
+    trigger.id,
+  );
+  element<HTMLElement>(summary, "[data-trigger-context]").textContent =
+    `Trigger #${trigger.id} · ${before} s before · ${after} s after (retained context).${sampledOut ? " Trigger GPU not sampled; neighbouring samples cannot supply its timing." : ""}`;
 }

@@ -2,10 +2,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 // Consume junkui's public asset once at build time; shipped jank has no runtime dependency.
 const theme = readFileSync(new URL(import.meta.resolve("junkui/styles.css")), "utf8");
-const panel = readFileSync(new URL("../src/panel/panel.css", import.meta.url), "utf8").replace(
-  '@import "junkui/styles.css";',
-  "",
-);
+const panel = readFileSync(new URL("../src/panel/panel.css", import.meta.url), "utf8")
+  .replace('@import "junkui/styles.css";', "")
+  .replace('@import "../viewer/viewer.css";', "");
 const viewer = readFileSync(new URL("../src/viewer/viewer.css", import.meta.url), "utf8").replace(
   '@import "junkui/styles.css";',
   "",

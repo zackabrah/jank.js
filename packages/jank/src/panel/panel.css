@@ -1,4 +1,5 @@
 @import "junkui/styles.css";
+@import "../viewer/viewer.css";
 
 .jl.jank {
   --jank-warning: #f26032;
@@ -628,4 +629,49 @@
 }
 .jank .jank-integration-setting select {
   width: 140px;
+}
+
+.jank .jank-automatic-live {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--jl-line);
+  flex: none;
+}
+.jank .jank-automatic-live .jank-actions {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.jank .jank-automatic-live .jank-note {
+  margin: 4px 0 0;
+  padding: 0;
+}
+.jank .jank-automatic-live [data-automatic-saved]:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jank [data-trigger-preset] {
+  max-width: 180px;
+}
+.jl.jank-capture-inspector {
+  width: calc(100vw - 24px);
+  max-width: 1600px;
+  height: calc(100dvh - 24px);
+  max-height: none;
+  padding: 8px;
+  border: 1px solid var(--jl-line);
+  background: var(--jl-ink);
+  color: var(--jl-text);
+  overflow: auto;
+}
+.jank-capture-inspector::backdrop {
+  background: #000b;
+}
+.jank-capture-inspector > .jank-viewer {
+  margin-top: 8px;
+}
+@media (min-width: 1101px) {
+  .jank-capture-inspector > .jank-viewer {
+    height: calc(100% - 36px);
+  }
 }

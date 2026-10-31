@@ -50,6 +50,8 @@ export function createComparisonView(
         ![
           "record",
           "arm",
+          "auto-toggle",
+          "inspect-trigger",
           "disarm",
           "budget",
           "budget-preset",

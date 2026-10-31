@@ -233,3 +233,36 @@ warm-up/measurement/pair controls, cancellation, per-trial coverage, median/p95/
 and one export containing all completed trial recordings. See [comparison integration and limits](comparisons.md).
 The section stays hidden when no comparison host is connected. Closing the panel cancels an active
 run and restores the scene without disposing the borrowed controller.
+
+## Automatic capture entry and inspection
+
+LIVE exposes **Capture slow frames**, its armed/collecting/cooldown status, and a Settings
+shortcut. The existing default remains disarmed with a 50 ms threshold. CAPTURE offers custom
+milliseconds and 1.5×, 2× and 3× frame-budget presets, showing the resolved threshold. Presets
+resolve when ARM is applied; later budget changes update the next proposed threshold but do
+not silently replace an active rule. A single interval must exceed the threshold. Cooldown
+begins after post-trigger context completes; disarming during collection finishes that context.
+
+A completed automatic capture shows **Capture saved → Inspect trigger** in LIVE. Inspection
+uses the existing bounded export/finalization path and opens a detached recording in an owned
+modal viewer; no separate viewer URL is required. Host collection continues. Escape/Close
+restores focus, panel clear/removal closes its inspector, and the panel never disposes the host
+profiler. The latest retained automatic capture is offered; clearing/eviction cannot silently
+substitute another recording. Captures remain in memory until exported. Manual recording and
+active A/B runs protect their capture ownership by disabling the relevant quick controls.
+
+
+Verification includes 311 unit tests, 356 browser interactions (seven GPU cases skipped by
+existing capability guards), 24 final focused browser regressions, and 78 visual checks across
+Chromium, Firefox and WebKit. Package-consumer checks and the configured coverage floors pass
+(98.28% statements/lines, 95.97% branches, 99.09% functions). Browser tests cover arming,
+preset resolution, manual/A/B ownership, saved-capture inspection, focus restoration, disposal,
+narrow layout, and mixed sampled/valid GPU evidence.
+
+The [collection benchmark](verification/automatic-capture-collection.json) and
+[panel benchmark](verification/automatic-capture-panel.json) were rerun on Apple M3 Max.
+Median incremental synchronous panel cost was 0.0094 ms (LINE), 0.1379 ms (MINI), 0.1658 ms
+(FULL), and 0.2532 ms (FULL with static diagnostic providers) per host frame in headless
+Chromium 153. These synthetic paired batches include refresh throttling and exclude deferred
+paint/GPU, real frame scheduling and opening the capture inspector. They do not establish an
+improvement over earlier runs or quantify overhead in Red Skies.

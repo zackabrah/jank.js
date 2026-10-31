@@ -157,6 +157,8 @@ test("LIVE keeps its summary pinned while details scroll from CPU scopes", async
   const scopes = page.getByRole("heading", { name: "CPU SCOPES MS / FRAME" });
   const metricBefore = await metrics.boundingBox();
   const chartBefore = await chart.boundingBox();
+  const automatic = page.locator(".jank-automatic-live");
+  const automaticBefore = await automatic.boundingBox();
   const scopesBefore = await scopes.boundingBox();
   await scopes.hover();
   await page.mouse.wheel(0, 300);
@@ -167,8 +169,9 @@ test("LIVE keeps its summary pinned while details scroll from CPU scopes", async
   expect(await chart.boundingBox()).toEqual(chartBefore);
   const scroll = page.getByRole("region", { name: "Performance details" });
   await expect(scroll).toBeVisible();
+  expect(await automatic.boundingBox()).toEqual(automaticBefore);
   expect((await scroll.boundingBox())?.y).toBeCloseTo(
-    (chartBefore?.y ?? 0) + (chartBefore?.height ?? 0),
+    (automaticBefore?.y ?? 0) + (automaticBefore?.height ?? 0),
     0,
   );
   await scroll.focus();

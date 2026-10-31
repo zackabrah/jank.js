@@ -3,12 +3,9 @@ import { summarizeFrames } from "../analysis/statistics.ts";
 import { createViewerHandoff } from "../browser/viewer-handoff.ts";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import type { GpuSource } from "../sources.ts";
-import {
-  createCaptureView,
-  initializeCapture,
-  readCaptureOptions,
-  renderCaptureProgress,
-} from "./capture-view.ts";
+import { createAutomaticView } from "./automatic-view.ts";
+import { createCaptureInspector } from "./capture-inspector.ts";
+import { createCaptureView, initializeCapture, renderCaptureProgress } from "./capture-view.ts";
 import { createComparisonView } from "./comparison-view.ts";
 import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
@@ -84,6 +81,8 @@ export function createPanel(options: PanelOptions): Panel {
   let current = profiler.snapshot();
   const renderCaptures = createCaptureView(root, profiler, exporter);
   initializeCapture(root, profiler);
+  const automatic = createAutomaticView(root, profiler);
+  const inspector = createCaptureInspector(document);
   const comparisonView = options.comparison
     ? createComparisonView(root, options.comparison, {
         changed: safelyRedraw,
@@ -152,6 +151,9 @@ export function createPanel(options: PanelOptions): Panel {
     renderExportState(root, exporter.state(), recording);
     renderViewerTransfer();
     renderFreezeControls(root, frozen !== null);
+    if (mode === "full") {
+      automatic.render(current.targetFps);
+    }
     comparisonView?.render();
     write(root, "header-budget", (1000 / (frozen ?? current).targetFps).toFixed(1));
     for (const button of root.querySelectorAll<HTMLButtonElement>("[data-fps]")) {
@@ -234,7 +236,7 @@ export function createPanel(options: PanelOptions): Panel {
       notice.textContent = transfer.message;
     }
     for (const button of root.querySelectorAll<HTMLButtonElement>(
-      '[data-action="open-viewer"], [data-action="open-capture"]',
+      '[data-action="open-viewer"], [data-action="open-capture"], [data-action="inspect-trigger"]',
     )) {
       button.disabled = exporter.state().busy || transfer.busy;
     }
@@ -295,6 +297,7 @@ export function createPanel(options: PanelOptions): Panel {
     },
     clear: () => {
       options.comparison?.cancel("Profiler cleared; comparison cancelled.");
+      inspector.dispose();
       handoff.clear();
       exporter.clear();
       liveView.clear();
@@ -309,7 +312,28 @@ export function createPanel(options: PanelOptions): Panel {
     export: () => {
       exporter.export().catch(showError);
     },
-    arm: () => profiler.capture.arm(readCaptureOptions(root)),
+    arm: () => automatic.arm(),
+    "auto-toggle": () => automatic.toggle(),
+    "auto-settings": () => {
+      tabs.select("capture");
+      element<HTMLDetailsElement>(root, '[data-section="automatic"]').open = true;
+      element<HTMLSelectElement>(root, "[data-trigger-preset]").focus();
+    },
+    "inspect-trigger": () => {
+      const id = automatic.latest();
+      if (id !== undefined) {
+        exporter
+          .export(id, {
+            save: (recording) =>
+              inspector.open(
+                recording,
+                element<HTMLButtonElement>(root, '[data-action="inspect-trigger"]'),
+              ),
+            description: "Opened capture inspector.",
+          })
+          .catch(showError);
+      }
+    },
     disarm: () => profiler.capture.disarm(),
     budget: () =>
       profiler.setTargetFps(element<HTMLInputElement>(root, '[data-input="fps"]').valueAsNumber),
@@ -368,6 +392,7 @@ export function createPanel(options: PanelOptions): Panel {
   }
 
   root.addEventListener("click", click);
+  root.addEventListener("change", automatic.change);
   setMode(mode);
   return {
     refresh: (atMs) => {
@@ -391,6 +416,8 @@ export function createPanel(options: PanelOptions): Panel {
         integrationView.dispose();
         tabs.dispose();
         root.removeEventListener("click", click);
+        root.removeEventListener("change", automatic.change);
+        inspector.dispose();
         comparisonView?.dispose();
         handoff.dispose();
         exporter.dispose();

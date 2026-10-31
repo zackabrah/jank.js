@@ -19,15 +19,25 @@ export function initialViewerState(
   const comparison = input.kind === "comparison" ? input.comparison : null;
   const recording =
     input.kind === "recording" ? input.recording : (comparison?.trials[0]?.recording ?? null);
+  const trigger =
+    input.kind === "recording" && recording?.capture.kind === "automatic"
+      ? recording.capture.triggerFrameId
+      : null;
+  const index = Math.max(0, recording?.frames.findIndex((frame) => frame.id === trigger) ?? 0);
+  const selected = recording?.frames[index];
+  const visibleFrameCount = trigger !== null && (recording?.frames.length ?? 0) > 100 ? 200 : 100;
   return {
     status: "loaded",
     recording,
     comparison,
     selectedTrialIndex: comparison && comparison.trials.length > 0 ? 0 : null,
-    selectedFrameId: recording?.frames[0]?.id ?? null,
-    firstVisibleIndex: 0,
-    visibleFrameCount: 100,
-    comparisonElapsedMs: 0,
+    selectedFrameId: selected?.id ?? null,
+    firstVisibleIndex: Math.max(
+      0,
+      Math.min(index - visibleFrameCount / 2, (recording?.frames.length ?? 0) - visibleFrameCount),
+    ),
+    visibleFrameCount,
+    comparisonElapsedMs: (selected?.startedAtMs ?? 0) - (recording?.frames[0]?.startedAtMs ?? 0),
     comparisonWindowMs: 1000,
     comparisonWindowStartMs: 0,
   };

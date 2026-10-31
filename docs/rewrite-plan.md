@@ -93,7 +93,7 @@ work; this review does not change Red Skies or its editor.
 
 ## Product follow-up todo
 
-- [ ] Make automatic hitch capture a primary workflow: expose a clear **Capture slow frames**
+- [x] Make automatic hitch capture a primary workflow: expose a clear **Capture slow frames**
   control, visible armed/disarmed status and a notice when a hitch is captured, with a direct
   path to inspect or export it. Preserve before/after context, bounded retention and truthful
   completeness reporting. Make it clear that captures remain in memory until exported.
@@ -102,10 +102,12 @@ work; this review does not change Red Skies or its editor.
 - [x] Review the cloud-ramp user report before implementing capture UX changes. Read the updated
   report at Red Skies commit `b571916`, validate the delivered recordings and open capture 05
   in its bundled viewer. Evidence and follow-up scope are recorded below.
-- [ ] Evaluate budget-relative trigger guidance or presets alongside the absolute millisecond
-  threshold. Explain which slowdowns the selected threshold will miss. Choose default behavior
-  after reviewing capture usefulness and repeated-trigger noise, rather than treating one
-  workload's threshold as universally appropriate.
+- [x] Add budget-relative presets alongside the absolute millisecond threshold, with the
+  resolved rule and frame budget visible. Presets resolve when armed; changing the budget
+  does not silently replace an active rule.
+- [ ] Revisit default arming and threshold behavior after reviewing capture usefulness and
+  repeated-trigger noise. The default remains disarmed at 50 ms; one workload's useful
+  threshold is not universally appropriate.
 
 ### Reviewed feedback: storm transition
 
@@ -140,12 +142,13 @@ Desktop bundle `red-skies-cloud-ramp-jank-f1662bb-2026-10-31.zip`. Installed Jan
 
 ### Follow-up work from the report
 
-- [ ] Improve automatic-capture entry and orientation: prominent arm/status/captured feedback,
+- [x] Improve automatic-capture entry and orientation: prominent arm/status/captured feedback,
   budget-relative threshold guidance, and a prominent **Go to trigger** action or initial trigger
-  selection. Preserve access to the full before/after context. Evaluate sustained-over-budget
-  triggering separately from single-frame hitch detection.
-- [ ] Show actual pre/post elapsed durations alongside frame counts; evaluate bounded
-  seconds-based windows. Explain cooldown timing and archive retention/eviction. Consider
+  selection. Preserve access to the full before/after context. LIVE entry, presets, saved-capture
+  inspection, original-trigger selection and a sampled-out trigger notice are implemented.
+  Sustained-over-budget triggering remains a separate follow-up from single-frame detection.
+- [x] Show actual retained pre/post elapsed durations in the automatic recording inspector.
+- [ ] Evaluate bounded seconds-based windows. Explain cooldown timing and archive retention/eviction. Consider
   grouping repeated captures of one episode and opt-in automatic export for longer sessions.
 - [ ] Explain coverage where users inspect it: intentional sampling, partial sampled frames,
   complete sampled frames, missing records and CPU retention separately. State **Trigger GPU

@@ -47,6 +47,11 @@ export function panelMarkup(): string {
         <section data-tabpanel="live" class="jank-live">
           <div class="jank-metrics">${metric("fps", "FPS", `<span class="jank-fps-range" data-fps-range role="img" hidden><span data-value="fps-high"></span><i><i data-fps-mark></i></i><span data-value="fps-low"></span></span>`)}${metric("average", "AVG MS")}${metric("p95", "P95 MS")}${metric("worst", "WORST MS")}${metric("frame", "AT FRAME")}${metric("missed", "MISSED")}</div>
           <div class="jank-chart"><div data-live-chart="full" class="jank-frame-view"><canvas data-chart="full" role="img" aria-label="Recent frame durations"></canvas></div><div class="jank-chart-labels"><span data-value="range">–</span><span data-value="budget">–</span></div></div>
+          <div class="jank-automatic-live">
+            <div class="jank-actions"><button type="button" class="jl-btn" data-action="auto-toggle" aria-pressed="false">Capture slow frames</button><button type="button" class="jl-btn jl-small" data-action="auto-settings">Settings</button></div>
+            <p class="jank-note" data-automatic-status role="status"></p>
+            <div data-automatic-saved hidden><p class="jank-note" data-automatic-notice role="status"></p><button type="button" class="jl-btn jl-small" data-action="inspect-trigger">Inspect trigger</button></div>
+          </div>
           <div class="jank-scroll" role="region" aria-label="Performance details" tabindex="0">
             <details class="jank-section" data-section="scopes" open>
               <summary><h2>CPU SCOPES <span>MS / FRAME</span></h2></summary>
@@ -128,11 +133,14 @@ export function panelMarkup(): string {
             <summary><h2>AUTOMATIC CAPTURE <span data-value="capture-state">IDLE</span></h2></summary>
             <div>
               <div class="jank-settings jank-fields">
+                <label>Trigger preset <select class="jl-select" aria-label="Trigger preset" data-trigger-preset><option value="custom">Custom milliseconds</option><option value="1.5">1.5 × frame budget</option><option value="2">2 × frame budget</option><option value="3">3 × frame budget</option></select></label>
                 <label>Threshold ms <input class="jl-input" data-input="thresholdMs" type="number" min="0.001" step="any"></label>
                 <label>Before frames <input class="jl-input" data-input="beforeFrames" type="number" min="0" step="1"></label>
                 <label>After frames <input class="jl-input" data-input="afterFrames" type="number" min="0" step="1"></label>
                 <label>Cooldown ms <input class="jl-input" data-input="cooldownMs" type="number" min="0" step="any"></label>
               </div>
+              <p class="jank-note" data-trigger-rule></p>
+              <p class="jank-note">ARM applies these settings. A single frame must exceed the threshold; slower frames below it do not trigger. Cooldown starts after the after-frame window finishes.</p>
               <div class="jank-actions"><button type="button" class="jl-btn" data-action="arm" aria-label="Arm automatic capture">ARM</button><button type="button" class="jl-btn" data-action="disarm">DISARM</button></div></div>
           </details>
           <details class="jank-section" data-section="instrumentation" open>

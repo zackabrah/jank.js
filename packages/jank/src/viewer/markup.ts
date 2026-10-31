@@ -63,6 +63,7 @@ export function viewerMarkup(): string {
           <div class="jank-viewer-headline"><strong data-viewer-duration>—</strong><span>ms</span><span data-viewer-budget-ratio></span></div>
           <p class="jank-viewer-budget-note" data-viewer-budget-note>Unknown timing</p>
           <p class="jank-viewer-likely" data-viewer-likely></p>
+          <div class="jank-trigger-summary" data-trigger-summary hidden><button type="button" class="jl-btn" data-capture-action="open" data-go-trigger>Go to trigger</button><p data-trigger-context></p></div>
           <div data-comparison-only hidden class="jank-viewer-paired-frames"><p class="jank-series-a" data-paired-title="a"></p><p data-paired-frame="a"></p><p class="jank-series-b" data-paired-title="b"></p><p data-paired-frame="b"></p></div>
           <section class="jank-viewer-inspector-section"><h3>CPU <span>scope union / ms</span></h3><div data-inspector-cpu></div></section>
           <section class="jank-viewer-inspector-section"><h3>GPU <span>observed / ms</span></h3><div data-inspector-gpu></div></section>

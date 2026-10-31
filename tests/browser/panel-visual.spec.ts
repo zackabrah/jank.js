@@ -52,8 +52,10 @@ test("@visual panel retains LINE, MINI, FULL and capture layouts", async ({ page
   await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
   await expect(panel).toHaveScreenshot("panel-capture.png", costs);
   await page.getByRole("button", { name: "Shrink to mini view" }).click();
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("panel-mini.png");
   await page.getByRole("button", { name: "Collapse to one line" }).click();
+  await page.mouse.move(0, 0);
   await expect(panel).toHaveScreenshot("panel-line.png");
   await page.setViewportSize({ width: 360, height: 800 });
   await expect(panel).toHaveScreenshot("panel-line-narrow.png");

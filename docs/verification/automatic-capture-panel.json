@@ -1,0 +1,346 @@
+{
+  "collectedAt": "2026-10-31T11:43:35.262Z",
+  "platform": "darwin 25.5.0",
+  "cpu": "Apple M3 Max",
+  "browser": "headless Chromium 153.0.8010.12",
+  "method": "15 paired batches per mode, alternating order, 5000 synthetic host frames after 600 warmup frames; both paths collect eight scopes and counters. One discarded warmup pair per mode.",
+  "limits": "Incremental synchronous milliseconds per HOST FRAME, including normal refresh throttling, copying, DOM/canvas commands and any forced layout. Not cost per redraw. Headless tight loops exclude deferred paint/GPU and real frame scheduling. The full-diagnostics case includes static visibility/instance/temporal source reads and controls. No renderer, bounds drawing, archive, loading or old-panel comparison; batch ranges are not individual-frame tail latency.",
+  "results": [
+    {
+      "mode": "line",
+      "framesPerSample": 5000,
+      "samples": [
+        {
+          "baseline": 0.004259999999403953,
+          "instrumented": 0.014140000000596047,
+          "incremental": 0.009880000001192095
+        },
+        {
+          "baseline": 0.004059999999403954,
+          "instrumented": 0.013459999999403954,
+          "incremental": 0.0094
+        },
+        {
+          "baseline": 0.0041,
+          "instrumented": 0.013419999998807906,
+          "incremental": 0.009319999998807907
+        },
+        {
+          "baseline": 0.004119999998807907,
+          "instrumented": 0.0136,
+          "incremental": 0.009480000001192092
+        },
+        {
+          "baseline": 0.004159999999403954,
+          "instrumented": 0.013420000001788139,
+          "incremental": 0.009260000002384184
+        },
+        {
+          "baseline": 0.004040000000596047,
+          "instrumented": 0.0132,
+          "incremental": 0.009159999999403954
+        },
+        {
+          "baseline": 0.0040399999976158145,
+          "instrumented": 0.013459999999403954,
+          "incremental": 0.00942000000178814
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.0134,
+          "incremental": 0.0094
+        },
+        {
+          "baseline": 0.004020000001788139,
+          "instrumented": 0.013319999998807907,
+          "incremental": 0.009299999997019769
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.0137,
+          "incremental": 0.0097
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.013579999998211861,
+          "incremental": 0.009579999998211861
+        },
+        {
+          "baseline": 0.004059999999403954,
+          "instrumented": 0.013319999998807907,
+          "incremental": 0.009259999999403953
+        },
+        {
+          "baseline": 0.004019999998807907,
+          "instrumented": 0.0135,
+          "incremental": 0.009480000001192094
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.013580000001192093,
+          "incremental": 0.009580000001192093
+        },
+        {
+          "baseline": 0.004040000000596047,
+          "instrumented": 0.013140000000596046,
+          "incremental": 0.0091
+        }
+      ],
+      "medianIncrementalMsPerHostFrame": 0.0094,
+      "minimum": 0.0091,
+      "maximum": 0.009880000001192095
+    },
+    {
+      "mode": "mini",
+      "framesPerSample": 5000,
+      "samples": [
+        {
+          "baseline": 0.004040000000596047,
+          "instrumented": 0.060619999998807905,
+          "incremental": 0.05657999999821186
+        },
+        {
+          "baseline": 0.0038400000005960463,
+          "instrumented": 0.07594000000059604,
+          "incremental": 0.0721
+        },
+        {
+          "baseline": 0.003860000002384186,
+          "instrumented": 0.0906,
+          "incremental": 0.08673999999761581
+        },
+        {
+          "baseline": 0.004059999999403954,
+          "instrumented": 0.10964000000059605,
+          "incremental": 0.1055800000011921
+        },
+        {
+          "baseline": 0.004020000001788139,
+          "instrumented": 0.1262,
+          "incremental": 0.12217999999821187
+        },
+        {
+          "baseline": 0.0039199999988079074,
+          "instrumented": 0.1418,
+          "incremental": 0.1378800000011921
+        },
+        {
+          "baseline": 0.0039199999988079074,
+          "instrumented": 0.15665999999940394,
+          "incremental": 0.15274000000059604
+        },
+        {
+          "baseline": 0.003940000000596047,
+          "instrumented": 0.17812000000178813,
+          "incremental": 0.17418000000119208
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.19745999999940395,
+          "incremental": 0.19345999999940394
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.2142800000011921,
+          "incremental": 0.2102800000011921
+        },
+        {
+          "baseline": 0.0040399999976158145,
+          "instrumented": 0.2395199999988079,
+          "incremental": 0.2354800000011921
+        },
+        {
+          "baseline": 0.004019999998807907,
+          "instrumented": 0.2085,
+          "incremental": 0.2044800000011921
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.1810800000011921,
+          "incremental": 0.1770800000011921
+        },
+        {
+          "baseline": 0.0039,
+          "instrumented": 0.11395999999940395,
+          "incremental": 0.11005999999940395
+        },
+        {
+          "baseline": 0.0039800000011920925,
+          "instrumented": 0.11824000000059605,
+          "incremental": 0.11425999999940395
+        }
+      ],
+      "medianIncrementalMsPerHostFrame": 0.1378800000011921,
+      "minimum": 0.05657999999821186,
+      "maximum": 0.2354800000011921
+    },
+    {
+      "mode": "full",
+      "framesPerSample": 5000,
+      "samples": [
+        {
+          "baseline": 0.0039,
+          "instrumented": 0.1428,
+          "incremental": 0.13890000000000002
+        },
+        {
+          "baseline": 0.003939999997615814,
+          "instrumented": 0.14718000000119208,
+          "incremental": 0.14324000000357626
+        },
+        {
+          "baseline": 0.003959999999403953,
+          "instrumented": 0.15085999999940394,
+          "incremental": 0.1469
+        },
+        {
+          "baseline": 0.003880000001192093,
+          "instrumented": 0.15115999999940397,
+          "incremental": 0.14727999999821187
+        },
+        {
+          "baseline": 0.003979999998211861,
+          "instrumented": 0.16185999999940395,
+          "incremental": 0.1578800000011921
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.1648,
+          "incremental": 0.1608
+        },
+        {
+          "baseline": 0.004040000000596047,
+          "instrumented": 0.16922000000178813,
+          "incremental": 0.1651800000011921
+        },
+        {
+          "baseline": 0.003880000001192093,
+          "instrumented": 0.16972000000178813,
+          "incremental": 0.16584000000059604
+        },
+        {
+          "baseline": 0.0039199999988079074,
+          "instrumented": 0.17484000000059605,
+          "incremental": 0.17092000000178814
+        },
+        {
+          "baseline": 0.0039,
+          "instrumented": 0.1893,
+          "incremental": 0.1854
+        },
+        {
+          "baseline": 0.003940000000596047,
+          "instrumented": 0.19142000000178813,
+          "incremental": 0.18748000000119208
+        },
+        {
+          "baseline": 0.003959999999403953,
+          "instrumented": 0.1878,
+          "incremental": 0.18384000000059605
+        },
+        {
+          "baseline": 0.0039199999988079074,
+          "instrumented": 0.19445999999940394,
+          "incremental": 0.19054000000059604
+        },
+        {
+          "baseline": 0.003880000001192093,
+          "instrumented": 0.19834000000059604,
+          "incremental": 0.19445999999940394
+        },
+        {
+          "baseline": 0.0039,
+          "instrumented": 0.20042000000178814,
+          "incremental": 0.19652000000178815
+        }
+      ],
+      "medianIncrementalMsPerHostFrame": 0.16584000000059604,
+      "minimum": 0.13890000000000002,
+      "maximum": 0.19652000000178815
+    },
+    {
+      "mode": "full-diagnostics",
+      "framesPerSample": 5000,
+      "samples": [
+        {
+          "baseline": 0.003920000001788139,
+          "instrumented": 0.2140800000011921,
+          "incremental": 0.21015999999940396
+        },
+        {
+          "baseline": 0.0038400000005960463,
+          "instrumented": 0.21957999999821187,
+          "incremental": 0.21573999999761584
+        },
+        {
+          "baseline": 0.004019999998807907,
+          "instrumented": 0.22407999999821185,
+          "incremental": 0.22005999999940395
+        },
+        {
+          "baseline": 0.003819999998807907,
+          "instrumented": 0.23454000000059605,
+          "incremental": 0.23072000000178813
+        },
+        {
+          "baseline": 0.004059999999403954,
+          "instrumented": 0.2419,
+          "incremental": 0.23784000000059605
+        },
+        {
+          "baseline": 0.003940000000596047,
+          "instrumented": 0.23838000000119208,
+          "incremental": 0.23444000000059603
+        },
+        {
+          "baseline": 0.0039800000011920925,
+          "instrumented": 0.2459,
+          "incremental": 0.24191999999880792
+        },
+        {
+          "baseline": 0.003959999999403953,
+          "instrumented": 0.25712000000178814,
+          "incremental": 0.2531600000023842
+        },
+        {
+          "baseline": 0.0038599999994039535,
+          "instrumented": 0.2624399999976158,
+          "incremental": 0.25857999999821185
+        },
+        {
+          "baseline": 0.0038599999994039535,
+          "instrumented": 0.26207999999821185,
+          "incremental": 0.2582199999988079
+        },
+        {
+          "baseline": 0.0039,
+          "instrumented": 0.293,
+          "incremental": 0.28909999999999997
+        },
+        {
+          "baseline": 0.003939999997615814,
+          "instrumented": 0.31092000000178815,
+          "incremental": 0.30698000000417236
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.28024000000059607,
+          "incremental": 0.27624000000059606
+        },
+        {
+          "baseline": 0.004020000001788139,
+          "instrumented": 0.2930399999976158,
+          "incremental": 0.28901999999582767
+        },
+        {
+          "baseline": 0.004,
+          "instrumented": 0.29055999999940396,
+          "incremental": 0.28655999999940396
+        }
+      ],
+      "medianIncrementalMsPerHostFrame": 0.2531600000023842,
+      "minimum": 0.21015999999940396,
+      "maximum": 0.30698000000417236
+    }
+  ]
+}

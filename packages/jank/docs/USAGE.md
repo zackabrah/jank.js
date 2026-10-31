@@ -55,7 +55,15 @@ captures are retained. Old captures can be evicted. The last open frame is not s
 the next host frame boundary and is excluded from export. Limits are counts, not guaranteed
 recording durations. This build does not promise unlimited streaming capture.
 
-Automatic capture uses labelled threshold, before/after-frame and cooldown controls. Arm it
+Use **Capture slow frames** in LIVE to arm/disarm automatic capture; **Settings** opens its
+threshold, before/after-frame and cooldown controls. The default remains 50 ms and disarmed.
+Choose custom milliseconds or 1.5× / 2× / 3× budget, then ARM to apply. At 60 FPS, 1.5× is
+25 ms. Changing FPS updates the proposed preset but leaves an already-armed threshold alone
+until reapplied. Only frames exceeding the threshold trigger a capture.
+
+A **Capture saved** notice offers **Inspect trigger**, opening an in-place viewer while the
+application keeps running. Close or Escape returns to the panel. Export captures you want to
+keep; inspection does not save them to disk. Arm automatic capture
 to retain context around a slow frame; disarming stops new triggers while an active after-frame
 window finishes. Manual recording disarms automatic capture.
 
@@ -79,6 +87,10 @@ The library uses simulated sources. The development scene's temporal preview is 
 history, not a GPU velocity buffer or TAA implementation.
 
 ## Navigate the offline viewer
+
+Automatic recordings open at their original trigger. **Go to trigger** returns to it after
+navigation. The inspector shows retained seconds before/after and explicitly identifies a
+sampled-out trigger GPU observation; adjacent samples cannot supply the missing timing.
 
 Select a frame by clicking its timeline. Use the session overview to move through the full
 recording and drag the visible range. Zoom with the controls or wheel. VIEW exposes precise
