@@ -56,6 +56,14 @@ test("blocked popups download the selected evidence and explain the fallback", a
   expect((await download).suggestedFilename()).toBe("jank-manual.json");
   await expect(page.locator("[data-viewer-transfer-status]")).toContainText("Popup blocked");
   await expect(page.locator("[data-viewer-transfer-status]")).toContainText("Download requested");
+  expect(
+    await page.evaluate(() => {
+      const notice = document.querySelector("[data-viewer-transfer-status]");
+      const text = notice?.firstChild;
+      window.panelFixture.refresh();
+      return text === notice?.firstChild;
+    }),
+  ).toBe(true);
 });
 
 for (const viewerUrl of [

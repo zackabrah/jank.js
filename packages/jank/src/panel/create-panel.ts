@@ -226,7 +226,9 @@ export function createPanel(options: PanelOptions): Panel {
     element<HTMLButtonElement>(root, '[data-action="retry-viewer-download"]').hidden =
       !transfer.canRetry;
     notice.hidden = transfer.message === "";
-    notice.textContent = transfer.message;
+    if (notice.textContent !== transfer.message) {
+      notice.textContent = transfer.message;
+    }
     for (const button of root.querySelectorAll<HTMLButtonElement>(
       '[data-action="open-viewer"], [data-action="open-capture"]',
     )) {
