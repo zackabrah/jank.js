@@ -43,7 +43,7 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
     label: "Render submission",
     readCounters: () => ({ calls: 128, memoryBytes: 67108864, animations: true }),
   });
-  const loading: LoadingSnapshot = {
+  const coldLoading: LoadingSnapshot = {
     id: 1,
     label: "Simulated scene loading",
     kind: "fresh-context",
@@ -73,6 +73,7 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
       },
     ],
   };
+  let loading: LoadingSnapshot | null = coldLoading;
   let comparisonCpuScale = 1;
   const comparison = createComparison({
     profiler,
@@ -110,7 +111,7 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
         },
       },
       ...diagnostics,
-      loading: { snapshot: () => loading, history: () => [loading] },
+      loading: { snapshot: () => loading, history: () => (loading ? [coldLoading] : []) },
     });
     // This gallery mounts three copies; their landmarks need distinct accessible names.
     containers[mode].querySelector(".jank")?.setAttribute("aria-label", `Jank ${mode} preview`);
@@ -155,6 +156,37 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
   refresh(true);
 
   return {
+    advance: () => {
+      for (let frame = 0; frame < 60; frame += 1) {
+        step();
+      }
+      refresh(true);
+    },
+    setLoadingExample: (value: string) => {
+      if (value === "empty") {
+        loading = null;
+      } else {
+        const status =
+          value === "loading" || value === "failed" || value === "cancelled" ? value : "ready";
+        loading = {
+          ...coldLoading,
+          id: 2,
+          label: "SIMULATED repeat loading",
+          kind: "repeat-session",
+          status,
+          elapsedMs: 280,
+          pendingOperations: status === "loading" ? 2 : 0,
+          stages: coldLoading.stages.map((stage) => ({
+            ...stage,
+            busyMs: stage.busyMs / 2,
+            totalMs: stage.totalMs / 2,
+            failedCount: status === "failed" ? 1 : 0,
+            cancelledCount: status === "cancelled" ? 1 : 0,
+          })),
+        };
+      }
+      refresh(true);
+    },
     tick: () => {
       step();
       refresh();

@@ -216,7 +216,7 @@
           </div>
           <div class="preview-toolbar">
             <button id="stream-toggle" class="jl-btn" type="button">Pause sample stream</button
-            ><button id="spike" class="jl-btn" type="button">Add sample spike</button
+            ><button id="advance-stream" class="jl-btn" type="button">Advance 60 sample frames</button><button id="spike" class="jl-btn" type="button">Add sample spike</button
             ><button id="marker" class="jl-btn" type="button">Add event marker</button
             ><label
               >GPU example<select id="gpu-example" class="jl-select">
@@ -228,6 +228,13 @@
                 <option value="error">Readback error</option>
               </select></label
             >
+            <label>Loading example<select id="loading-example" class="jl-select">
+              <option value="ready">Ready / cached repeat</option>
+              <option value="loading">In progress</option>
+              <option value="failed">Failed operations</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="empty">No runs yet</option>
+            </select></label>
           </div>
           <div class="preview-grid">
             <article>

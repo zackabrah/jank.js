@@ -31,3 +31,8 @@ The CAPTURE tab includes the shared A/B comparison controls. Resume the sample s
 running them. A uses the normal synthetic CPU values; B multiplies synthetic update time by 1.25.
 The report and export are real Jank comparison artifacts, clearly labelled simulated; they do not
 measure this machine. Changing the GPU example or adding a spike cancels the sample experiment.
+
+For designer reviews, pause the sample stream (or enable reduced motion), then use **Advance
+60 sample frames** to progress captures and comparisons deterministically. **Loading example**
+selects completed, in-progress, failed, cancelled and empty mock runs. GPU examples retain
+missing and rejected timing as unknown. These controls only affect synthetic preview data.

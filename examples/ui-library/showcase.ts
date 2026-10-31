@@ -64,6 +64,11 @@ media.addEventListener(
   },
   { signal },
 );
+element("advance-stream").addEventListener("click", () => preview.advance(), { signal });
+const loadingExample = element<HTMLSelectElement>("loading-example");
+loadingExample.addEventListener("change", () => preview.setLoadingExample(loadingExample.value), {
+  signal,
+});
 element("spike").addEventListener("click", () => preview.spike(), { signal });
 element("marker").addEventListener("click", () => preview.marker(), { signal });
 const gpuExample = element<HTMLSelectElement>("gpu-example");
