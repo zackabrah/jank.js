@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { readThreeRendererCounters } from "../../packages/jank/src/adapters/three-counters.ts";
-import { createGpuProbe } from "./headroom-workloads.ts";
+import type { GpuWorkload } from "./gpu-workload-options.ts";
+import { createGpuProbe } from "./gpu-workloads.ts";
 import { createSceneDiagnostics } from "./scene-diagnostics.ts";
 
 /** The scene owns its renderer/resources. Profiling and scheduling belong to the host. */
@@ -33,6 +34,7 @@ export function createScene(canvas: HTMLCanvasElement) {
   let activeCount = 0;
   let probe: ReturnType<typeof createGpuProbe> | null = null;
   let probeIterations = 0;
+  let probeMode: GpuWorkload = "arithmetic";
   let elapsedSeconds = 0;
   let resolutionScale = 1;
 
@@ -107,11 +109,16 @@ export function createScene(canvas: HTMLCanvasElement) {
       renderer.info.reset();
       renderer.render(scene, camera);
       if (probeIterations > 0) {
-        probe ??= createGpuProbe(renderer);
+        probe ??= createGpuProbe(renderer, probeMode);
         probe.render(probeIterations);
       }
     },
-    stressGpu: (iterations: number) => {
+    stressGpu: (iterations: number, mode: GpuWorkload = "arithmetic") => {
+      if (probeMode !== mode) {
+        probe?.dispose();
+        probe = null;
+        probeMode = mode;
+      }
       probeIterations = iterations;
     },
     clearStress: (count: number) => {
@@ -125,6 +132,8 @@ export function createScene(canvas: HTMLCanvasElement) {
     },
     counters: () => ({
       objects: activeCount,
+      gpuWorkload: probeIterations > 0 ? probeMode : "off",
+      gpuWorkUnits: probeIterations,
       ...readThreeRendererCounters(renderer.info, "webgl"),
     }),
     dispose: () => {

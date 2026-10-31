@@ -4,7 +4,8 @@ Run `pnpm dev:demo` from the rewrite worktree. It opens
 `http://127.0.0.1:4187/examples/basic/`.
 
 The scene is 36 rotating cubes and a grid, using the already-pinned Three.js development
-dependency. It has no models, textures, audio, remote requests or private demonstration assets.
+dependency. It downloads no models, textures or audio and includes no private demonstration assets.
+The texture workloads generate their own deterministic noise locally.
 Increasing the object count deliberately increases animation and draw-submission work; the
 cubes share geometry and two materials. This example is outside both shipped packages.
 
@@ -102,14 +103,34 @@ space for the value while allowing the label to wrap.
 
 ## Quick headroom estimate
 
-Open **Quick headroom test** and choose **Estimate headroom**. The test uses the current
+Open **Quick headroom test**, select **GPU workload**, and choose **Estimate headroom**. The test uses the current
 Jank **Target FPS** setting (`1000 / target FPS` milliseconds independently for CPU and GPU).
-It measures a baseline, doubles fixed CPU computation batches, doubles an offscreen GPU shader's
-iteration count, then doubles the number of animated, individually submitted cubes. The last
+It measures a baseline, doubles fixed CPU computation batches, doubles the selected offscreen GPU workload, then doubles the number of animated, individually submitted cubes. The last
 ramp exercises CPU and GPU together. Each CPU batch updates 4,096 retained values; the GPU probe
 runs at the drawing-buffer resolution and writes UV-dependent results to an offscreen target.
 Neither workload is a timer-based wait. These workloads are demo-specific, not universal estimates
 of how many objects or effects a different game can afford.
+
+Four real GPU workloads are available, all implemented with WebGL2 fragment shaders:
+
+| Workload             | Work increased each step                                                  | Cap |
+| -------------------- | ------------------------------------------------------------------------- | --- |
+| Shader arithmetic    | Dependent trigonometric iterations per pixel                              | 512 |
+| Texture sampling     | Dependent filtered reads from a generated 512×512 texture per pixel       | 512 |
+| Volumetric raymarch  | Samples of a procedural density field integrated along each ray           | 256 |
+| Diffusion simulation | Five-tap simulation steps alternating between two full-resolution targets | 32  |
+
+Each run tests one selected GPU workload. Arithmetic, sampling and raymarching use one draw;
+diffusion uses one draw per simulation step, so its CPU submission cost grows too. Texture
+sampling stresses sampling/cache behavior, not a calibrated memory-bandwidth measurement.
+Diffusion uses RGBA8 state and is a synthetic workload, not a precision simulation benchmark.
+No new animation loop or per-frame readback is introduced. Probe resources are allocated when
+the GPU phase first draws, warmed up, reused, then released on Stop/completion or a workload
+change. Renderer target, cube face and mip level are restored after each probe.
+
+The selector locks during a run. Reports retain the tested workload and its units even if you
+select a different workload afterward. Renderer counters also retain `gpuWorkload` and
+`gpuWorkUnits` in recordings. Unsupported timing still skips GPU capacity recommendations.
 
 A step warms up for 600ms, measures for 1,000ms, then allows 300ms at baseline load for pending
 GPU queries. Two halves of each measurement window must each contain at least 12 frames.
@@ -165,3 +186,5 @@ The live panel's **OPEN VIEWER** action opens `/examples/viewer/` and transfers 
 recording after GPU finalization when a resolver is connected. During manual recording it reads
 **STOP & VIEWER**. CAPTURE cards open their own recording without stopping a newer capture.
 Blocked popups fall back to a JSON download that can be imported into the standalone viewer.
+
+GPU workload regressions compare real output pixels at two load levels, verify diffusion draw counts, reject out-of-cap loads, restore the borrowed render target, and check resource counts after repeated disposal.

@@ -1,3 +1,5 @@
+import { type GpuWorkload, gpuWorkloads } from "./gpu-workload-options.ts";
+
 /** Bounded quick-run decisions; clocks, CPU observations and correlated GPU replies are supplied by the host. */
 const headroomLimits = {
   warmupMs: 600,
@@ -35,6 +37,7 @@ export interface HeadroomOptions {
   readonly objects: number;
   readonly startedAtMs: number;
   readonly gpuSupported: boolean;
+  readonly gpuWorkload?: GpuWorkload;
 }
 
 function percentile(values: readonly number[]): number | null {
@@ -111,10 +114,15 @@ export function createHeadroomRun(options: HeadroomOptions) {
   if (!Number.isFinite(budgetMs) || budgetMs <= 0) {
     throw new RangeError("Headroom requires a positive target FPS");
   }
+  const gpuWorkload = options.gpuWorkload ?? "arithmetic";
+  const gpuLevels = Math.log2(gpuWorkloads[gpuWorkload].cap) + 1;
   const plan: HeadroomLevel[] = [
     { phase: "baseline", amount: options.objects },
     ...Array.from({ length: 11 }, (_, index) => ({ phase: "cpu" as const, amount: 2 ** index })),
-    ...Array.from({ length: 10 }, (_, index) => ({ phase: "gpu" as const, amount: 2 ** index })),
+    ...Array.from({ length: gpuLevels }, (_, index) => ({
+      phase: "gpu" as const,
+      amount: 2 ** index,
+    })),
     ...[
       ...new Set(
         Array.from({ length: 8 }, (_, index) => Math.min(8192, options.objects * 2 ** (index + 1))),
@@ -244,6 +252,7 @@ export function createHeadroomRun(options: HeadroomOptions) {
         status,
         reason,
         budgetMs,
+        gpuWorkload,
         targetFps: options.targetFps,
         level,
         steps: [...steps],

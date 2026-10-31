@@ -56,6 +56,16 @@
           <p>About one minute. Uses Jank’s current frame budget: baseline, CPU computation,
             GPU shader work, then increasing scene complexity. Motion runs during the test;
             manual CPU stalls are temporarily ignored.</p>
+          <label>GPU workload
+            <select id="headroom-workload" class="jl-select" aria-describedby="headroom-workload-description">
+              <option value="arithmetic">Shader arithmetic</option>
+              <option value="texture">Texture sampling</option>
+              <option value="raymarch">Volumetric raymarch</option>
+              <option value="diffusion">Diffusion simulation</option>
+            </select>
+          </label>
+          <p id="headroom-workload-description"></p>
+          <p>Real GPU computation in WebGL2 fragment shaders. Each run tests the selected workload separately.</p>
           <div class="controls">
             <button id="headroom-start" type="button" class="jl-btn jl-primary">Estimate headroom</button>
             <button id="headroom-stop" type="button" class="jl-btn" disabled>Stop estimate</button>
@@ -66,7 +76,7 @@
             <p id="headroom-baseline"></p>
             <dl>
               <dt>CPU computation</dt><dd id="headroom-cpu"></dd>
-              <dt>GPU shader</dt><dd id="headroom-gpu"></dd>
+              <dt id="headroom-gpu-heading">GPU shader</dt><dd id="headroom-gpu"></dd>
               <dt>Scene complexity · CPU + GPU</dt><dd id="headroom-scene"></dd>
             </dl>
           </div>

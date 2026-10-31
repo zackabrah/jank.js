@@ -1,11 +1,16 @@
+import { type GpuWorkload, gpuWorkloads } from "./gpu-workload-options.ts";
 import type { HeadroomPhase, HeadroomReport, HeadroomStep } from "./headroom-run.ts";
 
-export function loadLabel(phase: HeadroomPhase, amount: number): string {
+export function loadLabel(
+  phase: HeadroomPhase,
+  amount: number,
+  workload: GpuWorkload = "arithmetic",
+): string {
   if (phase === "cpu") {
     return `${amount.toLocaleString()} × 4,096 CPU updates/frame`;
   }
   if (phase === "gpu") {
-    return `${amount} shader iterations/pixel`;
+    return `${amount} ${gpuWorkloads[workload].units}`;
   }
   return `${amount.toLocaleString()} cubes`;
 }
@@ -35,7 +40,7 @@ export function phaseSummary(report: HeadroomReport, phase: "cpu" | "gpu" | "sce
   const last = steps.at(-1);
   const lines = [
     passed
-      ? `Last within measured budgets: ${loadLabel(phase, passed.amount)}.`
+      ? `Last within measured budgets: ${loadLabel(phase, passed.amount, report.gpuWorkload)}.`
       : "No passing level measured.",
   ];
   if (passed) {
@@ -48,12 +53,12 @@ export function phaseSummary(report: HeadroomReport, phase: "cpu" | "gpu" | "sce
   }
   lines.push(
     recommended
-      ? `20% spare: ${loadLabel(phase, recommended.amount)}.`
+      ? `20% spare: ${loadLabel(phase, recommended.amount, report.gpuWorkload)}.`
       : "No level verified with 20% spare on both CPU and GPU.",
   );
   if (last && last.verdict !== "within-budget") {
     lines.push(
-      `Next: ${loadLabel(phase, last.amount)} — ${last.verdict}${last.limiting.length ? ` (${last.limiting.join(", ")})` : ""}.`,
+      `Next: ${loadLabel(phase, last.amount, report.gpuWorkload)} — ${last.verdict}${last.limiting.length ? ` (${last.limiting.join(", ")})` : ""}.`,
     );
   }
   if (last?.verdict === "unmeasured") {

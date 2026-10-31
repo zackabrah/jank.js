@@ -127,3 +127,33 @@ test("GPU coverage must be adequate in both windows before reporting a complete 
   expect(step.gpuP95Ms).toBeNull();
   expect(step.verdict).toBe("within-budget");
 });
+
+test.each([
+  ["arithmetic", 512, "shader iterations/pixel"],
+  ["texture", 512, "texture samples/pixel"],
+  ["raymarch", 256, "ray steps/pixel"],
+  ["diffusion", 32, "simulation steps/frame"],
+] as const)(
+  "%s ramps use their own bounded work units and retain their identity",
+  async (gpuWorkload, cap, units) => {
+    const { phaseSummary } = await import("../../../examples/basic/headroom-results.ts");
+    const run = createHeadroomRun({
+      targetFps: 60,
+      objects: 36,
+      startedAtMs: 0,
+      gpuSupported: true,
+      gpuWorkload,
+    });
+    for (let atMs = 0, frameId = 0; atMs < 60000 && run.running(); atMs += 20) {
+      run.tick(atMs);
+      run.frame({ frameId: ++frameId, atMs, cpuMs: 2, frameMs: 16.7 });
+      run.gpu(frameId, 2);
+      expect(run.work().gpuIterations).toBeLessThanOrEqual(cap);
+    }
+    const report = run.report();
+    expect(report.gpuWorkload).toBe(gpuWorkload);
+    expect(report.steps.filter((step) => step.phase === "gpu").at(-1)?.amount).toBe(cap);
+    expect(phaseSummary(report, "gpu")).toContain(units);
+    expect(report.phaseEnds.gpu).toBe("load cap reached");
+  },
+);

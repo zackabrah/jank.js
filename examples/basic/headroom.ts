@@ -1,5 +1,6 @@
 import type { GpuState, Profiler } from "../../packages/jank/src/index.ts";
 import type { createDemoGpu, DemoGpuMode } from "./gpu-source.ts";
+import { type GpuWorkload, gpuWorkloads } from "./gpu-workload-options.ts";
 import { baselineSummary, loadLabel, phaseSummary } from "./headroom-results.ts";
 import { createHeadroomRun, type HeadroomFrame, type HeadroomRun } from "./headroom-run.ts";
 import { createCpuProbe } from "./headroom-workloads.ts";
@@ -24,6 +25,9 @@ function required<T extends HTMLElement>(id: string): T {
 
 /** Coordinates only the demo; the host retains its sole animation loop and profiler. */
 export function createHeadroomTest(host: HeadroomHost) {
+  const workload = required<HTMLSelectElement>("headroom-workload");
+  const description = required("headroom-workload-description");
+  const gpuHeading = required("headroom-gpu-heading");
   const startButton = required<HTMLButtonElement>("headroom-start");
   const stopButton = required<HTMLButtonElement>("headroom-stop");
   const status = required("headroom-status");
@@ -47,6 +51,7 @@ export function createHeadroomTest(host: HeadroomHost) {
   let width = 0;
   let height = 0;
   let cpuBatches = 0;
+  let selectedWorkload: GpuWorkload = "arithmetic";
 
   function restore(): void {
     if (!active) {
@@ -69,6 +74,7 @@ export function createHeadroomTest(host: HeadroomHost) {
     }
     startButton.disabled = active || !host.scene || !host.profiler() || !host.canStart();
     stopButton.disabled = !active;
+    workload.disabled = active || !host.canStart();
     if (active) {
       for (const control of controls) {
         control.disabled = true;
@@ -81,8 +87,9 @@ export function createHeadroomTest(host: HeadroomHost) {
     results.hidden = false;
     status.textContent =
       report.status === "running"
-        ? `Running ${report.level.phase}: ${loadLabel(report.level.phase, report.level.amount)} · ${Math.floor(report.elapsedMs / 1000)} / 60 s`
+        ? `Running ${report.level.phase}: ${loadLabel(report.level.phase, report.level.amount, report.gpuWorkload)} · ${Math.floor(report.elapsedMs / 1000)} / 60 s`
         : report.reason;
+    gpuHeading.textContent = `GPU · ${gpuWorkloads[report.gpuWorkload].label}`;
     baseline.textContent = baselineSummary(report);
     cpu.textContent = phaseSummary(report, "cpu");
     gpu.textContent = phaseSummary(report, "gpu");
@@ -94,6 +101,7 @@ export function createHeadroomTest(host: HeadroomHost) {
     if (active || !profiler || !host.scene || !host.canStart()) {
       return;
     }
+    selectedWorkload = workload.value as GpuWorkload;
     originalObjects = host.scene.counters().objects;
     originalGpu = host.gpu.mode();
     host.gpu.select("webgl2");
@@ -106,12 +114,13 @@ export function createHeadroomTest(host: HeadroomHost) {
       objects: originalObjects,
       startedAtMs: performance.now(),
       gpuSupported: host.gpu.source.read().status !== "unsupported",
+      gpuWorkload: selectedWorkload,
     });
     for (const control of controls) {
       disabled.set(control, control.disabled);
     }
     active = true;
-    context.textContent = `Jank: ${targetFps} FPS · ${(1000 / targetFps).toFixed(2)} ms each for CPU / GPU · ${width} × ${height} drawing pixels · ${originalObjects} baseline cubes.`;
+    context.textContent = `Jank: ${targetFps} FPS · ${(1000 / targetFps).toFixed(2)} ms each for CPU / GPU · ${width} × ${height} drawing pixels · ${originalObjects} baseline cubes · ${gpuWorkloads[selectedWorkload].label}.`;
     refresh();
   }
 
@@ -142,7 +151,7 @@ export function createHeadroomTest(host: HeadroomHost) {
     const work = run.work();
     cpuBatches = work.cpuBatches;
     host.scene?.setCount(work.objects);
-    host.scene?.stressGpu(work.gpuIterations);
+    host.scene?.stressGpu(work.gpuIterations, selectedWorkload);
   }
 
   const stop = () =>
@@ -152,6 +161,11 @@ export function createHeadroomTest(host: HeadroomHost) {
       cancel("Tab hidden; restart in the foreground.");
     }
   };
+  const describeWorkload = () => {
+    description.textContent = gpuWorkloads[workload.value as GpuWorkload].description;
+  };
+  workload.addEventListener("change", describeWorkload);
+  describeWorkload();
   startButton.addEventListener("click", start);
   stopButton.addEventListener("click", stop);
   document.addEventListener("visibilitychange", visibility);
@@ -181,6 +195,7 @@ export function createHeadroomTest(host: HeadroomHost) {
     dispose: () => {
       run?.cancel("Demo disposed.");
       restore();
+      workload.removeEventListener("change", describeWorkload);
       startButton.removeEventListener("click", start);
       stopButton.removeEventListener("click", stop);
       document.removeEventListener("visibilitychange", visibility);
