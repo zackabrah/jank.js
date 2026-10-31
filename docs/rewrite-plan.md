@@ -101,4 +101,19 @@ archived preview has been updated by these source changes.
   whether it is armed by default is an open design decision.
 - [ ] Review the incoming user report before implementing the capture UX changes. Record
   reproduction steps and supporting evidence, then use the findings to refine scope and priority.
-  Report pending; no findings assumed yet.
+  Initial feedback is recorded below; the follow-up run and full report remain pending.
+- [ ] Evaluate budget-relative trigger guidance or presets alongside the absolute millisecond
+  threshold. Explain which slowdowns the selected threshold will miss. Choose default behavior
+  after reviewing capture usefulness and repeated-trigger noise, rather than treating one
+  workload's threshold as universally appropriate.
+
+### User feedback: storm transition
+
+- User-reported observation: the default 50 ms trigger captured nothing during sustained
+  roughly 35 ms frames. The threshold was too high for this slowdown; those reported frame
+  durations do not cross it. This alone does not establish a capture implementation failure.
+- A 25 ms threshold run is underway. Its outcome has not yet been reported.
+- Follow-up evidence to review: whether capture includes the onset, useful before/after
+  context, GPU completeness, and whether cooldown/repeated captures obscure or retain the
+  sustained slowdown. Confirm the configured target FPS and timing settings with the report.
+- No default or runtime behavior has been changed in response to this preliminary observation.
