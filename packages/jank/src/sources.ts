@@ -15,6 +15,7 @@ export interface VisibilityView {
 }
 
 export interface VisibilitySnapshot {
+  readonly note?: string;
   readonly enabled: boolean;
   readonly debugBounds: boolean;
   readonly views: readonly VisibilityView[];
@@ -44,6 +45,7 @@ export interface VisibilitySource {
 }
 
 export interface TemporalSnapshot {
+  readonly note?: string;
   readonly objectMotion: boolean;
   readonly debugView: "none" | "motion" | "history";
   readonly eligibleBatches: number;

@@ -142,6 +142,7 @@ function attachPanel(mode?: PanelMode): void {
     mode: "full",
     gpu: gpu.source,
     loading: loading.source,
+    ...(scene ? { visibility: scene.visibility, temporal: scene.temporal } : {}),
     ...(experiment ? { comparison: experiment } : {}),
   });
   if (mode) {
@@ -290,6 +291,7 @@ function click(event: MouseEvent): void {
       );
       status.textContent = "Marker added.";
     },
+    "inspect-culling": () => scene?.toggleInspectionView(),
     "cancel-loading": () => loading.cancel(),
     loading: () => {
       loading.start(() => scene?.setCount(Number(objectCount.value)));

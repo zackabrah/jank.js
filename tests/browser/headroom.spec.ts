@@ -86,6 +86,11 @@ test("budget changes cancel a run and missing timer support never becomes GPU ca
     );
   });
   await page.goto("/examples/basic/");
+  // Leave room for the baseline under shared CI load; this test exercises cancellation, not capacity.
+  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+  await page.getByLabel("Target FPS", { exact: true }).fill("15");
+  await page.getByRole("button", { name: "APPLY", exact: true }).click();
+  await page.getByRole("tab", { name: "LIVE", exact: true }).click();
   await page.getByText("Quick headroom test", { exact: true }).click();
   await page.getByRole("button", { name: "Estimate headroom", exact: true }).click();
   await expect(page.locator("#headroom-baseline")).toContainText("GPU unknown", { timeout: 10000 });

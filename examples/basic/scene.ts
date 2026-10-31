@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { readThreeRendererCounters } from "../../packages/jank/src/adapters/three-counters.ts";
 import { createGpuProbe } from "./headroom-workloads.ts";
+import { createSceneDiagnostics } from "./scene-diagnostics.ts";
 
 /** The scene owns its renderer/resources. Profiling and scheduling belong to the host. */
 export function createScene(canvas: HTMLCanvasElement) {
@@ -27,6 +28,8 @@ export function createScene(canvas: HTMLCanvasElement) {
   const neutral = new THREE.MeshStandardMaterial({ color: 0x7799aa, roughness: 0.6 });
   const accent = new THREE.MeshStandardMaterial({ color: 0xf26032, roughness: 0.6 });
   const cubes: THREE.Mesh[] = [];
+  const diagnostics = createSceneDiagnostics({ canvas, camera, cubes });
+  let inspectionView = false;
   let activeCount = 0;
   let probe: ReturnType<typeof createGpuProbe> | null = null;
   let probeIterations = 0;
@@ -38,6 +41,7 @@ export function createScene(canvas: HTMLCanvasElement) {
       return;
     }
     activeCount = count;
+    diagnostics.reset();
     while (cubes.length < count) {
       const cube = new THREE.Mesh(geometry, cubes.length % 9 === 0 ? accent : neutral);
       cubes.push(cube);
@@ -70,6 +74,14 @@ export function createScene(canvas: HTMLCanvasElement) {
   setCount(36);
   return {
     context,
+    visibility: diagnostics.visibility,
+    temporal: diagnostics.temporal,
+    toggleInspectionView: () => {
+      inspectionView = !inspectionView;
+      camera.position.set(inspectionView ? 2 : 9, inspectionView ? 1 : 10, inspectionView ? 2 : 13);
+      camera.lookAt(0, 0, 0);
+      diagnostics.reset();
+    },
     setCount,
     resolutionScale: () => resolutionScale,
     setResolutionScale: (scale: number) => {
@@ -90,6 +102,8 @@ export function createScene(canvas: HTMLCanvasElement) {
       }
     },
     render: () => {
+      scene.updateMatrixWorld(true);
+      diagnostics.update(activeCount);
       renderer.info.reset();
       renderer.render(scene, camera);
       if (probeIterations > 0) {
@@ -115,6 +129,7 @@ export function createScene(canvas: HTMLCanvasElement) {
     }),
     dispose: () => {
       resize.disconnect();
+      diagnostics.dispose();
       probe?.dispose();
       geometry.dispose();
       neutral.dispose();

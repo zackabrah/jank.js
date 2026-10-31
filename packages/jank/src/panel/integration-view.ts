@@ -167,7 +167,7 @@ function renderVisibility(
     "visibility-status",
     state.error ??
       (value
-        ? "Host visibility decisions · tested / visible / culled"
+        ? (value.note ?? "Host visibility decisions · tested / visible / culled")
         : "Visibility diagnostics unavailable"),
   );
   rows(
@@ -217,7 +217,9 @@ function renderTemporal(root: HTMLElement, state: ReturnType<typeof readState>["
     root,
     "temporal-status",
     state.error ??
-      (value ? "Host-owned object history and debug view" : "Temporal diagnostics unavailable"),
+      (value
+        ? (value.note ?? "Host-owned object history and debug view")
+        : "Temporal diagnostics unavailable"),
   );
   rows(
     element(root, '[data-list="temporal"]'),
