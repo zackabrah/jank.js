@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { readThreeRendererCounters } from "../../packages/jank/src/adapters/three-counters.ts";
 import { createGpuProbe } from "./headroom-workloads.ts";
 
 /** The scene owns its renderer/resources. Profiling and scheduling belong to the host. */
@@ -110,8 +111,7 @@ export function createScene(canvas: HTMLCanvasElement) {
     },
     counters: () => ({
       objects: activeCount,
-      draws: renderer.info.render.calls,
-      triangles: renderer.info.render.triangles,
+      ...readThreeRendererCounters(renderer.info, "webgl"),
     }),
     dispose: () => {
       resize.disconnect();

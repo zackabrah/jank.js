@@ -43,6 +43,7 @@ test("built profiler and both declaration packages work without workspace source
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
 import { createPanel, createProfiler, createLoadingProfiler, createViewer, parseComparison, finalizeRecording, inspectFrame, summarizeGpuCoverage, type InspectFrame } from "jank.js";
+import { readThreeRendererCounters } from "jank.js/adapters/three-counters";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
 declare const gl: WebGL2RenderingContext;
@@ -114,8 +115,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createPanel, createProfiler, createLoadingProfiler, finalizeRecording, inspectFrame, summarizeGpuCoverage, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
+import { readThreeRendererCounters } from "jank.js/adapters/three-counters";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
+assert.equal(readThreeRendererCounters(null, "webgpu").drawCalls, null);
 assert.equal(typeof createWebGl2GpuSource, "function");
 assert.equal(typeof createThreeWebGpuSource, "function");
 assert.equal(typeof createTabs, "function");
@@ -183,6 +186,7 @@ profiler.dispose();
         "-e",
         `import assert from "node:assert/strict";
 import { createPanel, createViewer, parseComparison } from "jank.js";
+import { readThreeRendererCounters } from "jank.js/adapters/three-counters";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
 for (const factory of [createPanel, createViewer, parseComparison, createWebGl2GpuSource, createThreeWebGpuSource]) {

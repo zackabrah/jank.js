@@ -127,7 +127,10 @@ test("the GPU probe adds real rendering work and releases its load on restore", 
     canvas.remove();
     return { baseline, probe, complex, restored };
   });
-  expect(counters.probe.draws).toBe(counters.baseline.draws + 1);
-  expect(counters.complex.draws).toBeGreaterThan(counters.probe.draws);
+  if (counters.baseline.drawCalls === null || counters.probe.drawCalls === null) {
+    throw new Error("Renderer counters unavailable");
+  }
+  expect(counters.probe.drawCalls).toBe(counters.baseline.drawCalls + 1);
+  expect(counters.complex.drawCalls).toBeGreaterThan(counters.probe.drawCalls);
   expect(counters.restored).toEqual(counters.baseline);
 });
