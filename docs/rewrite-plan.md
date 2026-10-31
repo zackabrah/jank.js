@@ -84,12 +84,12 @@ diff, more files, stricter lint settings or a lower line count alone proves none
 
 ## Investigation priorities from production runs
 
-Before continuing the offline viewer: capture completeness and precise timestamp diagnostics
-are implemented in source, with bounded retention markers and explicit GPU sampling. Named
-cloud panorama/shadows, ocean FFT, reflection, bloom and temporal-resolve passes are the next
-Red Skies integration slice; labels belong at those actual submission sites. Reusable A/B run
-control and unified stop/finalize/export are implemented; production adoption remains follow-up work. No production integration or
-archived preview has been updated by these source changes.
+Capture completeness, precise timestamp diagnostics, named-pass support, reusable A/B run
+control and unified stop/finalize/export are implemented. The Red Skies cloud-ramp report at
+`b571916` exercises installed Jank `f1662bb` with production integration `c80c2f8`, including
+named cloud, reflection, ocean and post-processing passes. Its findings below now guide the
+next product improvements. Production A/B adoption and finer host CPU scopes remain follow-up
+work; this review does not change Red Skies or its editor.
 
 ## Product follow-up todo
 
@@ -99,21 +99,74 @@ archived preview has been updated by these source changes.
   completeness reporting. Make it clear that captures remain in memory until exported.
   This is a discoverability improvement to the existing automatic capture behavior; changing
   whether it is armed by default is an open design decision.
-- [ ] Review the incoming user report before implementing the capture UX changes. Record
-  reproduction steps and supporting evidence, then use the findings to refine scope and priority.
-  Initial feedback is recorded below; the follow-up run and full report remain pending.
+- [x] Review the cloud-ramp user report before implementing capture UX changes. Read the updated
+  report at Red Skies commit `b571916`, validate the delivered recordings and open capture 05
+  in its bundled viewer. Evidence and follow-up scope are recorded below.
 - [ ] Evaluate budget-relative trigger guidance or presets alongside the absolute millisecond
   threshold. Explain which slowdowns the selected threshold will miss. Choose default behavior
   after reviewing capture usefulness and repeated-trigger noise, rather than treating one
   workload's threshold as universally appropriate.
 
-### User feedback: storm transition
+### Reviewed feedback: storm transition
 
-- User-reported observation: the default 50 ms trigger captured nothing during sustained
-  roughly 35 ms frames. The threshold was too high for this slowdown; those reported frame
-  durations do not cross it. This alone does not establish a capture implementation failure.
-- A 25 ms threshold run is underway. Its outcome has not yet been reported.
-- Follow-up evidence to review: whether capture includes the onset, useful before/after
-  context, GPU completeness, and whether cooldown/repeated captures obscure or retain the
-  sustained slowdown. Confirm the configured target FPS and timing settings with the report.
-- No default or runtime behavior has been changed in response to this preliminary observation.
+Source: Red Skies `docs/verification/jank-cloud-ramp-viewer-2026-10-31.md`, commit `b571916`;
+Desktop bundle `red-skies-cloud-ramp-jank-f1662bb-2026-10-31.zip`. Installed Jank is
+`0.2.1-rewrite.4` at `f1662bb`. The reported experiments use AC power, a 60 FPS target,
+120 frames before/after, a 5,000 ms cooldown and one-in-eight GPU sampling.
+
+- Reported 50 ms run: zero captures; storm-period median 34.8 ms, p95 41.7 ms, maximum 48.7 ms.
+  This is a severe-hitch threshold missing sustained over-budget work, not evidence that a
+  crossed threshold failed to trigger.
+- The 25 ms run produced ten captures. Independently parsed all ten with Jank: each has 241
+  sealed frames and its original trigger at position 121, exceeding 25 ms. All 50 supplied
+  checksums match. The report records settled finalization with no missing correlated GPU
+  records or merge omissions. Its slower overall run is not a controlled overhead comparison.
+- Opened `automatic/auto-25-05.json` first in the exact bundled viewer and selected
+  **Overview capture 1**: frame 7476, 27.8 ms, approximately 2.10 seconds before and 4.18 seconds
+  after. The `Coverage 50%` event and following Water + buoyancy rise remain visible. Within
+  this recording, independently calculated Water + buoyancy scope medians are approximately
+  0.2 ms before that event and 41.6 ms after it, excluding the frame spanning the event.
+  This identifies a broad CPU scope, not an individual function or a GPU cause.
+- Every exact trigger is deliberately sampled out. Each file has 211 sampled-out frames,
+  30 partial GPU samples with reversed reflection timestamps, zero complete GPU frames and
+  zero missing correlated records. Unknown totals must stay unknown; partial pass evidence
+  remains useful. Increasing sampling after detection cannot recover a skipped trigger.
+- The viewer opens at the first context frame. Its current `CPU 100% · GPU 0% · TRUNCATED`
+  header and long list of reflection invocations obscure these distinctions and push counters
+  below the fold. Import and trigger selection produced no browser JavaScript errors.
+- Frame-count windows cover different elapsed durations as FPS changes. Cooldown starts after
+  post-trigger collection; it is not a fixed five-second interval between trigger frames.
+- No default or runtime behavior has been changed by this review.
+
+### Follow-up work from the report
+
+- [ ] Improve automatic-capture entry and orientation: prominent arm/status/captured feedback,
+  budget-relative threshold guidance, and a prominent **Go to trigger** action or initial trigger
+  selection. Preserve access to the full before/after context. Evaluate sustained-over-budget
+  triggering separately from single-frame hitch detection.
+- [ ] Show actual pre/post elapsed durations alongside frame counts; evaluate bounded
+  seconds-based windows. Explain cooldown timing and archive retention/eviction. Consider
+  grouping repeated captures of one episode and opt-in automatic export for longer sessions.
+- [ ] Explain coverage where users inspect it: intentional sampling, partial sampled frames,
+  complete sampled frames, missing records and CPU retention separately. State **Trigger GPU
+  not sampled** explicitly. Keep raw rejected pairs and avoid claiming valid whole-frame totals.
+- [ ] Group GPU rows by stable named pass with expandable invocation detail in both timeline
+  and inspector. Any aggregate must use the correct interval union and retain partial/unknown
+  status; do not sum overlapping intervals into a misleading total.
+- [ ] Allow important context counters to be pinned near selected-frame evidence; improve numeric
+  formatting and distinguish counter-only channels from CPU work without hiding genuinely
+  unobserved registered CPU scopes.
+- [ ] Add bounded chunk export and a session manifest/timeline for long recordings. Expose GPU
+  pass/sample capacity as well as CPU frame capacity; starting a new capture currently shares
+  observation retention. Preserve explicit gaps and unsealed tails across chunks.
+- [ ] Mark export/serialization boundaries and support explicit analysis exclusions. In the manual
+  report, the worst frame is an export-boundary interval rather than the sustained CPU problem;
+  exclusion must be visible and must not erase original evidence.
+- [ ] Investigate reversed environment-reflection timestamps with the host integration before
+  claiming complete GPU costs. Trial denser sampling for short automatic captures and measure
+  its overhead with matched workloads; do not infer an instrumentation regression from these
+  sequential 50 ms and 25 ms runs.
+- [ ] Host follow-up: split Water + buoyancy into spectrum construction, query-field preparation
+  and buoyancy integration, or use a CPU trace. Reusable ramp/preset/scrub authoring belongs in
+  Junklab Engine; Red Skies owns weather parameters. Existing private hooks are evidence tools,
+  not a shipped editor feature.
