@@ -40,6 +40,8 @@ export function panelMarkup(): string {
       </div>
       <button type="button" class="jl-btn jank-read-summary" data-action="summary">Read summary</button><p class="jl-sr" aria-live="polite" data-value="summary"></p>
       <p class="jank-note" data-value="capture-health" hidden></p>
+      <p class="jank-note" data-viewer-transfer-status role="status" hidden></p>
+      <button type="button" class="jl-btn" data-action="retry-viewer-download" hidden>Retry viewer download</button>
       <div class="jank-views">
         <section data-tabpanel="live" class="jank-live">
           <div class="jank-metrics">${metric("fps", "FPS", `<span class="jank-fps-range" data-fps-range role="img" hidden><span data-value="fps-high"></span><i><i data-fps-mark></i></i><span data-value="fps-low"></span></span>`)}${metric("average", "AVG MS")}${metric("p95", "P95 MS")}${metric("worst", "WORST MS")}${metric("frame", "AT FRAME")}${metric("missed", "MISSED")}</div>
@@ -68,6 +70,7 @@ export function panelMarkup(): string {
               <button type="button" class="jl-btn" data-action="clear">CLEAR</button>
               <button type="button" class="jl-btn jl-primary" data-action="export">EXPORT JSON</button>
             </div>
+            <button type="button" class="jl-btn" data-action="open-viewer" aria-label="Open viewer" title="Stops an active manual recording and finalizes GPU results before opening" hidden>OPEN VIEWER</button>
             <p class="jank-note" data-export-status role="status" hidden></p>
           </div>
         </section>

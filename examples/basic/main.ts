@@ -137,6 +137,7 @@ function attachPanel(mode?: PanelMode): void {
   panel = createPanel({
     container: element("panel-mount"),
     profiler: instrumentation.profiler,
+    viewerUrl: new URL("../viewer/", import.meta.url).href,
     mode: "full",
     gpu: gpu.source,
     loading: loading.source,

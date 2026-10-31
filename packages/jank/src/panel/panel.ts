@@ -10,11 +10,12 @@ export interface PanelOptions {
   readonly profiler: Profiler;
   readonly mode?: PanelMode;
   readonly corner?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  /** Enables Open viewer. Same-origin HTTP(S) transfer; other URLs fall back to a download. */
   readonly viewerUrl?: string;
   readonly gpu?: GpuSource;
   /** Host-driven comparison; closing the panel cancels its run, without disposing the controller. */
   readonly comparison?: Comparison;
-  /** Borrowed interval resolver, such as the Three WebGPU adapter; used only during export. */
+  /** Borrowed interval resolver, such as the Three WebGPU adapter; used during export or viewer handoff. */
   readonly gpuResolver?: GpuFrameResolver;
   /** Bounded GPU finalization wait in milliseconds, 0–10000; defaults to 2000. */
   readonly exportTimeoutMs?: number;

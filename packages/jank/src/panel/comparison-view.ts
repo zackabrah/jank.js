@@ -57,6 +57,8 @@ export function createComparisonView(
           "gpu",
           "export",
           "export-capture",
+          "open-viewer",
+          "open-capture",
         ].includes(button.dataset.action ?? "")
       ) {
         continue;

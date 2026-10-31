@@ -146,9 +146,8 @@ implementation, not a claim of completed reference parity or remote CI execution
 The loading runtime and its full run/history, cache and overlap displays remain in slice 7.
 The current loading tab can display an injected source's stage summary or an explicit empty
 state. Visibility/temporal controls remain in slice 7. Optional [GPU timing adapters](gpu-adapters.md)
-are implemented. `viewerUrl`,
-`visibility` and `temporal` are still draft contract options without panel behavior; viewer
-opening/handoff arrives with the actual offline viewer. GPU observations render explicit
+are implemented. `viewerUrl` enables [viewer handoff](viewer.md#open-directly-from-the-panel).
+`visibility` and `temporal` are still draft contract options without panel behavior. GPU observations render explicit
 unavailable states; an optional borrowed GPU source provides enable/disable controls. The host
 feeds its observations to the profiler, so recording does not depend on an open panel. Adapters
 and GPU query ownership remain outside the panel. Tracing requires

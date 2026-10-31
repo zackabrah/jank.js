@@ -48,11 +48,13 @@ available until the complete parity matrix and release checks pass.
 5. **Core live panel implemented.** LINE, MINI and FULL, live statistics, native tabs, freeze,
    recording/export, labelled automatic capture, archive thumbnails and scope ownership now
    have browser, accessibility and visual checks. See [panel evidence](panel.md). Loading run
-   detail and optional integration views remain with slice 7; viewer handoff remains with slice 6.
+   detail and optional integration views remain with slice 7; viewer handoff is implemented in slice 6.
    New visual baselines do not constitute final reference-feature acceptance.
-6. **Analysis and offline viewer, started.** Pure CPU frame inspection is implemented; see
-   [analysis semantics](analysis.md). Add lanes, shared chart geometry, selection,
-   navigation, import/export, and safe handoff. Verify a single HTML artifact works offline.
+6. **Analysis and offline viewer implemented; final reference audit pending.** CPU/GPU lanes,
+   counter overlays, A/B inspection, navigation, captures, frame copy, nearby events and safe
+   panel handoff have behavior tests. The single HTML viewer works offline with local imports;
+   hosted same-origin handoff has validated messages and download fallbacks. See
+   [viewer behavior](viewer.md) and [analysis semantics](analysis.md).
 7. **Loading and optional integrations, partly implemented.** WebGL2 and Three r186 WebGPU
    timing were brought forward for the standalone preview. Their optional exports, delayed
    frame association and resource ownership are implemented with TDD; see [GPU evidence](gpu-adapters.md).
@@ -83,5 +85,5 @@ Before continuing the offline viewer: capture completeness and precise timestamp
 are implemented in source, with bounded retention markers and explicit GPU sampling. Named
 cloud panorama/shadows, ocean FFT, reflection, bloom and temporal-resolve passes are the next
 Red Skies integration slice; labels belong at those actual submission sites. Reusable A/B run
-control and unified stop/finalize/export remain follow-up work. No production integration or
+control and unified stop/finalize/export are implemented; production adoption remains follow-up work. No production integration or
 archived preview has been updated by these source changes.

@@ -152,3 +152,9 @@ coverage. **Export comparison** downloads one `jank.js-comparison` bundle contai
 trial's recording, scene context and comparison summary. The regular archive holds the raw measured
 plus drain captures; bundle recordings contain only sealed frames within measurement windows.
 See [comparison contracts and measurement limits](../../docs/comparisons.md).
+
+
+The live panel's **OPEN VIEWER** action opens `/examples/viewer/` and transfers the selected
+recording after GPU finalization when a resolver is connected. During manual recording it reads
+**STOP & VIEWER**. CAPTURE cards open their own recording without stopping a newer capture.
+Blocked popups fall back to a JSON download that can be imported into the standalone viewer.

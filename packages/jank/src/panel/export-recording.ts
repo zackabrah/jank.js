@@ -12,6 +12,10 @@ interface ExportOptions {
   readonly save: (recording: Recording) => void;
   readonly changed: () => void;
 }
+interface ExportDestination {
+  readonly save: (recording: Recording) => void;
+  readonly description: string;
+}
 interface SelectedRecording {
   readonly id: number | null;
   readonly recording: Recording;
@@ -79,7 +83,11 @@ export function createRecordingExporter(options: ExportOptions) {
   function current(epoch: number): boolean {
     return !disposed && epoch === generation;
   }
-  function finish(selected: SelectedRecording, result: RecordingFinalization | null): void {
+  function finish(
+    selected: SelectedRecording,
+    result: RecordingFinalization | null,
+    destination: ExportDestination,
+  ): void {
     if (
       selected.id !== null &&
       !profiler.capture.list().some((capture) => capture.id === selected.id)
@@ -91,11 +99,14 @@ export function createRecordingExporter(options: ExportOptions) {
     const description = describeResult(recording, result);
     cached = { id: selected.id, recording };
     retryRecent = selected.id === null;
-    options.save(recording);
+    destination.save(recording);
     retryRecent = false;
-    describe(selected.id, `Download requested. ${description}`);
+    describe(selected.id, `${destination.description} ${description}`);
   }
-  async function exportRecording(id?: number): Promise<void> {
+  async function exportRecording(
+    id?: number,
+    destination: ExportDestination = { save: options.save, description: "Download requested." },
+  ): Promise<void> {
     if (disposed || busy) {
       return;
     }
@@ -109,15 +120,19 @@ export function createRecordingExporter(options: ExportOptions) {
         : "Preparing captured data…",
     );
     options.changed();
-    await completeExport(selected, epoch);
+    await completeExport(selected, epoch, destination);
   }
-  async function completeExport(selected: SelectedRecording, epoch: number): Promise<void> {
+  async function completeExport(
+    selected: SelectedRecording,
+    epoch: number,
+    destination: ExportDestination,
+  ): Promise<void> {
     try {
       const result = options.resolver
         ? await finalizeRecording(selected.recording, options.resolver, { timeoutMs })
         : null;
       if (current(epoch)) {
-        finish(selected, result);
+        finish(selected, result, destination);
       }
     } catch (error) {
       if (current(epoch)) {

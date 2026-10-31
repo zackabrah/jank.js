@@ -49,3 +49,24 @@ describe("offline capture marks", () => {
     expect(marks.map((mark) => [mark.frameId, mark.source])).toEqual([[168, "recorded"]]);
   });
 });
+
+it("missing recordings have no captures and event context excludes unrelated times", () => {
+  expect(findCaptureMarks(null)).toEqual([]);
+  const base = viewerReferenceFixture();
+  const recording = {
+    ...base,
+    events: [
+      { atMs: 0, label: "Before capture context", detail: null },
+      ...base.events,
+      { atMs: 100000, label: "After recording", detail: null },
+    ],
+  };
+  const marks = findCaptureMarks(recording);
+  expect(
+    marks.every(
+      (mark) =>
+        !mark.nearbyEvents.includes("capture context") &&
+        !mark.nearbyEvents.includes("After recording"),
+    ),
+  ).toBe(true);
+});

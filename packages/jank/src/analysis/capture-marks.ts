@@ -12,7 +12,8 @@ export interface CaptureMark {
 
 /** Automatic files retain their actual trigger. Other files expose up to 50 detected spikes. */
 export function findCaptureMarks(recording: Recording | null): CaptureMark[] {
-  if (!recording) {
+  const originMs = recording?.frames[0]?.startedAtMs;
+  if (!recording || originMs === undefined) {
     return [];
   }
   const automatic = recording.capture.kind === "automatic" ? recording.capture : null;
@@ -29,7 +30,7 @@ export function findCaptureMarks(recording: Recording | null): CaptureMark[] {
         rank: index + 1,
         frameId: frame.id,
         frameIndex: peak.frameIndex,
-        elapsedMs: frame.startedAtMs - (recording.frames[0]?.startedAtMs ?? 0),
+        elapsedMs: frame.startedAtMs - originMs,
         durationMs: peak.durationMs,
         source: automatic ? "recorded" : "detected",
         nearbyEvents: nearbyEvents(recording, peak.frameIndex),

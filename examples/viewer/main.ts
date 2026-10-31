@@ -6,6 +6,6 @@ const container = document.querySelector<HTMLElement>("#viewer");
 if (!container) {
   throw new Error("Missing viewer container");
 }
-const viewer = createViewer({ container });
+const viewer = createViewer({ container, receiveFromOpener: true });
 document.body.dataset.ready = "true";
 window.addEventListener("pagehide", () => viewer.dispose(), { once: true });

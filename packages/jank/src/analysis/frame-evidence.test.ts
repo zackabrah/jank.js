@@ -58,3 +58,12 @@ it("retains every GPU observation and exact rejected timestamps in copied eviden
   expect(copied.gpu[0].metrics).toBeNull();
   expect(copied.recordingCoverage.gpu.incompleteFrames).toBe(1);
 });
+
+it("empty recordings have no frame evidence or nearby events, and events after the final frame stay excluded", () => {
+  const base = recordingFixture();
+  const empty = { ...base, frames: [] };
+  expect(frameEvidence(empty, 1)).toBeNull();
+  expect(nearbyEvents(empty, 0)).toEqual([]);
+  expect(nearbyEvents(base, 32).map((event) => event.offsetMs)).toEqual([-12]);
+  expect(nearbyEvents(base, -1).map((event) => event.offsetMs)).toEqual([21]);
+});

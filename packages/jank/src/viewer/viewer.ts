@@ -35,4 +35,8 @@ export interface Viewer {
   snapshot(): ViewerState;
   dispose(): void;
 }
-export type CreateViewer = (options: { readonly container: HTMLElement }) => Viewer;
+export type CreateViewer = (options: {
+  readonly container: HTMLElement;
+  /** Opt in to one same-origin panel transfer; local imports and newer loads take precedence. */
+  readonly receiveFromOpener?: boolean;
+}) => Viewer;

@@ -171,3 +171,22 @@ it("retries the same recent-history file after a failed download, then resumes f
   await exporter.export();
   expect(save.mock.calls[2]?.[0].frames).toHaveLength(3);
 });
+
+it("delivers the finalized selected capture to the viewer without also downloading it", async () => {
+  const { profiler, record } = host();
+  record();
+  const save = vi.fn();
+  const receive = vi.fn();
+  const exporter = createRecordingExporter({
+    profiler,
+    resolver: { resolveFrames: async (ids) => resolved(ids) },
+    save,
+    changed: vi.fn(),
+  });
+  await exporter.export(undefined, { save: receive, description: "Viewer transfer prepared." });
+  expect(save).not.toHaveBeenCalled();
+  expect(receive).toHaveBeenCalledTimes(1);
+  expect(receive.mock.calls[0]?.[0].gpu).toHaveLength(2);
+  expect(exporter.state().message).toContain("Viewer transfer prepared");
+  expect(exporter.state().message).toContain("100.0%");
+});

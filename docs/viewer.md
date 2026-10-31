@@ -223,8 +223,8 @@ viewer.dispose();
 import path additionally enforces the encoded-byte limit before parsing. Snapshots are detached.
 Repeated disposal and late load/selection calls after disposal do not remount the viewer.
 
-This slice provides local import, A/B review and individual-frame investigation. It does not add
-live-window handoff, editing or statistical significance estimates.
+The viewer provides local import, panel handoff, A/B review and individual-frame investigation.
+It does not edit measurements or estimate statistical significance.
 The session overview covers the imported recording or selected A/B pair. Single-recording orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.
 
@@ -249,3 +249,29 @@ Counter cells show Δ prev from the previous valid numeric sample in that same t
 of skipped invalid polls is visible; the full tooltip includes elapsed sample spacing. Missing
 current values and numeric overflow produce unknown changes. The first valid sample has no
 previous delta. Poll gaps never establish continuity, and these deltas are not A/B differences.
+
+
+## Open directly from the panel
+
+Set `viewerUrl` on `createPanel` to a hosted viewer on the same origin. The basic demo points to
+`/examples/viewer/`. LIVE offers **OPEN VIEWER** (or **STOP & VIEWER** during a manual capture);
+each saved capture has its own button in CAPTURE. Opening an older capture does not stop another
+active recording. The shared export path selects and finalizes the recording using the configured
+GPU resolver and timeout, retains raw diagnostics, and reports coverage exactly as file export does.
+
+The supplied viewer entry opts into receipt with `createViewer({ container, receiveFromOpener: true })`.
+Custom viewer hosts must do the same; the public factory otherwise listens to no window messages.
+Transfer checks the exact opener/child window, exact HTTP(S) origin, protocol and a fresh token.
+Recording JSON passes the normal bounded schema validation. A viewer accepts at most one transfer;
+manual imports or newer API loads take precedence. No recording data is placed in the URL or storage.
+
+A blocked popup, unsupported URL, rejected transfer or missing acknowledgement after ten seconds
+requests a JSON download, with an explanation in the panel. File URLs use this fallback rather than
+opaque-origin messaging. The standalone viewer still opens downloaded JSON offline. If download
+fails, **Retry viewer download** retains and retries the exact prepared recording, including recent
+history even while the live history advances. A new handoff replaces that retry copy. Clearing or disposing the panel cancels pending
+transfers and fallback downloads; it does not close the user's viewer window.
+
+The transfer timeout includes viewer startup and GPU finalization. A download request cannot prove
+that the user saved a file. Only acknowledged receipt is reported as **Opened in viewer**. A/B bundles
+continue to use comparison export/import; this action transfers one selected recording.

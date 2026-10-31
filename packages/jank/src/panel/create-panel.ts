@@ -1,5 +1,6 @@
 import { createTabs } from "junkui";
 import { summarizeFrames } from "../analysis/statistics.ts";
+import { createViewerHandoff } from "../browser/viewer-handoff.ts";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import type { GpuSource } from "../sources.ts";
 import {
@@ -41,6 +42,12 @@ export function createPanel(options: PanelOptions): Panel {
   const document = container.ownerDocument;
   const window = document.defaultView;
   const download = createDownload(document);
+  const handoff = createViewerHandoff({
+    window,
+    viewerUrl: options.viewerUrl,
+    save: download.save,
+    changed: safelyRedraw,
+  });
   const exporter = createRecordingExporter({
     profiler,
     ...(options.gpuResolver ? { resolver: options.gpuResolver } : {}),
@@ -53,6 +60,8 @@ export function createPanel(options: PanelOptions): Panel {
   root.setAttribute("aria-label", "jank.js performance");
   root.dataset.corner = options.corner ?? "top-right";
   root.innerHTML = panelMarkup();
+  root.dataset.viewerEnabled = String(Boolean(options.viewerUrl));
+  element<HTMLButtonElement>(root, '[data-action="open-viewer"]').hidden = !options.viewerUrl;
   write(root, "gpu-source", options.gpu?.label ?? "ASYNCHRONOUS");
   write(
     root,
@@ -97,6 +106,7 @@ export function createPanel(options: PanelOptions): Panel {
         renderOverhead(root, current);
         if (selectedTab === "capture") {
           renderCaptures(current);
+          renderViewerTransfer();
           comparisonView?.render();
           return;
         }
@@ -136,6 +146,7 @@ export function createPanel(options: PanelOptions): Panel {
     recordButton.textContent = recording ? "STOP REC" : "REC";
     recordButton.setAttribute("aria-pressed", String(recording));
     renderExportState(root, exporter.state(), recording);
+    renderViewerTransfer();
     renderFreezeControls(root, frozen !== null);
     comparisonView?.render();
     write(root, "header-budget", (1000 / (frozen ?? current).targetFps).toFixed(1));
@@ -197,6 +208,9 @@ export function createPanel(options: PanelOptions): Panel {
   }
 
   function safelyRedraw(): void {
+    if (disposed) {
+      return;
+    }
     try {
       redraw();
     } catch (error) {
@@ -204,6 +218,49 @@ export function createPanel(options: PanelOptions): Panel {
     }
   }
 
+  function renderViewerTransfer(): void {
+    const transfer = handoff.state();
+    element<HTMLButtonElement>(root, '[data-action="open-viewer"]').textContent =
+      profiler.capture.getState().status === "manual" ? "STOP & VIEWER" : "OPEN VIEWER";
+    const notice = element<HTMLElement>(root, "[data-viewer-transfer-status]");
+    element<HTMLButtonElement>(root, '[data-action="retry-viewer-download"]').hidden =
+      !transfer.canRetry;
+    notice.hidden = transfer.message === "";
+    notice.textContent = transfer.message;
+    for (const button of root.querySelectorAll<HTMLButtonElement>(
+      '[data-action="open-viewer"], [data-action="open-capture"]',
+    )) {
+      button.disabled = exporter.state().busy || transfer.busy;
+    }
+  }
+  function openViewer(id?: number): void {
+    if (exporter.state().busy) {
+      return;
+    }
+    const destination = handoff.open();
+    if (destination) {
+      let delivered = false;
+      exporter
+        .export(id, {
+          ...destination,
+          save: (recording) => {
+            delivered = true;
+            destination.save(recording);
+          },
+        })
+        .then(() => {
+          if (!delivered) {
+            destination.cancel();
+            safelyRedraw();
+          }
+        })
+        .catch((error: unknown) => {
+          destination.cancel();
+          showError(error);
+          safelyRedraw();
+        });
+    }
+  }
   function comparisonAction(name: string): void {
     if (exporter.state().busy) {
       throw new Error("Wait for the current export to finish.");
@@ -230,12 +287,15 @@ export function createPanel(options: PanelOptions): Panel {
     },
     clear: () => {
       options.comparison?.cancel("Profiler cleared; comparison cancelled.");
+      handoff.clear();
       exporter.clear();
       liveView.clear();
       profiler.clear();
       gpuView.clear();
       frozen = null;
     },
+    "open-viewer": () => openViewer(),
+    "retry-viewer-download": () => handoff.retry(),
     export: () => {
       exporter.export().catch(showError);
     },
@@ -284,6 +344,8 @@ export function createPanel(options: PanelOptions): Panel {
         const targetFps = Number(button.dataset.fps);
         profiler.setTargetFps(targetFps);
         element<HTMLInputElement>(root, '[data-input="fps"]').value = String(targetFps);
+      } else if (button.dataset.action === "open-capture") {
+        openViewer(Number(button.dataset.captureId));
       } else if (button.dataset.action === "export-capture") {
         exporter.export(Number(button.dataset.captureId)).catch(showError);
       } else {
@@ -319,6 +381,7 @@ export function createPanel(options: PanelOptions): Panel {
         tabs.dispose();
         root.removeEventListener("click", click);
         comparisonView?.dispose();
+        handoff.dispose();
         exporter.dispose();
         download.dispose();
         gpuView.clear();

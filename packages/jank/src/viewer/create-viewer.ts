@@ -2,6 +2,7 @@ import { type CaptureMark, findCaptureMarks } from "../analysis/capture-marks.ts
 import { frameAtElapsed, type WorkIdentity, workCatalog } from "../analysis/frame-comparison.ts";
 import { summarizeFrames } from "../analysis/statistics.ts";
 import { fitTimelineWindow } from "../analysis/timeline.ts";
+import { receiveViewerHandoff } from "../browser/viewer-handoff.ts";
 import { drawRecordingChart } from "../charts/recording-chart.ts";
 import { readComparison } from "../comparison/codec.ts";
 import { createDownload } from "../panel/download.ts";
@@ -20,7 +21,7 @@ import { drawSession, sessionDuration } from "./session-view.ts";
 import { createTimelineNavigation, recordingWindow } from "./timeline-navigation.ts";
 import type { CreateViewer, ViewerDocument, ViewerImportResult, ViewerState } from "./viewer.ts";
 
-export const createViewer: CreateViewer = ({ container }) => {
+export const createViewer: CreateViewer = ({ container, receiveFromOpener = false }) => {
   const document = container.ownerDocument;
   const root = document.createElement("section");
   root.className = "jl jank-viewer";
@@ -634,6 +635,13 @@ export const createViewer: CreateViewer = ({ container }) => {
   ]) {
     root.addEventListener(type, onEvent);
   }
+  const stopHandoff = receiveFromOpener
+    ? receiveViewerHandoff({
+        window: document.defaultView,
+        importJson,
+        unchanged: () => !disposed && generation === 0,
+      })
+    : () => {};
   root.addEventListener("dragover", drag);
   root.addEventListener("drop", drop);
   const resize = new ResizeObserver(draw);
@@ -665,6 +673,7 @@ export const createViewer: CreateViewer = ({ container }) => {
         return;
       }
       disposed = true;
+      stopHandoff();
       generation += 1;
       for (const type of [
         "click",

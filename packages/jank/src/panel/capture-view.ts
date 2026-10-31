@@ -117,6 +117,16 @@ function appendCapture(list: HTMLElement, profiler: Profiler, capture: SavedCapt
   notice.setAttribute("aria-live", "polite");
   notice.hidden = true;
   card.append(title, chart, exportButton, notice);
+  if (list.closest<HTMLElement>("[data-viewer-enabled]")?.dataset.viewerEnabled === "true") {
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "jl-btn jl-small";
+    openButton.textContent = "OPEN VIEWER";
+    openButton.setAttribute("aria-label", `Open capture ${capture.id} in viewer`);
+    openButton.dataset.action = "open-capture";
+    openButton.dataset.captureId = String(capture.id);
+    notice.before(openButton);
+  }
   list.append(card);
   const recording = profiler.capture.read(capture.id);
   if (recording) {
