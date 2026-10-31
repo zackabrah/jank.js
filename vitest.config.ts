@@ -8,6 +8,7 @@ export default defineConfig({
       provider: "v8",
       include: [
         "packages/jank/src/core/**/*.ts",
+        "packages/jank/src/loading/**/*.ts",
         "packages/jank/src/recordings/**/*.ts",
         "packages/jank/src/comparison/**/*.ts",
         "packages/jank/src/analysis/**/*.ts",

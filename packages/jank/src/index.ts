@@ -1,6 +1,7 @@
 export { type GpuCoverage, summarizeGpuCoverage } from "./analysis/gpu-coverage.ts";
 export { type FrameSummary, type InspectFrame, inspectFrame } from "./analysis/summary.ts";
 export { createComparison } from "./browser/create-comparison.ts";
+export { createLoadingProfiler } from "./browser/create-loading-profiler.ts";
 export { createProfiler } from "./browser/create-profiler.ts";
 export { finalizeRecording, type RecordingFinalization } from "./browser/finalize-recording.ts";
 export { type ComparisonResult, parseComparison } from "./comparison/codec.ts";
@@ -45,9 +46,12 @@ export type { ProfilerSnapshot } from "./core/snapshot.ts";
 export type {
   CreateLoadingProfiler,
   LoadingOperation,
+  LoadingOptions,
+  LoadingOutcome,
   LoadingProfiler,
   LoadingRun,
   LoadingSnapshot,
+  LoadingStage,
 } from "./loading/loading.ts";
 export { createPanel } from "./panel/create-panel.ts";
 export type { CreatePanel, Panel, PanelMode, PanelOptions } from "./panel/panel.ts";

@@ -42,7 +42,7 @@ test("built profiler and both declaration packages work without workspace source
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
-import { createPanel, createProfiler, createViewer, parseComparison, finalizeRecording, inspectFrame, summarizeGpuCoverage, type InspectFrame } from "jank.js";
+import { createPanel, createProfiler, createLoadingProfiler, createViewer, parseComparison, finalizeRecording, inspectFrame, summarizeGpuCoverage, type InspectFrame } from "jank.js";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
 declare const gl: WebGL2RenderingContext;
@@ -76,6 +76,9 @@ declare const tablist: HTMLElement;
 declare const button: HTMLButtonElement;
 declare const panel: HTMLElement;
 const profiler = factory({ targetFps: 60 });
+const loading = createLoadingProfiler();
+loading.beginRun({ label: "Level", kind: "fresh-context" }).measure("build", () => 42);
+loading.dispose();
 const viewer = createViewer({ container: panel });
 viewer.import("{}");
 const comparisonFile = parseComparison("{}");
@@ -109,7 +112,7 @@ tabs.dispose();
       `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createPanel, createProfiler, finalizeRecording, inspectFrame, summarizeGpuCoverage, parseRecording, serializeRecording } from "jank.js";
+import { createPanel, createProfiler, createLoadingProfiler, finalizeRecording, inspectFrame, summarizeGpuCoverage, parseRecording, serializeRecording } from "jank.js";
 import { createTabs } from "junkui";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
@@ -125,6 +128,12 @@ assert.ok(panelCss.includes(".jank") && panelCss.includes("--jl-ink"));
 assert.doesNotMatch(panelCss, /@import|url\\(/u);
 let timeMs = 0;
 const profiler = createProfiler({ now: () => timeMs });
+const loading = createLoadingProfiler({ now: () => timeMs });
+const load = loading.beginRun({ label: "Level", kind: "fresh-context" });
+load.measure("build", () => 42);
+load.finish("ready");
+assert.equal(loading.history().length, 1);
+loading.dispose();
 const channel = profiler.createChannel({ id: "physics", label: "Physics", readCounters: () => ({ bodies: 10 }) });
 profiler.capture.start();
 profiler.beginFrame(timeMs);

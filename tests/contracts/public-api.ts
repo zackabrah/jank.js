@@ -1,11 +1,7 @@
-import type {
-  ComparisonHost,
-  CreateLoadingProfiler,
-  GpuFrameResolver,
-  GpuState,
-} from "../../packages/jank/src/index.ts";
+import type { ComparisonHost, GpuFrameResolver, GpuState } from "../../packages/jank/src/index.ts";
 import {
   createComparison,
+  createLoadingProfiler,
   createPanel,
   createProfiler,
   createViewer,
@@ -16,7 +12,6 @@ import {
 import { createTabs } from "../../packages/junkui/src/index.ts";
 
 // These declarations are compile-time consumers, not placeholder implementations.
-declare const createLoadingProfiler: CreateLoadingProfiler;
 declare const container: HTMLElement;
 declare const gpuResolver: GpuFrameResolver;
 declare const comparisonHost: ComparisonHost;
