@@ -29,6 +29,13 @@ jobs:
       - run: pnpm test:package
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm test:browser
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
   visuals:
     # Native system-font baselines are intentionally tied to macOS 26 / arm64.
     runs-on: macos-26
@@ -43,3 +50,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install chromium firefox webkit
       - run: pnpm test:visual
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: visual-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

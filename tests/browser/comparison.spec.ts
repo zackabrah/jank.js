@@ -114,7 +114,13 @@ test("recording blocks a comparison and unavailable GPU timings stay unknown", a
     );
   });
   await page.goto("/examples/basic/");
-  await page.getByRole("button", { name: "REC", exact: true }).click();
+  await expect(page.locator("#host-frames")).not.toHaveText("0");
+  // Test capture/comparison exclusion without a live data refresh moving the pointer target.
+  await page.getByRole("button", { name: "REC", exact: true }).press("Enter");
+  await expect(page.getByRole("button", { name: "STOP REC", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await page.getByText("A/B comparison", { exact: true }).click();
   await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
   await page.getByText("A/B COMPARISON", { exact: true }).click();
