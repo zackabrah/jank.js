@@ -61,7 +61,7 @@ const culling = {
       viewProjection: null,
       instances: {
         ...source.instances,
-        views: source.instances.views.map((view) => ({ ...view, view: view.name })),
+        views: source.instances.views.map((view) => ({ ...view, view: view.name.toLowerCase() })),
       },
     };
   },

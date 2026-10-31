@@ -145,9 +145,9 @@ implementation, not a claim of completed reference parity or remote CI execution
 
 The [loading runtime](loading.md) and its run/history, cache, cold-baseline and overlap
 displays are implemented. The panel borrows the source and freezing copies its display data.
-Empty/disconnected sources remain explicit. Visibility/temporal controls remain in slice 7. Optional [GPU timing adapters](gpu-adapters.md)
+Empty/disconnected sources remain explicit. [Visibility, instance and temporal controls](renderer-diagnostics.md) are implemented. Optional [GPU timing adapters](gpu-adapters.md)
 are implemented. `viewerUrl` enables [viewer handoff](viewer.md#open-directly-from-the-panel).
-`visibility` and `temporal` are still draft contract options without panel behavior. GPU observations render explicit
+`visibility` and `temporal` are optional borrowed host sources with labelled controls and explicit unavailable states. GPU observations render explicit
 unavailable states; an optional borrowed GPU source provides enable/disable controls. The host
 feeds its observations to the profiler, so recording does not depend on an open panel. Adapters
 and GPU query ownership remain outside the panel. Tracing requires
@@ -216,7 +216,7 @@ reference-parity screenshot includes an event, a slow frame, CPU meters and both
 unknown GPU passes. Pure chart-layout tests cover frame geometry, tie-breaking, gaps, marker
 collisions and lifecycle glyphs. Existing panel, GPU, accessibility and visual suites remain
 required. Offline viewer and loading behavior now have their own verified slices; optional
-visibility/temporal functionality remains pending.
+visibility/temporal functionality now has its own verified integration slice.
 
 The [local parity benchmark](verification/panel-parity.json) measured median incremental
 synchronous costs of 0.0094ms (LINE), 0.1385ms (MINI), and 0.2087ms (FULL) per host frame on

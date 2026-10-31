@@ -7,12 +7,12 @@ export interface CounterIdentity {
   readonly name: string;
   readonly label: string;
 }
-export interface CounterPoint {
+interface CounterPoint {
   readonly elapsedMs: number;
   readonly value: number | null;
   readonly note: string;
 }
-export interface CounterChange {
+interface CounterChange {
   readonly value: number | null;
   readonly previousElapsedMs: number | null;
   readonly intervalMs: number | null;

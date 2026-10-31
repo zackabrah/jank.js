@@ -1,5 +1,5 @@
 /** Bounded quick-run decisions; clocks, CPU observations and correlated GPU replies are supplied by the host. */
-export const headroomLimits = {
+const headroomLimits = {
   warmupMs: 600,
   measureMs: 1000,
   drainMs: 300,

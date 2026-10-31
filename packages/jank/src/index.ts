@@ -88,6 +88,7 @@ export type {
   TemporalSource,
   VisibilitySnapshot,
   VisibilitySource,
+  VisibilityView,
 } from "./sources.ts";
 export { createViewer } from "./viewer/create-viewer.ts";
 export type {

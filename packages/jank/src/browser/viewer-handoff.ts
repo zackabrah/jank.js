@@ -1,7 +1,7 @@
 import { serializeRecording } from "../recordings/codec.ts";
 import type { Recording } from "../recordings/recording.ts";
 
-export const handoffParameter = "jank-handoff";
+const handoffParameter = "jank-handoff";
 const protocol = "jank.js-viewer-v1";
 
 export function handoffMessage(

@@ -47,11 +47,10 @@ reviewed at desktop and narrow widths and rerun without snapshot updates. A coun
 test now scrolls its target into view after the additional context lanes increased page height.
 No collection algorithm or GPU adapter changed; no new performance claim is made.
 
-## Remaining acceptance work
+## Follow-up acceptance
 
-This completes the current core panel/viewer audit, not acceptance of the entire rewrite.
-Loading run ownership/history/overlap/cache measurements, optional renderer counter helpers,
-visibility and instance diagnostics, temporal controls and the bounded debug overlay remain
-pending in [slice 7](../rewrite-plan.md). Production Red Skies pass labels and adoption of
-capture/comparison workflows also remain integration work. Final package/release acceptance
-must follow those slices and another visual review of their actual interfaces.
+The figures above describe the core panel/viewer audit at that point. Loading, renderer counter
+helpers, visibility/instance diagnostics, temporal controls and bounded debug bounds are now
+implemented and reviewed. See the [local acceptance report](local-acceptance.md) for the expanded
+suite, package review, overhead measurements and remaining limits. Production Red Skies pass
+labels and adoption of capture/comparison workflows remain separate integration work.

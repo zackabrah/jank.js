@@ -48,29 +48,29 @@ available until the complete parity matrix and release checks pass.
 5. **Core live panel implemented.** LINE, MINI and FULL, live statistics, native tabs, freeze,
    recording/export, labelled automatic capture, archive thumbnails and scope ownership now
    have browser, accessibility and visual checks. See [panel evidence](panel.md). Loading run
-   detail is implemented; optional integration views remain with slice 7; viewer handoff is implemented in slice 6.
+   detail is implemented; optional integration views are implemented in slice 7; viewer handoff is implemented in slice 6.
    New visual baselines do not constitute final reference-feature acceptance.
 6. **Analysis and offline viewer implemented; core reference audit completed.** CPU/GPU lanes,
    counter overlays, A/B inspection, navigation, captures, frame copy, nearby events and safe
    panel handoff have behavior tests. The single HTML viewer works offline with local imports;
    hosted same-origin handoff has validated messages and download fallbacks. See
    [viewer behavior](viewer.md), [analysis semantics](analysis.md) and the
-   [reference audit](verification/ui-parity.md). Remaining integration views and final release acceptance
-   stay in slices 7–8.
-7. **Loading and optional integrations, partly implemented.** WebGL2 and Three r186 WebGPU
+   [reference audit](verification/ui-parity.md). Optional integration views and local acceptance are recorded in slices 7–8.
+7. **Loading and optional integration surfaces implemented.** WebGL2 and Three r186 WebGPU
    timing were brought forward for the standalone preview. Their optional exports, delayed
    frame association and resource ownership are implemented with TDD; see [GPU evidence](gpu-adapters.md).
    [Loading runs](loading.md), overlapping stages, retained cold baseline, cache/byte observations
-   and bounded session history are implemented with a real demo and panel tests. Renderer counter
-   helpers, visibility/temporal controls and the bounded overlay remain pending. Keep each renderer optional and preserve limitations in the readout.
-8. **Acceptance and packaging.** Complete all retained-feature tests, independent package builds,
-   exports, docs, visual comparisons and overhead benchmarks. Review package size and dependency
-   boundaries. Only then consider making the rewrite the primary branch or a release candidate.
+   and bounded session history are implemented with a real demo and panel tests. [Renderer counter helpers, visibility/instance/temporal controls and bounded overlays](renderer-diagnostics.md)
+   are implemented with optional host-owned contracts, demo coverage and browser checks. Keep each renderer optional and preserve limitations in the readout.
+8. **Local acceptance and packaging review completed.** Retained-feature tests, independent package
+   consumers, exports, documentation, visual comparisons, dependency boundaries and overhead
+   benchmarks have been reviewed. See the [acceptance report](verification/local-acceptance.md)
+   for evidence and limits, including GPU skips and remaining visual differences. Packages remain
+   private; production integration, primary-branch promotion and publication are separate decisions.
 
-The exact geometry types for the optional bounds overlay and renderer-specific factory inputs
-are intentionally deferred to their slice: they need the projection/API contract in front of
-the implementer. Their required features are recorded above rather than represented by fake
-generic interfaces now.
+The bounds API explicitly declares world AABBs, a column-major world-to-clip matrix and the
+clip-depth convention. Production visibility/temporal implementations remain in the host renderer;
+Jank does not substitute synthetic observations for those integrations.
 
 ## How to judge the result
 

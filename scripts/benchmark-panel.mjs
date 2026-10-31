@@ -16,6 +16,7 @@ try {
   await page.waitForFunction(() => document.body.dataset.ready === "true");
   const results = await page.evaluate(async () => {
     const { createPanel, createProfiler } = await import("/packages/jank/src/index.ts");
+    const { createDiagnosticPreview } = await import("/examples/ui-library/diagnostic-preview.ts");
     window.panelFixture.panel.dispose();
     window.panelFixture.profiler.dispose();
     const results = [];
@@ -31,7 +32,14 @@ try {
       });
       // Equal scope collection in the baseline isolates the incremental presentation work.
       profiler.requestScopes();
-      const panel = visible ? createPanel({ container: document.body, profiler, mode }) : null;
+      const panel = visible
+        ? createPanel({
+            container: document.body,
+            profiler,
+            mode: mode === "full-diagnostics" ? "full" : mode,
+            ...(mode === "full-diagnostics" ? createDiagnosticPreview() : {}),
+          })
+        : null;
       function frame(index) {
         timeMs = index * 16.7;
         profiler.beginFrame(timeMs);
@@ -55,7 +63,7 @@ try {
       profiler.dispose();
       return millisecondsPerHostFrame;
     }
-    for (const mode of ["line", "mini", "full"]) {
+    for (const mode of ["line", "mini", "full", "full-diagnostics"]) {
       sample(mode, false);
       sample(mode, true);
       const samples = [];
@@ -87,7 +95,7 @@ try {
     method:
       "15 paired batches per mode, alternating order, 5000 synthetic host frames after 600 warmup frames; both paths collect eight scopes and counters. One discarded warmup pair per mode.",
     limits:
-      "Incremental synchronous milliseconds per HOST FRAME, including normal refresh throttling, copying, DOM/canvas commands and any forced layout. Not cost per redraw. Headless tight loops exclude deferred paint/GPU and real frame scheduling. No adapter, archive, loading or old-panel comparison; batch ranges are not individual-frame tail latency.",
+      "Incremental synchronous milliseconds per HOST FRAME, including normal refresh throttling, copying, DOM/canvas commands and any forced layout. Not cost per redraw. Headless tight loops exclude deferred paint/GPU and real frame scheduling. The full-diagnostics case includes static visibility/instance/temporal source reads and controls. No renderer, bounds drawing, archive, loading or old-panel comparison; batch ranges are not individual-frame tail latency.",
     results,
   };
   mkdirSync("artifacts", { recursive: true });

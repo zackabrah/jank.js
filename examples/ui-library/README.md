@@ -7,14 +7,14 @@ assets or runtime dependencies. Send that one file to share the current UI libra
 The page bundles the current junkui tokens, native controls and accessible tabs, plus real Jank
 FULL/MINI/LINE panels. It shows colors, type and sizing tokens, button states, labelled fields,
 disclosures, scrolling graphs, annotations, warning colors, CPU/GPU meters, FPS indicators,
-loading and recording views. All three panels share one synthetic stream; recording, clearing,
+loading, recording, visibility, instance and temporal views. All three panels share one synthetic stream; recording, clearing,
 budgets and GPU enablement therefore affect the same profiler. Freeze is local to each panel.
 
 Use the sample controls to add a spike or event, pause the stream, or show absent passes,
 rejected timestamps, pending results and errors. Rows retain their order and unavailable timing
 stays unknown. A seeded capture is ready to export. Exports explicitly identify their application
 as **SIMULATED DATA**; this page is an interface showcase, not a device benchmark. Loading values
-remain a labelled static source example; the basic demo exercises the real loading runtime.
+and optional renderer diagnostics remain labelled synthetic source examples; the basic demo exercises the real loading runtime.
 
 The gallery adds layout around the existing components; it does not reimplement or copy their
 styles or behavior. Vite bundles the actual sources and the build script inlines its two outputs.

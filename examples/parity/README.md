@@ -22,7 +22,8 @@ viewports at equal scale; Actual size enables scrolling without shrinking typogr
 uses a 390-pixel native viewport. The controls within each pane remain interactive. Reset
 reloads both panes and aligns the viewers to spike #243 with a similar visible range. Loading runs use matched scripted fetch/decode intervals through each native API (600ms cold,
 100ms repeat), including overlapping cold fetch operations and explicit synthetic cache counts.
-Visibility and temporal integrations remain pending.
+Visibility / temporal compares matched synthetic host observations and controls. These demonstrate
+the integration UI, not production renderer culling or temporal reconstruction.
 
 Reference used for the October 31 audit: built 0.2.1, commit `eeed4c7`, marked local changes by
 its build metadata. Preserve that distinction when comparing against later source changes.

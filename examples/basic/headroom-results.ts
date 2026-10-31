@@ -10,7 +10,7 @@ export function loadLabel(phase: HeadroomPhase, amount: number): string {
   return `${amount.toLocaleString()} cubes`;
 }
 
-export function milliseconds(value: number | null): string {
+function milliseconds(value: number | null): string {
   return value === null ? "unknown" : `${value.toFixed(2)} ms`;
 }
 

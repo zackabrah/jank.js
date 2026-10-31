@@ -65,8 +65,10 @@ The host-provided trace sink converts profiler-relative times to navigation-rela
 Timing entries. It keeps at most 200 entries and only clears its own names. The dedicated
 clear button and profiler restart remove them; unrelated browser/host entries remain intact.
 
-The offline viewer is available through panel handoff. Visibility/temporal integrations remain
-pending and are not represented by fake controls here.
+The offline viewer is available through panel handoff. Visibility and temporal diagnostics are available in LIVE. Inspect culling moves the camera
+closer; culling and bounded wireframes use real cube AABBs. The temporal view is explicitly a
+CPU-projected corner/history preview, not a GPU velocity buffer or TAA. Instance counts remain
+unavailable because this scene contains individual meshes. See [integration limits](../../docs/renderer-diagnostics.md).
 
 ## Read the integration
 
