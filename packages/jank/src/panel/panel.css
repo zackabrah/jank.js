@@ -366,3 +366,154 @@
 .jank .jank-gpu-pass[data-observation="unavailable"] {
   color: var(--jl-muted);
 }
+
+/* Moving measured bars are clipped below fixed, readable annotations. */
+.jank .jank-frame-view {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+}
+.jank .jank-frame-view canvas {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+.jank [data-live-chart="mini"] {
+  height: 36px;
+  margin-top: 2px;
+}
+.jank [data-live-chart="mini"] canvas {
+  margin: 0;
+}
+.jank [data-chart-label] {
+  position: absolute;
+  top: 0;
+  max-width: 65%;
+  padding: 0 3px;
+  background: var(--jl-ink);
+  color: var(--jl-muted);
+  font: 10px / 14px var(--jl-font);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jank [data-chart-label="worst"] {
+  left: 0;
+  max-width: 32%;
+}
+.jank [data-chart-label="event"],
+.jank [data-chart-label="budget"] {
+  right: 0;
+}
+.jank [data-chart-label]:empty {
+  display: none;
+}
+.jank [data-chart-label][data-warning="true"] {
+  color: var(--jank-warning);
+}
+.jank [data-chart-label]::before {
+  content: none;
+}
+
+.jank .jank-meter-row::after {
+  display: none;
+}
+.jank .jank-meter {
+  position: relative;
+  flex: 1;
+  min-width: 8px;
+  align-self: stretch;
+  background: radial-gradient(circle, var(--jl-control) 0.8px, transparent 1px) 0 50% / 5px 20px;
+}
+.jank .jank-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: radial-gradient(circle, var(--jl-muted) 0.9px, transparent 1.1px) 0 50% / 5px 20px;
+}
+.jank [data-list="gpu"] .jank-meter {
+  background: linear-gradient(90deg, var(--jl-control) 3px, transparent 0) 0 50% / 5px 1px repeat-x;
+}
+.jank [data-list="gpu"] .jank-meter-fill {
+  background: linear-gradient(90deg, var(--jl-muted) 3px, transparent 0) 0 50% / 5px 1px repeat-x;
+}
+.jank [data-heavy="true"] > span {
+  color: var(--jl-bright);
+  font-weight: 600;
+}
+.jank [data-heavy="true"] .jank-meter-fill {
+  background-image: radial-gradient(circle, var(--jl-bright) 1px, transparent 1.2px);
+}
+.jank [data-dim="true"] {
+  color: var(--jl-muted);
+}
+.jank .jank-tile {
+  position: relative;
+}
+.jank .jank-tile > .jank-fps-range {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  line-height: 10px;
+  letter-spacing: 0;
+}
+.jank .jank-fps-range > i {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: var(--jl-control);
+}
+.jank [data-fps-mark] {
+  position: absolute;
+  left: -2px;
+  width: 5px;
+  height: 1px;
+  background: var(--jl-text);
+}
+.jank .jank-header-budget {
+  margin-left: auto;
+  align-self: center;
+  color: var(--jl-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.jank .jank-budget-presets {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 0;
+}
+.jank .jank-budget-presets [aria-pressed="true"] {
+  background: var(--jl-text);
+  color: var(--jl-ink);
+}
+.jank .jank-read-summary:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+.jank .jank-read-summary:focus {
+  margin: 4px;
+}
+.jank .jank-counter-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 10px;
+}
+.jank .jank-counter-list [data-error="true"] {
+  grid-column: 1 / -1;
+}
+.jank .jank-section h2 > span {
+  max-width: 65%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

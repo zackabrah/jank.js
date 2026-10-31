@@ -1,6 +1,7 @@
 import type { GpuIntervalSample, GpuSample, GpuState } from "../core/gpu.ts";
-import { element, milliseconds, rows, write } from "./dom.ts";
+import { element, milliseconds, write } from "./dom.ts";
 import { createGpuPassRows, type GpuPassRow } from "./gpu-pass-rows.ts";
+import { createMeter, meterRows, updateMeter } from "./meters.ts";
 
 /** Row identity and availability belong to this mounted panel, never the recorded measurements. */
 export function createGpuView(root: HTMLElement, passOrder?: readonly string[]) {
@@ -21,17 +22,17 @@ export function createGpuView(root: HTMLElement, passOrder?: readonly string[]) 
   }
   return {
     clear,
-    render(gpu: GpuState | null): void {
+    render(gpu: GpuState | null, budgetMs: number): void {
       const view = model.update(gpu);
       const sample = gpu?.status === "ready" ? gpu.sample : null;
       explanation.hidden = view.measurement !== "intervals";
-      renderTotals(totals, view.measurement, sample);
+      renderTotals(totals, view.measurement, sample, budgetMs);
       if (measurement !== view.measurement) {
         nodes.clear();
         passes.replaceChildren();
         measurement = view.measurement;
       }
-      renderPassRows(passes, nodes, view.rows);
+      renderPassRows(passes, nodes, view.rows, budgetMs);
       legend.hidden = view.rows.length === 0;
       write(
         root,
@@ -50,12 +51,14 @@ interface PassNode {
   readonly element: HTMLElement;
   readonly value: Text;
   readonly status: HTMLElement;
+  readonly meter: HTMLElement;
 }
 
 function renderPassRows(
   parent: HTMLElement,
   nodes: Map<string, PassNode>,
   values: readonly GpuPassRow[],
+  budgetMs: number,
 ): void {
   let next = parent.firstElementChild;
   for (const row of values) {
@@ -69,8 +72,13 @@ function renderPassRows(
     }
     next = node.element.nextElementSibling;
     node.element.dataset.observation = row.status;
+    updateMeter(node.meter, row.durationMs, budgetMs);
     const description = rowDescription(row);
-    node.element.title = description;
+    node.element.title =
+      description +
+      (row.durationMs === null
+        ? ""
+        : ` · ${row.durationMs.toFixed(2)} ms · ${((row.durationMs / budgetMs) * 100).toFixed(1)}% of budget`);
     const value = milliseconds(row.durationMs, 2);
     if (node.value.data !== value) {
       node.value.data = value;
@@ -83,7 +91,7 @@ function renderPassRows(
 
 function createPassNode(document: Document, row: GpuPassRow): PassNode {
   const element = document.createElement("div");
-  element.className = "jank-row jank-gpu-pass";
+  element.className = "jank-row jank-meter-row jank-gpu-pass";
   element.dataset.passId = row.id;
   const label = document.createElement("span");
   label.textContent = [row.label, row.type, row.category, `#${row.occurrence}`]
@@ -94,28 +102,49 @@ function createPassNode(document: Document, row: GpuPassRow): PassNode {
   const status = document.createElement("span");
   status.className = "jl-sr";
   cell.append(value, status);
-  element.append(label, cell);
-  return { element, value, status };
+  const meter = createMeter(document);
+  element.append(label, meter, cell);
+  return { element, value, status, meter };
 }
 
 function renderTotals(
   root: HTMLElement,
   measurement: GpuSample["measurement"] | null,
   sample: GpuSample | null,
+  budgetMs: number,
 ): void {
   if (measurement === "intervals") {
     const metrics = sample?.measurement === "intervals" ? sample.metrics : null;
-    rows(root, [
-      ["Render pass sum", milliseconds(metrics?.renderSumMs, 2)],
-      ["Compute pass sum", milliseconds(metrics?.computeSumMs, 2)],
-      ["Combined pass sum", milliseconds(metrics?.combinedSumMs, 2)],
-      ["GPU busy (union)", milliseconds(metrics?.busyMs, 2)],
-      ["GPU elapsed span", milliseconds(metrics?.elapsedSpanMs, 2)],
-    ]);
+    const totals: readonly (readonly [string, number | null])[] = [
+      ["Render pass sum", metrics?.renderSumMs ?? null],
+      ["Compute pass sum", metrics?.computeSumMs ?? null],
+      ["Combined pass sum", metrics?.combinedSumMs ?? null],
+      ["GPU busy (union)", metrics?.busyMs ?? null],
+      ["GPU elapsed span", metrics?.elapsedSpanMs ?? null],
+    ];
+    meterRows(
+      root,
+      totals.map(([label, durationMs]) => ({
+        label,
+        durationMs,
+        description: `${label}: ${milliseconds(durationMs, 2)} ms. GPU totals are separate measures; do not add them together.`,
+      })),
+      budgetMs,
+    );
     return;
   }
   const duration = sample && sample.measurement !== "intervals" ? sample.durationMs : null;
-  rows(root, [[measurement ?? "GPU time", milliseconds(duration, 2)]]);
+  meterRows(
+    root,
+    [
+      {
+        label: measurement ?? "GPU time",
+        durationMs: duration,
+        description: "Asynchronous GPU timing; separate from CPU execution.",
+      },
+    ],
+    budgetMs,
+  );
 }
 
 function rowDescription(row: GpuPassRow): string {

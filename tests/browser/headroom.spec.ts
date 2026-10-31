@@ -26,7 +26,7 @@ test("quick headroom uses Jank's budget and restores controls on stop and resize
   await expect(
     page
       .locator('[data-list="counters"] .jank-row')
-      .filter({ hasText: "extraMs" })
+      .filter({ hasText: "extra ms" })
       .locator("span")
       .last(),
   ).toHaveText("0");

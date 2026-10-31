@@ -1,8 +1,10 @@
+import manifest from "../../package.json" with { type: "json" };
+
 const icon = (action: string, label: string, text: string) =>
   `<button type="button" class="jl-btn jl-icon" data-action="${action}" aria-label="${label}" title="${label}">${text}</button>`;
 
-const metric = (name: string, label: string) =>
-  `<div class="jank-tile"><span>${label}</span><strong data-value="${name}">–</strong></div>`;
+const metric = (name: string, label: string, extra = "") =>
+  `<div class="jank-tile"><span>${label}</span><strong data-value="${name}">–</strong>${extra}</div>`;
 
 export function panelMarkup(): string {
   return `
@@ -23,36 +25,38 @@ export function panelMarkup(): string {
         <span><b data-value="mini-average">–</b> <small>AVG</small></span>
         <span><b data-value="mini-p95">–</b> <small>P95</small></span>
       </div>
-      <canvas data-chart="mini" role="img" aria-label="Recent frame durations"></canvas>
+      <div data-live-chart="mini" class="jank-frame-view"><canvas data-chart="mini" role="img" aria-label="Recent frame durations"></canvas></div>
       <div class="jank-mini-footer"><span data-value="mini-worst">–</span><span data-value="mini-channel">–</span></div>
     </div>
     <div data-view="full" hidden>
       <header class="jank-header"><strong class="jank-wordmark">JANK.JS</strong><span data-value="state" class="jl-chip"></span>
-        ${icon("mini", "Shrink to mini view", "↙")}${icon("line", "Collapse to one line", "−")}
+        ${icon("freeze", "Freeze display", "Ⅱ")}${icon("mini", "Shrink to mini view", "↙")}${icon("line", "Collapse to one line", "−")}
       </header>
       <div class="jl-tabs" aria-label="Performance views" data-tabs>
         <button type="button" class="jl-tab" data-tab="live">LIVE</button>
         <button type="button" class="jl-tab" data-tab="loading">LOADING</button>
         <button type="button" class="jl-tab" data-tab="capture">CAPTURE</button>
+        <span class="jank-header-budget">BUDGET <span data-value="header-budget"></span></span>
       </div>
+      <button type="button" class="jl-btn jank-read-summary" data-action="summary">Read summary</button><p class="jl-sr" aria-live="polite" data-value="summary"></p>
       <p class="jank-note" data-value="capture-health" hidden></p>
       <div class="jank-views">
         <section data-tabpanel="live" class="jank-live">
-          <div class="jank-metrics">${metric("fps", "FPS")}${metric("average", "AVG MS")}${metric("p95", "P95 MS")}${metric("worst", "WORST MS")}${metric("frame", "AT FRAME")}${metric("missed", "MISSED")}</div>
-          <div class="jank-chart"><canvas data-chart="full" role="img" aria-label="Recent frame durations"></canvas><div class="jank-chart-labels"><span data-value="range">–</span><span data-value="budget">–</span></div></div>
+          <div class="jank-metrics">${metric("fps", "FPS", `<span class="jank-fps-range" data-fps-range role="img" hidden><span data-value="fps-high"></span><i><i data-fps-mark></i></i><span data-value="fps-low"></span></span>`)}${metric("average", "AVG MS")}${metric("p95", "P95 MS")}${metric("worst", "WORST MS")}${metric("frame", "AT FRAME")}${metric("missed", "MISSED")}</div>
+          <div class="jank-chart"><div data-live-chart="full" class="jank-frame-view"><canvas data-chart="full" role="img" aria-label="Recent frame durations"></canvas></div><div class="jank-chart-labels"><span data-value="range">–</span><span data-value="budget">–</span></div></div>
           <div class="jank-scroll" role="region" aria-label="Performance details" tabindex="0">
             <details class="jank-section" data-section="scopes" open>
               <summary><h2>CPU SCOPES <span>MS / FRAME</span></h2></summary>
               <div><div data-list="scopes" class="jank-list"></div><p class="jank-note" data-value="coverage"></p></div>
             </details>
             <details class="jank-section" data-section="gpu" open>
-              <summary><h2>GPU <span>ASYNCHRONOUS</span></h2></summary>
+              <summary><h2>GPU <span data-value="gpu-source">ASYNCHRONOUS</span></h2></summary>
               <div><div data-list="gpu" class="jank-list"></div><p class="jank-note" data-value="gpu-note"></p><p class="jank-note" data-value="gpu-rows-note" hidden></p>
                 <details data-gpu-explanation hidden><summary>About GPU measurements</summary><p class="jank-note">Pass sums count overlapping work more than once. Busy time is the union of measured intervals. Elapsed span includes gaps between the first and last pass. All values are milliseconds on the GPU clock, separate from CPU time. Incomplete frames have no complete totals; their measured passes remain visible.</p></details></div>
             </details>
             <details class="jank-section" data-section="counters" open>
-              <summary><h2>COUNTERS</h2></summary>
-              <div><div data-list="counters" class="jank-list"></div></div>
+              <summary><h2>COUNTERS <span data-value="counter-sources"></span></h2></summary>
+              <div><div data-list="counters" class="jank-list jank-counter-list"></div><p class="jank-note" data-value="counter-note"></p></div>
             </details>
             <details class="jank-section" data-section="events" open>
               <summary><h2>EVENTS</h2></summary>
@@ -82,7 +86,7 @@ export function panelMarkup(): string {
           <details class="jank-section" data-section="budget" open>
             <summary><h2>FRAME BUDGET</h2></summary>
             <div>
-              <div class="jank-settings"><label>Target FPS <input class="jl-input" data-input="fps" type="number" min="1" step="1"></label><button type="button" class="jl-btn jl-small" data-action="budget">APPLY</button></div></div>
+              <div class="jank-budget-presets" role="group" aria-label="Frame budget presets">${[30, 60, 120].map((fps) => `<button type="button" class="jl-btn" data-action="budget-preset" data-fps="${fps}" aria-label="${fps} FPS" aria-pressed="false">${fps}</button>`).join("")}<button type="button" class="jl-btn" data-action="custom-fps" aria-label="Custom FPS" aria-pressed="false">CUSTOM</button></div><div class="jank-settings"><label>Target FPS <input class="jl-input" data-input="fps" type="number" min="1" step="1"></label><button type="button" class="jl-btn jl-small" data-action="budget">APPLY</button></div></div>
           </details>
           <details class="jank-section" data-section="automatic" open>
             <summary><h2>AUTOMATIC CAPTURE <span data-value="capture-state">IDLE</span></h2></summary>
@@ -106,7 +110,7 @@ export function panelMarkup(): string {
           </details>
         </section>
       </div>
-      <footer class="jank-overhead"><div class="jank-cost"><span>COLLECTION</span><span data-value="collection-cost"></span></div><div class="jank-cost"><span>PANEL REFRESH</span><span data-value="refresh-cost"></span></div><div class="jl-muted">MS AVG / PEAK · excludes browser paint and GPU work</div><div class="jl-muted" data-value="precision"></div></footer>
+      <footer class="jank-overhead"><div class="jank-cost"><span>COLLECTION</span><span data-value="collection-cost"></span></div><div class="jank-cost"><span>PANEL REFRESH</span><span data-value="refresh-cost"></span></div><div class="jl-muted">MS AVG / PEAK · excludes browser paint and GPU work</div><div class="jl-muted" data-value="precision"></div><div class="jl-muted" data-value="isolation"></div><div class="jl-muted" aria-label="jank.js build">v${manifest.version}</div></footer>
     </div>
     <p role="alert" class="jank-error" hidden></p>
   `;

@@ -143,3 +143,47 @@ configured order, first-seen fallback, changing invocation numbers, missing/reje
 restoration, pending state, freezing, clearing, row height and DOM identity. The 256-row bound and
 measurement-format reset are covered separately. The required collection benchmark completed;
 it excludes panel layout and is not evidence of a UI performance improvement.
+
+## Live visualizer reference parity
+
+The live graph restores the reference's 3px frame spacing, 2px bars, newest-frame highlight,
+three-budget minimum scale, dotted guides, worst-frame label and moving marker, numeric budget
+label, and frame-aligned event glyphs. The newest visible event has a fixed caption and age.
+Labels stay fixed while measured bars glide through the clipped viewport. The animation uses
+the compositor, not a second frame loop, and stops on freeze, view changes, hidden documents,
+resize, reduced-motion changes and disposal. Colliding event markers favor the newest event;
+events in missing frame intervals are not attached to a neighboring frame. Long captions truncate
+visually but retain their full text in the accessible graph description and title.
+
+CPU averages now describe the same visible frame window as the graph. Timed channels retain
+registration order, with the heaviest named channel emphasized. Dotted CPU and dashed GPU meters
+show each measurement relative to the current budget. They are not stacked: inclusive scopes,
+pass sums, busy time and elapsed span must not be added together. Values beyond budget retain
+their numeric value and tooltip percentage while the fill is bounded to the available width.
+Unknown and absent measurements have no fill, never a fabricated zero. GPU row identity,
+configured order, missing-observation dimming and timestamp diagnostics are preserved.
+
+The FPS tile again shows high/low one-second rates with the current rate marked between them.
+It stays hidden until a complete one-second rate exists. The header restores budget text and
+a freeze shortcut; CAPTURE adds 30/60/120 FPS presets beside the validated custom input.
+A keyboard-focusable Read summary action announces the displayed frame statistics on request.
+Counters restore readable names, source labels, compact numbers and a notice when more than
+12 values exist; exact source names and values remain in tooltips and accessible labels.
+Package version and the host document's cross-origin isolation state are visible in the footer.
+
+`panel-parity.spec.ts` verifies these specific behaviors rather than relying only on updated
+screenshots: annotations and actual bar colors, animation lifecycle, meter fractions and unknown
+values, visible-window coverage, FPS range and keyboard controls, and counter overflow. The
+reference-parity screenshot includes an event, a slow frame, CPU meters and both measured and
+unknown GPU passes. Pure chart-layout tests cover frame geometry, tie-breaking, gaps, marker
+collisions and lifecycle glyphs. Existing panel, GPU, accessibility and visual suites remain
+required. This is live-panel parity work; offline viewer, loading-runtime and optional
+visibility/temporal functionality remain separate implementation slices.
+
+The [local parity benchmark](verification/panel-parity.json) measured median incremental
+synchronous costs of 0.0094ms (LINE), 0.1385ms (MINI), and 0.2087ms (FULL) per host frame on
+an Apple M3 Max with headless Chromium 153. These are synthetic tight-loop measurements with
+normal refresh throttling, excluding deferred paint, compositor/GPU execution and real frame
+scheduling. They are not a claim of a performance improvement or a controlled comparison with
+the earlier panel run. Core coverage, package-consumer checks, the collection benchmark and
+cross-browser parity/accessibility/visual tests also passed.

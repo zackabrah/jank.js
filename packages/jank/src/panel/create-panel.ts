@@ -1,4 +1,5 @@
 import { createTabs } from "junkui";
+import { summarizeFrames } from "../analysis/statistics.ts";
 import type { ProfilerSnapshot } from "../core/snapshot.ts";
 import type { GpuSource } from "../sources.ts";
 import {
@@ -10,7 +11,7 @@ import {
 import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
 import { createGpuView } from "./gpu-view.ts";
-import { renderLive, renderOverhead } from "./live-view.ts";
+import { createLiveView, renderOverhead } from "./live-view.ts";
 import { renderLoading } from "./loading-view.ts";
 import { panelMarkup } from "./markup.ts";
 import type { Panel, PanelMode, PanelOptions } from "./panel.ts";
@@ -42,8 +43,15 @@ export function createPanel(options: PanelOptions): Panel {
   root.setAttribute("aria-label", "jank.js performance");
   root.dataset.corner = options.corner ?? "top-right";
   root.innerHTML = panelMarkup();
+  write(root, "gpu-source", options.gpu?.label ?? "ASYNCHRONOUS");
+  write(
+    root,
+    "isolation",
+    window?.crossOriginIsolated ? "Cross-origin isolated" : "Not cross-origin isolated",
+  );
   const gpuView = createGpuView(root, options.gpuPassOrder);
   container.append(root);
+  const liveView = createLiveView(root);
   let disposed = false;
   let mode = rememberedMode(window, options.mode ?? "line");
   let selectedTab = "live";
@@ -79,9 +87,9 @@ export function createPanel(options: PanelOptions): Panel {
         }
       }
       const displayed = frozen ?? current;
-      renderLive(root, displayed, mode);
+      liveView.render(displayed, mode, frozen === null);
       if (mode === "full") {
-        gpuView.render(displayed.gpu);
+        gpuView.render(displayed.gpu, 1000 / displayed.targetFps);
       }
     });
     const costMs = current.overhead.refresh.averageMs;
@@ -108,9 +116,15 @@ export function createPanel(options: PanelOptions): Panel {
     const recordButton = element<HTMLButtonElement>(root, '[data-action="record"]');
     recordButton.textContent = recording ? "STOP REC" : "REC";
     recordButton.setAttribute("aria-pressed", String(recording));
-    const freezeButton = element<HTMLButtonElement>(root, '[data-action="freeze"]');
-    freezeButton.textContent = frozen ? "RESUME" : "FREEZE";
-    freezeButton.setAttribute("aria-pressed", String(frozen !== null));
+    renderFreezeControls(root, frozen !== null);
+    write(root, "header-budget", (1000 / (frozen ?? current).targetFps).toFixed(1));
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-fps]")) {
+      button.setAttribute("aria-pressed", String(Number(button.dataset.fps) === current.targetFps));
+    }
+    element(root, '[data-action="custom-fps"]').setAttribute(
+      "aria-pressed",
+      String(![30, 60, 120].includes(current.targetFps)),
+    );
   }
 
   const id = `jank-${crypto.randomUUID()}`;
@@ -125,6 +139,7 @@ export function createPanel(options: PanelOptions): Panel {
     }),
     selectedId: selectedTab,
     onSelect: (name) => {
+      liveView.stop();
       selectedTab = name;
       safelyRedraw();
     },
@@ -136,6 +151,7 @@ export function createPanel(options: PanelOptions): Panel {
     }
     validateMode(nextMode);
     const rehome = moveFocus || root.contains(document.activeElement);
+    liveView.stop();
     mode = nextMode;
     root.dataset.mode = mode;
     for (const view of root.querySelectorAll<HTMLElement>("[data-view]")) {
@@ -154,7 +170,8 @@ export function createPanel(options: PanelOptions): Panel {
     }
     safelyRedraw();
     if (rehome) {
-      element<HTMLButtonElement>(root, `[data-view="${mode}"] button`).focus();
+      const action = mode === "full" ? "mini" : "full";
+      element<HTMLButtonElement>(root, `[data-view="${mode}"] [data-action="${action}"]`).focus();
     }
   }
 
@@ -171,6 +188,7 @@ export function createPanel(options: PanelOptions): Panel {
     mini: () => setMode("mini", true),
     full: () => setMode("full", true),
     freeze: () => {
+      liveView.stop();
       frozen = frozen ? null : profiler.snapshot();
     },
     record: () => {
@@ -181,6 +199,7 @@ export function createPanel(options: PanelOptions): Panel {
       }
     },
     clear: () => {
+      liveView.clear();
       profiler.clear();
       gpuView.clear();
       frozen = null;
@@ -193,6 +212,22 @@ export function createPanel(options: PanelOptions): Panel {
     disarm: () => profiler.capture.disarm(),
     budget: () =>
       profiler.setTargetFps(element<HTMLInputElement>(root, '[data-input="fps"]').valueAsNumber),
+    "custom-fps": () => {
+      const input = element<HTMLInputElement>(root, '[data-input="fps"]');
+      input.focus();
+      input.select();
+    },
+    summary: () => {
+      const snapshot = frozen ?? profiler.snapshot();
+      const stats = summarizeFrames(snapshot.frames, snapshot.targetFps);
+      write(
+        root,
+        "summary",
+        stats
+          ? `${snapshot.frames.length} frames. ${stats.fps ?? "Unknown"} FPS. Average ${stats.averageMs.toFixed(1)} ms, p95 ${stats.p95Ms.toFixed(1)} ms. Worst ${stats.worstMs.toFixed(1)} ms at frame ${stats.worstFrameId}. ${stats.missedFrames} frames over budget. Budget ${stats.budgetMs.toFixed(1)} ms. GPU ${snapshot.gpu?.status ?? "unavailable"}.`
+          : "No complete frames yet.",
+      );
+    },
     trace: () => profiler.setTraceEnabled(!profiler.snapshot().traceEnabled),
     gpu: () => {
       const source = options.gpu;
@@ -214,7 +249,11 @@ export function createPanel(options: PanelOptions): Panel {
     }
     element<HTMLElement>(root, '[role="alert"]').hidden = true;
     try {
-      if (button.dataset.action === "export-capture") {
+      if (button.dataset.action === "budget-preset") {
+        const targetFps = Number(button.dataset.fps);
+        profiler.setTargetFps(targetFps);
+        element<HTMLInputElement>(root, '[data-input="fps"]').value = String(targetFps);
+      } else if (button.dataset.action === "export-capture") {
         const recording = profiler.capture.read(Number(button.dataset.captureId));
         if (!recording) {
           throw new Error("This capture is no longer retained.");
@@ -249,6 +288,7 @@ export function createPanel(options: PanelOptions): Panel {
         disposed = true;
         releaseScopes?.();
         releaseScopes = null;
+        liveView.dispose();
         tabs.dispose();
         root.removeEventListener("click", click);
         download.dispose();
@@ -272,4 +312,18 @@ function renderGpuControl(root: HTMLElement, source?: GpuSource): void {
   button.setAttribute("aria-label", enabled ? "Disable GPU timing" : "Enable GPU timing");
   button.setAttribute("aria-pressed", String(enabled));
   button.title = source.label;
+}
+
+function renderFreezeControls(root: HTMLElement, frozen: boolean): void {
+  for (const button of root.querySelectorAll<HTMLButtonElement>('[data-action="freeze"]')) {
+    button.setAttribute("aria-pressed", String(frozen));
+    if (button.classList.contains("jl-icon")) {
+      const label = frozen ? "Resume display" : "Freeze display";
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.textContent = frozen ? "▶" : "Ⅱ";
+    } else {
+      button.textContent = frozen ? "RESUME" : "FREEZE";
+    }
+  }
 }
