@@ -150,15 +150,16 @@ Desktop bundle `red-skies-cloud-ramp-jank-f1662bb-2026-10-31.zip`. Installed Jan
 - [x] Show actual retained pre/post elapsed durations in the automatic recording inspector.
 - [ ] Evaluate bounded seconds-based windows. Explain cooldown timing and archive retention/eviction. Consider
   grouping repeated captures of one episode and opt-in automatic export for longer sessions.
-- [ ] Explain coverage where users inspect it: intentional sampling, partial sampled frames,
-  complete sampled frames, missing records and CPU retention separately. State **Trigger GPU
-  not sampled** explicitly. Keep raw rejected pairs and avoid claiming valid whole-frame totals.
-- [ ] Group GPU rows by stable named pass with expandable invocation detail in both timeline
-  and inspector. Any aggregate must use the correct interval union and retain partial/unknown
-  status; do not sum overlapping intervals into a misleading total.
-- [ ] Allow important context counters to be pinned near selected-frame evidence; improve numeric
-  formatting and distinguish counter-only channels from CPU work without hiding genuinely
-  unobserved registered CPU scopes.
+- [x] Separate sampled GPU frames, frames with usable timing, complete frames, valid/rejected
+  timestamp pairs, omitted passes and missing observations. The trigger sampling notice remains
+  explicit; partial evidence never becomes a valid whole-frame total.
+- [x] Group repeated GPU invocations by stable pass ID and type in timeline and inspector.
+  Preserve invocation detail, fixed first-seen order and expansion during navigation. Group
+  readouts identify observed pass sums and observed-row counts; they never claim GPU busy time.
+- [x] Pin important context counters above work lanes and near selected-frame evidence, retaining
+  raw values, sample ages, unknown observations and A/B alignment.
+- [ ] Improve numeric counter formatting and distinguish counter-only channels from CPU work
+  without hiding genuinely unobserved registered CPU scopes. Explain CPU retention independently.
 - [ ] Add bounded chunk export and a session manifest/timeline for long recordings. Expose GPU
   pass/sample capacity as well as CPU frame capacity; starting a new capture currently shares
   observation retention. Preserve explicit gaps and unsealed tails across chunks.

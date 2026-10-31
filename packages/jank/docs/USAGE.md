@@ -130,3 +130,9 @@ or a universal winner. Time alignment alone does not ensure identical animation 
 
 Synchronous collection/refresh overhead excludes deferred paint and GPU work. Use real application
 runs when deciding how much budget remains; the showcase is not evidence of available headroom.
+
+The offline viewer groups repeated GPU invocations under expandable pass headings. GPU coverage
+separates sampled frames, usable timings and complete totals; expand **GPU coverage & timestamp
+evidence** for rejected/omitted counts. Use **PIN COUNTERS** to move selected provider/field plots
+and their last-observation readouts above work evidence. Pins and group expansion survive
+navigation within a document; opening another document resets them.

@@ -43,6 +43,7 @@ for (const width of [390, 1440]) {
 test("A/B pins share alignment, retain invalid samples and clear on replacement", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
   await page.goto("/examples/viewer/");
   const file = {
     name: "comparison.json",
@@ -53,6 +54,8 @@ test("A/B pins share alignment, retain invalid samples and clear on replacement"
   await page.getByText("PIN COUNTERS", { exact: true }).click();
   await page.getByRole("checkbox", { name: "Pin renderer / drawCalls", exact: true }).check();
   await page.getByText("PIN COUNTERS", { exact: true }).click();
+  const pinLabel = await page.getByText("PIN COUNTERS", { exact: true }).boundingBox();
+  expect(pinLabel?.height).toBeLessThan(20);
   const values = page.locator("[data-pinned-counter-readout] .jank-viewer-counter-value");
   await expect(values).toHaveText(["10", "20"]);
   await page.getByText("VIEW", { exact: true }).click();

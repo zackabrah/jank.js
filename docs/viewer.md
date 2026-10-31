@@ -329,3 +329,16 @@ A/B colors/scales. They do not interpolate values or invent units. Pin preferenc
 range and trial navigation within one document and reset when another document is opened.
 Cross-browser tests cover desktop/narrow operation, unpinning, A/B invalid/zero observations and
 replacement. The full counter inspector remains available below the work evidence.
+
+Acceptance against the supplied `automatic/auto-25-05.json` confirms 30/241 sampled GPU frames,
+30 frames with usable timing, zero complete frames, and 1,228 valid / 1,258 retained timestamp
+pairs (30 rejected). The reflection pass collapses 26 invocation rows. Pinning
+`weather / coveragePercent` leaves its plot beside the transition and its last observation above
+CPU/GPU work, with its recorded sample age. The original trigger remains frame #7476 and still
+states that its GPU timing was not sampled. The rebuilt offline file emitted no browser errors.
+
+Verification for this slice: 314 unit tests, package-consumer checks, configured coverage floors,
+377 browser interactions (seven existing GPU capability skips), and 90 visual checks across
+Chromium, Firefox and WebKit. Narrow A/B pin controls received a focused nine-case recheck after
+layout refinement. These changes concern offline presentation/analysis; they neither recover
+missing timing nor establish profiler overhead or rendering-performance improvements.

@@ -901,3 +901,23 @@
   border-bottom: 1px solid var(--jl-line);
   margin-bottom: 8px;
 }
+
+@media (max-width: 1100px) {
+  .jank-viewer-toolbar {
+    height: auto;
+    min-height: 28px;
+    flex-wrap: wrap;
+    padding-block: 4px;
+    row-gap: 8px;
+  }
+  .jank-viewer-legend {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .jank-counter-pin-controls {
+    margin-left: 0;
+  }
+  .jank-counter-pin-controls > summary {
+    white-space: nowrap;
+  }
+}
