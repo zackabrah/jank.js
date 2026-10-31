@@ -38,17 +38,21 @@ export function fitTimelineWindow(
   return { fromMs: start, toMs: start + duration };
 }
 export function zoomTimelineWindow(
-  window: TimelineWindow,
+  window: { readonly fromMs: number; readonly durationMs: number },
   zoom: { anchorMs: number; factor: number; totalMs: number },
-): TimelineWindow {
-  const duration = window.toMs - window.fromMs;
-  const anchor = Math.max(window.fromMs, Math.min(window.toMs, zoom.anchorMs));
+): TimelineWindow & { readonly durationMs: number } {
+  const duration = Math.max(1, Math.min(zoom.totalMs, window.durationMs));
+  const anchor = Math.max(window.fromMs, Math.min(window.fromMs + duration, zoom.anchorMs));
   const nextDuration = Math.max(1, Math.min(zoom.totalMs, duration * zoom.factor));
-  return fitTimelineWindow(
-    anchor - ((anchor - window.fromMs) / duration) * nextDuration,
-    nextDuration,
-    zoom.totalMs,
-  );
+  return {
+    ...fitTimelineWindow(
+      anchor - ((anchor - window.fromMs) / duration) * nextDuration,
+      nextDuration,
+      zoom.totalMs,
+    ),
+    // Subtracting fractional endpoints can turn an exact preset into a custom duration.
+    durationMs: nextDuration,
+  };
 }
 
 /** Visible per-frame durations; GPU offsets never enter the CPU/elapsed coordinate system. */

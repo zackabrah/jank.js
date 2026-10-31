@@ -60,16 +60,32 @@ it("keeps zero measurements distinct from gaps, rejects ambiguous GPU evidence a
   expect(buildTimeline({ ...base, frames: [] }, [], { fromMs: 0, toMs: 32 }).frames).toEqual([]);
 });
 
+it("preserves the requested zoom duration at fractional pointer anchors", () => {
+  const zoom = zoomTimelineWindow(
+    { fromMs: 0, durationMs: 1000 },
+    { anchorMs: 784.77, factor: 0.5, totalMs: 1000 },
+  );
+  expect(zoom).toMatchObject({ durationMs: 500 });
+  const again = zoomTimelineWindow(zoom, { anchorMs: 784.77, factor: 0.5, totalMs: 1000 });
+  expect(again.durationMs).toBe(250);
+});
+
 it("bounds pan and zoom, preserves the zoom anchor and includes boundary-crossing frames", () => {
   expect(fitTimelineWindow(900, 250, 1000)).toEqual({ fromMs: 750, toMs: 1000 });
   expect(fitTimelineWindow(-20, 5000, 1000)).toEqual({ fromMs: 0, toMs: 1000 });
   expect(fitTimelineWindow(0, 0, 0)).toEqual({ fromMs: 0, toMs: 1 });
   expect(
-    zoomTimelineWindow({ fromMs: 0, toMs: 1000 }, { anchorMs: 750, factor: 0.5, totalMs: 1000 }),
-  ).toEqual({ fromMs: 375, toMs: 875 });
+    zoomTimelineWindow(
+      { fromMs: 0, durationMs: 1000 },
+      { anchorMs: 750, factor: 0.5, totalMs: 1000 },
+    ),
+  ).toEqual({ fromMs: 375, toMs: 875, durationMs: 500 });
   expect(
-    zoomTimelineWindow({ fromMs: 0, toMs: 1000 }, { anchorMs: -50, factor: 0.5, totalMs: 1000 }),
-  ).toEqual({ fromMs: 0, toMs: 500 });
+    zoomTimelineWindow(
+      { fromMs: 0, durationMs: 1000 },
+      { anchorMs: -50, factor: 0.5, totalMs: 1000 },
+    ),
+  ).toEqual({ fromMs: 0, toMs: 500, durationMs: 500 });
   const base = recordingFixture();
   expect(
     buildTimeline(base, workCatalog(base, null), { fromMs: 10, toMs: 20 }).frames.map(

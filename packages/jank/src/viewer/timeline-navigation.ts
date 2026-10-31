@@ -200,12 +200,15 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
       }
       return;
     }
-    const next = zoomTimelineWindow(pairedWindow(state), {
-      anchorMs: anchorMs ?? state.comparisonElapsedMs,
-      factor,
-      totalMs: state.comparison?.options.measureMs ?? 1000,
-    });
-    host.window(next.fromMs, next.toMs - next.fromMs);
+    const next = zoomTimelineWindow(
+      { fromMs: pairedWindow(state).fromMs, durationMs: state.comparisonWindowMs },
+      {
+        anchorMs: anchorMs ?? state.comparisonElapsedMs,
+        factor,
+        totalMs: state.comparison?.options.measureMs ?? 1000,
+      },
+    );
+    host.window(next.fromMs, next.durationMs);
   }
   function timelinePointer(event: Event): void {
     if (!(event instanceof MouseEvent)) {

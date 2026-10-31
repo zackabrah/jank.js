@@ -90,7 +90,17 @@ test("single counter lanes preserve sample ages when panning and clear on replac
     throw new Error("Missing counter lane");
   }
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 10);
-  await expect(page.locator("[data-counter-inspector]")).toContainText("250.00 ms old");
+  const age = page
+    .locator("[data-counter-inspector] tbody tr")
+    .first()
+    .locator("td")
+    .nth(1)
+    .locator("small");
+  // Native pointer coordinates round to CSS pixels; allow one pixel of elapsed-time error.
+  const pointerErrorMs = 300 / bounds.width;
+  await expect
+    .poll(async () => Math.abs(Number.parseFloat((await age.textContent()) ?? "") - 250))
+    .toBeLessThanOrEqual(pointerErrorMs + 0.01);
   await input.setInputFiles(file({ ...recording, counters: [] }));
   await expect(
     page.locator('[data-timeline-lanes="single"] [data-lane-kind="counter"]'),
