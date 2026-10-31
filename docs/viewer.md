@@ -12,6 +12,18 @@ frame selection intact. A newer import or programmatic load invalidates any olde
 file read; disposal also invalidates reads and releases listeners, resize observation and the
 single download URL. There is no animation loop or background polling.
 
+## Layout and controls
+
+The desktop shell follows the original viewer: a compact toolbar and environment line, a full-session
+overview, timeline lanes on the left and a 440 px inspector on the right. The timeline and inspector
+scroll independently. Below 1100 px, the inspector stacks beneath the graphs. Click the session
+overview to select a time and bring its window into view.
+
+**VIEW** holds zoom, range and scroll controls. **FRAME DETAILS** holds exact CPU/GPU evidence and
+frame-position controls; **COMPARISON DETAILS** holds aggregate results, trial coverage, scene settings
+and paired diagnostic tables. **RECORDING & COVERAGE** retains capture losses and metadata.
+The compact inspector keeps selected frame timing and CPU/GPU summaries visible.
+
 ## A/B review
 
 The results table places A, B and the paired difference side by side for CPU/GPU/frame-pacing
@@ -38,16 +50,18 @@ so equal frame IDs in different recordings cannot cross-link data.
 
 ## Synchronized A/B inspection
 
-The selected trial chooses its A/B pair. Both timelines use the same elapsed-time window and
-frame-duration scale. Zero is each recording's first retained sealed measured frame, not a GPU
+The selected trial chooses its A/B pair. A and B overlay one frame chart and one graph per work identity, with the same elapsed-time
+window and duration scales. A is cyan with solid outlines; B is violet with dashed outlines.
+The A/B checkboxes independently hide a series in both frame charts and work lanes without
+changing selection, measurements or scales. Zero is each recording's first retained sealed measured frame, not a GPU
 clock or shared wall-clock timestamp. The selected frame contains the cursor in a half-open
 interval `[start, end)`; a gap, missing trial, empty recording or unsealed tail stays unknown.
 Time alignment does not guarantee identical scene or animation state, particularly when data
 was lost. Check scene settings and coverage before interpreting differences.
 
-Enter **Comparison elapsed time (ms)** or click either timeline to move both cursors. The single
+Enter **Comparison elapsed time (ms)** under **VIEW**, or click the shared timeline to move both cursors. The single
 recording inspector follows the active trial. Its frame controls also move the paired cursor.
-Choose a window size or zoom with the buttons/wheel; both charts move together. Switching
+Choose a window size or zoom with the buttons/wheel; the overview and detail chart stay linked. Switching
 trials or pairs preserves elapsed time; loading another document resets it. Invalid input preserves
 the current selection. The API exposes `selectComparisonTime(elapsedMs)` and detached snapshot
 fields `comparisonElapsedMs` and `comparisonWindowMs`.
@@ -81,7 +95,7 @@ as its minimum. The displayed scale states its range; no values are silently cap
 
 Hovering previews values and a dashed cursor on both A/B lane plots without changing selection.
 Clicking selects a time and updates both inspectors. A solid cursor marks the selection. Lane
-labels and unknown-value readouts remain visible. With a lane focused, Left/Right selects the
+labels stay fixed; hover titles and accessible readouts expose values and reasons for missing samples. With a lane focused, Left/Right selects the
 previous/next recorded frame, Home/End selects the first/last, and focus stays on that lane.
 A gap has no interpolated or reused measurement.
 
@@ -108,7 +122,7 @@ text and are never interpreted as HTML. No background refresh or animation loop 
 ## Frame inspection
 
 The timeline displays 50, 100 or 200 frames at a time, with range navigation, an editable range
-start, exact-budget line and selected-frame outline. Click a bar, use Previous/Next frame, enter a
+start, exact-budget line and selected-time cursor. Click a bar, use Previous/Next frame, enter a
 frame position, or jump to the worst frame. Frame positions are one-based positions within the
 selected recording; the inspector separately shows the actual profiler frame ID. Changing range
 does not change the selected frame; selecting an out-of-range frame brings its range into view.
@@ -124,7 +138,7 @@ totals. Pass rows preserve IDs, invocations and types. Rejected rows show the ex
 and retained raw timestamp pair. GPU offsets use the sample's GPU clock origin, never CPU time.
 Duration-only samples stay labelled as pass sum/elapsed span and do not establish interval coverage.
 A frame with no observation explicitly has unknown GPU timing. Events and counters are inspectable
-in the final disclosure. Unlinked GPU observations are counted in the recording description.
+in the right inspector. Unlinked GPU observations are counted in the recording description.
 
 **Export selected recording** downloads the current trial as a normal Jank recording. This makes
 it usable with existing recording tools without manually extracting JSON. It also works for a
@@ -158,5 +172,6 @@ Repeated disposal and late load/selection calls after disposal do not remount th
 
 This slice provides local import, A/B review and individual-frame investigation. It does not add
 live-window handoff, editing, statistical significance estimates or
-full parity with the older viewer's capture-session overview and counter lanes. Frame-chart orange bars use
+full parity with the older viewer's saved-capture list, capture markers and counter lanes.
+The session overview covers the imported recording or selected A/B pair. Single-recording orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.

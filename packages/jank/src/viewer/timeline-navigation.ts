@@ -72,14 +72,23 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     if (state.status !== "loaded") {
       return;
     }
-    for (const [side, model] of timelines) {
-      const hover = (side === "single") === (hoverSide === "single") ? hoverMs : null;
-      updateLaneCursor(element<HTMLElement>(root, `[data-timeline-lanes="${side}"]`), model, {
-        selectedMs: state.comparisonElapsedMs,
-        hoverMs: hover,
-      });
+    const model = timelines.get(state.comparison ? "a" : "single");
+    if (model) {
+      updateLaneCursor(
+        element<HTMLElement>(
+          root,
+          `[data-timeline-lanes="${state.comparison ? "overlay" : "single"}"]`,
+        ),
+        model,
+        {
+          selectedMs: state.comparisonElapsedMs,
+          hoverMs: (state.comparison === null) === (hoverSide === "single") ? hoverMs : null,
+          overlay: timelines.get("b"),
+        },
+      );
     }
   }
+
   function changeTimelineControl(target: Element): void {
     const state = host.state();
     if (state.status !== "loaded") {
@@ -97,7 +106,9 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
     const container = target.closest<HTMLElement>("[data-timeline-lanes]");
     const value = target.value;
     host.select(Number(value));
-    const next = container?.querySelector<HTMLSelectElement>("[data-timeline-event]");
+    const next = [
+      ...(container?.querySelectorAll<HTMLSelectElement>("[data-timeline-event]") ?? []),
+    ].find((select) => select.dataset.eventSeries === target.dataset.eventSeries);
     if (next) {
       next.value = value;
       next.focus({ preventScroll: true });
@@ -117,7 +128,7 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
       surface.closest<HTMLElement>("[data-timeline-lanes]")?.dataset.timelineLanes ??
       surface.getAttribute("data-paired-chart") ??
       "single";
-    const model = timelines.get(side);
+    const model = timelines.get(side === "overlay" ? "a" : side);
     if (!model) {
       return null;
     }
@@ -234,7 +245,9 @@ export function createTimelineNavigation(root: HTMLElement, host: TimelineHost) 
       event.target.closest<HTMLElement>("[data-timeline-lanes]")?.dataset.timelineLanes ?? "single";
     const pair = selectedPair(state);
     const recording =
-      side === "single" ? state.recording : pair[side === "a" ? "a" : "b"]?.recording;
+      side === "single" || side === "overlay"
+        ? state.recording
+        : pair[side === "a" ? "a" : "b"]?.recording;
     const origin = recording?.frames[0]?.startedAtMs ?? 0;
     const elapsed = state.comparisonElapsedMs;
     const frames = recording?.frames ?? [];
@@ -313,20 +326,23 @@ function renderModels(
   timelines: ReadonlyMap<string, TimelineModel>,
   budgetMs: number,
 ): void {
-  const peaks = new Map(
-    [...timelines].map(([side, model]) => [side, timelinePeak(model, budgetMs)]),
-  );
-  for (const [side, model] of timelines) {
-    const maximumMs =
-      side === "single"
-        ? (peaks.get(side) ?? 1)
-        : Math.max(peaks.get("a") ?? 1, peaks.get("b") ?? 1);
-    renderTimelineLanes(element<HTMLElement>(root, `[data-timeline-lanes="${side}"]`), model, {
-      name: side === "single" ? "Recording" : side.toUpperCase(),
-      maximumMs,
+  const a = timelines.get("a");
+  const b = timelines.get("b");
+  const single = timelines.get("single");
+  if (a && b) {
+    renderTimelineLanes(element<HTMLElement>(root, '[data-timeline-lanes="overlay"]'), a, {
+      name: "A/B",
+      maximumMs: Math.max(timelinePeak(a, budgetMs), timelinePeak(b, budgetMs)),
+      overlay: b,
+    });
+  } else if (single) {
+    renderTimelineLanes(element<HTMLElement>(root, '[data-timeline-lanes="single"]'), single, {
+      name: "Recording",
+      maximumMs: timelinePeak(single, budgetMs),
     });
   }
 }
+
 function frameTimeFromKey(
   frames: readonly FrameSample[],
   key: string,

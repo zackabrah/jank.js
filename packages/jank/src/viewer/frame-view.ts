@@ -1,9 +1,12 @@
 import { summarizeComparisonTrial } from "../analysis/comparison.ts";
+import { compareFrameWork, workCatalog } from "../analysis/frame-comparison.ts";
 import { summarizeGpuCoverage } from "../analysis/gpu-coverage.ts";
 import { inspectFrame } from "../analysis/summary.ts";
 import type { ComparisonTrial } from "../comparison/comparison.ts";
+import type { FrameSample } from "../core/frames.ts";
 import type { GpuSample } from "../core/gpu.ts";
 import type { Recording } from "../recordings/recording.ts";
+import { renderCompactWork } from "./compact-inspector.ts";
 import { element, milliseconds, percent, renderTable, write } from "./dom.ts";
 
 export function renderFrame(
@@ -19,6 +22,16 @@ export function renderFrame(
   cpu.replaceChildren();
   gpu.replaceChildren();
   events.replaceChildren();
+  renderCompactWork(
+    root,
+    compareFrameWork(
+      workCatalog(recording, null),
+      { recording, frame: frame ?? null },
+      { recording: null, frame: null },
+    ),
+    false,
+  );
+  renderHeadline(root, recording, frame);
   if (!frame) {
     write(
       root,
@@ -30,13 +43,16 @@ export function renderFrame(
     return;
   }
   const inspected = inspectFrame(recording, frame.id);
-  write(
-    root,
-    "frame",
-    `Frame #${frame.id} · ${milliseconds(frame.endedAtMs - frame.startedAtMs)} · CPU update ${milliseconds(frame.cpu.updateMs)}, render ${milliseconds(frame.cpu.renderMs)}`,
-  );
+  write(root, "frame", `Frame #${frame.id}`);
+  if (inspected?.likelyCause) {
+    const cause = inspected.likelyCause;
+    const label =
+      recording.channels.find((channel) => channel.id === cause.channelId)?.label ??
+      cause.channelId;
+    write(root, "likely", `${label} +${cause.aboveMedianMs.toFixed(2)} ms vs median · heuristic`);
+  }
   const note = root.ownerDocument.createElement("p");
-  note.textContent = `Scope coverage: ${frame.coverage.status}. Attributed union ${milliseconds(inspected?.attributedMs)}; unattributed ${milliseconds(inspected?.unattributedMs)} (waiting or unobserved work). Scope rows are inclusive; do not add nested scopes.`;
+  note.textContent = `CPU update ${milliseconds(frame.cpu.updateMs)}, render ${milliseconds(frame.cpu.renderMs)}. Scope coverage: ${frame.coverage.status}. Attributed union ${milliseconds(inspected?.attributedMs)}; unattributed ${milliseconds(inspected?.unattributedMs)} (waiting or unobserved work). Scope rows are inclusive; do not add nested scopes.`;
   cpu.append(note);
   const table = tableContainer(root, "CPU scope intervals");
   renderTable(
@@ -160,12 +176,64 @@ export function renderRecordingEvidence(
   write(
     root,
     "evidence",
-    `${recording.frames.length} frames · ${milliseconds(duration)} sealed duration · CPU samples ${percent(metrics.cpuCoverage)} · GPU samples ${percent(metrics.gpuCoverage)} (${metrics.gpuMeasurement ?? "unknown measurement"}) · GPU interval coverage ${coverage.coveragePercent === null ? "Unknown" : `${coverage.coveragePercent.toFixed(1)}%`} · ${coverage.missingFrames} missing, ${coverage.incompleteFrames} incomplete, ${coverage.sampledFrames} sampled out. ${coverage.reasons.map((item) => `${item.reason}: ${item.frames}`).join("; ")} Truncated: ${recording.truncated ? "yes" : "no"}. ${trial?.finalization ?? ""}`,
+    `${recording.frames.length} frames · ${milliseconds(duration)} sealed duration · CPU samples ${percent(metrics.cpuCoverage)} · GPU samples ${percent(metrics.gpuCoverage)} (${metrics.gpuMeasurement ?? "unknown measurement"}) · GPU interval coverage ${coverage.coveragePercent === null ? "Unknown" : `${coverage.coveragePercent.toFixed(1)}%`} · ${coverage.missingFrames} missing, ${coverage.incompleteFrames} incomplete, ${coverage.sampledFrames} sampled out. ${coverage.reasons.map((item) => `${item.reason}: ${item.frames}`).join("; ")} Truncated: ${recording.truncated ? "yes" : "no"}. ${trial?.finalization ?? ""} Created ${recording.metadata.createdAt}. ${recording.gpu.filter((sample) => sample.frameId === null).length} unlinked GPU samples.`,
+  );
+  write(
+    root,
+    "coverage",
+    `CPU ${percent(metrics.cpuCoverage)} · GPU ${percent(metrics.gpuCoverage)}${recording.truncated ? " · TRUNCATED" : ""}`,
   );
   const metadata = recording.metadata;
   write(
     root,
     "environment",
-    `${metadata.application?.name ?? "Unnamed application"} · ${metadata.createdAt} · ${metadata.environment.userAgent ?? "Browser not recorded"} · ${recording.targetFps} FPS budget. ${recording.gpu.filter((sample) => sample.frameId === null).length} unlinked GPU samples. Duration coverage and interval coverage are distinct.`,
+    `${metadata.application?.name ?? "Unnamed application"} · ${recording.targetFps} FPS target · ${metadata.environment.userAgent ?? "Browser not recorded"}`,
   );
+}
+
+function renderHeadline(
+  root: HTMLElement,
+  recording: Recording,
+  frame: FrameSample | undefined,
+): void {
+  write(root, "duration", frame ? (frame.endedAtMs - frame.startedAtMs).toFixed(2) : "—");
+  write(
+    root,
+    "budget-ratio",
+    frame
+      ? `${((frame.endedAtMs - frame.startedAtMs) / (1000 / recording.targetFps)).toFixed(2)}× budget`
+      : "",
+  );
+  write(
+    root,
+    "budget-note",
+    `${(1000 / recording.targetFps).toFixed(2)} ms budget · ${recording.targetFps} FPS target`,
+  );
+  write(root, "likely", "");
+  element<HTMLElement>(root, "[data-viewer-duration]").dataset.overBudget = String(
+    Boolean(frame && frame.endedAtMs - frame.startedAtMs > 1000 / recording.targetFps),
+  );
+}
+
+/** Clear evidence when a cancelled report has no trial recording. */
+export function renderNoRecording(root: HTMLElement): void {
+  for (const key of ["cpu", "gpu", "events", "evidence", "budget-ratio", "likely"]) {
+    write(root, key, "");
+  }
+  write(root, "frame", "No trial recording");
+  write(root, "duration", "—");
+  write(root, "budget-note", "Timing unknown");
+  write(root, "environment", "No trial recording");
+  write(root, "coverage", "No samples");
+  write(root, "recording-title", "No recording");
+  element<HTMLElement>(root, "[data-viewer-duration]").dataset.overBudget = "false";
+  for (const button of root.querySelectorAll<HTMLButtonElement>("[data-viewer-action]")) {
+    button.disabled = true;
+  }
+  for (const input of root.querySelectorAll<HTMLInputElement>(
+    "[data-viewer-frame-position], [data-viewer-range-start]",
+  )) {
+    input.value = "";
+    input.disabled = true;
+  }
 }

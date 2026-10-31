@@ -7,6 +7,7 @@ import {
 } from "../analysis/frame-comparison.ts";
 import { fitTimelineWindow } from "../analysis/timeline.ts";
 import { drawRecordingChart } from "../charts/recording-chart.ts";
+import { renderCompactWork } from "./compact-inspector.ts";
 import { element, milliseconds, renderTable } from "./dom.ts";
 import type { ViewerState } from "./viewer.ts";
 
@@ -44,25 +45,30 @@ export function drawPairedCharts(root: HTMLElement, state: LoadedState): void {
       ) ?? [];
     return { side, recording, originMs, frames };
   });
-  const maximumMs = Math.max(
-    0,
-    ...sides.flatMap((side) => side.frames.map((frame) => frame.endedAtMs - frame.startedAtMs)),
-  );
-  for (const side of sides) {
-    const canvas = element<HTMLCanvasElement>(root, `[data-paired-chart="${side.side}"]`);
-    drawRecordingChart(canvas, {
-      frames: side.frames,
-      budgetMs: 1000 / (state.comparison?.targetFps ?? 60),
-      selectedFrameId: frameAtElapsed(side.recording, state.comparisonElapsedMs)?.id ?? null,
-      maximumMs,
-      timeline: { ...window, originMs: side.originMs, selectedMs: state.comparisonElapsedMs },
-    });
-    canvas.setAttribute(
-      "aria-label",
-      `Trial ${side.side.toUpperCase()} elapsed timeline, ${window.fromMs} to ${window.toMs} milliseconds, cursor ${state.comparisonElapsedMs} milliseconds. Frame heights share the same scale.`,
-    );
+  const a = sides[0];
+  const b = sides[1];
+  if (!a || !b) {
+    return;
   }
+  const canvas = element<HTMLCanvasElement>(root, '[data-paired-chart="overlay"]');
+  drawRecordingChart(canvas, {
+    frames: a.frames,
+    budgetMs: 1000 / (state.comparison?.targetFps ?? 60),
+    selectedFrameId: frameAtElapsed(a.recording, state.comparisonElapsedMs)?.id ?? null,
+    timeline: { ...window, originMs: a.originMs, selectedMs: state.comparisonElapsedMs },
+    visible: element<HTMLInputElement>(root, '[data-series-visibility="a"]').checked,
+    overlay: {
+      frames: b.frames,
+      originMs: b.originMs,
+      visible: element<HTMLInputElement>(root, '[data-series-visibility="b"]').checked,
+    },
+  });
+  canvas.setAttribute(
+    "aria-label",
+    `A/B elapsed timeline, ${window.fromMs} to ${window.toMs} milliseconds, cursor ${state.comparisonElapsedMs} milliseconds. A cyan solid; B violet dashed. Shared time and height scales.`,
+  );
 }
+
 function measurementText(value: WorkMeasurement): string {
   return `${milliseconds(value.durationMs)} · ${value.note}`;
 }
@@ -128,6 +134,7 @@ export function renderPaired(
       frame: frameAtElapsed(pair.b?.recording ?? null, elapsedMs),
     },
   );
+  renderCompactWork(root, rows, true);
   renderWorkTable(root, rows, "cpu");
   renderWorkTable(root, rows, "gpu");
   drawPairedCharts(root, state);

@@ -9,9 +9,10 @@ import { recordingLimits } from "../recordings/limits.ts";
 import { renderComparison, renderSettings } from "./comparison-view.ts";
 import { initialViewerState, parseViewerDocument } from "./document.ts";
 import { element, write } from "./dom.ts";
-import { renderFrame, renderRecordingEvidence } from "./frame-view.ts";
+import { renderFrame, renderNoRecording, renderRecordingEvidence } from "./frame-view.ts";
 import { viewerMarkup } from "./markup.ts";
 import { drawPairedCharts, pairedWindow, renderPaired, selectedPair } from "./paired-view.ts";
+import { drawSession, sessionDuration } from "./session-view.ts";
 import { createTimelineNavigation, recordingWindow } from "./timeline-navigation.ts";
 import type { CreateViewer, ViewerDocument, ViewerImportResult, ViewerState } from "./viewer.ts";
 
@@ -62,6 +63,14 @@ export const createViewer: CreateViewer = ({ container }) => {
     const { comparison, recording } = state;
     element<HTMLElement>(root, '[role="alert"]').hidden = true;
     element<HTMLElement>(root, "[data-viewer-comparison]").hidden = !comparison;
+    element<HTMLElement>(root, "[data-viewer-empty]").hidden = true;
+    for (const node of root.querySelectorAll<HTMLElement>("[data-comparison-only]")) {
+      node.hidden = !comparison;
+    }
+    for (const node of root.querySelectorAll<HTMLElement>("[data-single-only]")) {
+      node.hidden = Boolean(comparison);
+    }
+    write(root, "file-name", comparison ? "A/B comparison" : "Recording");
     if (comparison) {
       renderComparison(root, comparison);
     }
@@ -69,8 +78,8 @@ export const createViewer: CreateViewer = ({ container }) => {
       root,
       "status",
       comparison
-        ? `Opened ${comparison.trials.length} comparison trials. Results recalculated from validated recordings. Files stay on this device.`
-        : `Opened ${recording?.frames.length ?? 0} sealed frames. Files stay on this device.`,
+        ? `Opened ${comparison.trials.length} comparison trials · results recalculated`
+        : `Opened ${recording?.frames.length ?? 0} sealed frames`,
     );
     renderSelection();
   }
@@ -97,7 +106,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     const { recording, comparison, selectedTrialIndex } = state;
     gpuIndex = 0;
     recordingCatalog = workCatalog(recording, null);
-    element<HTMLElement>(root, "[data-viewer-recording]").hidden = !recording;
+    element<HTMLElement>(root, "[data-viewer-recording]").hidden = !recording && !comparison;
     element<HTMLButtonElement>(root, '[data-viewer-action="export"]').disabled = !recording;
     if (comparison) {
       element<HTMLSelectElement>(root, "[data-viewer-trial]").value = String(
@@ -110,6 +119,8 @@ export const createViewer: CreateViewer = ({ container }) => {
     }
     timeline.render(catalog, recordingCatalog);
     if (!recording) {
+      renderNoRecording(root);
+      draw();
       return;
     }
     const trial = comparison?.trials[selectedTrialIndex ?? 0];
@@ -122,11 +133,16 @@ export const createViewer: CreateViewer = ({ container }) => {
     renderNavigation();
   }
   function draw(): void {
-    if (disposed || state.status !== "loaded" || !state.recording) {
+    if (disposed || state.status !== "loaded") {
       return;
     }
+    drawSession(root, state);
     if (state.comparison) {
       drawPairedCharts(root, state);
+      return;
+    }
+    if (!state.recording) {
+      return;
     }
     drawRecordingChart(canvas, {
       frames: state.recording.frames.slice(
@@ -357,7 +373,10 @@ export const createViewer: CreateViewer = ({ container }) => {
       }
       const json = await file.text();
       if (!disposed && epoch === generation) {
-        importJson(json);
+        const result = importJson(json);
+        if (result.ok) {
+          write(root, "file-name", file.name);
+        }
       }
     } catch (cause) {
       if (epoch === generation) {
@@ -365,16 +384,23 @@ export const createViewer: CreateViewer = ({ container }) => {
       }
     }
   }
+  function openSelectedFile(input: HTMLInputElement): void {
+    const file = input.files?.[0];
+    if (file) {
+      void readFile(file);
+    }
+    input.value = "";
+  }
   function change(target: Element): void {
     if (target instanceof HTMLInputElement && target.matches("[data-viewer-file]")) {
-      const file = target.files?.[0];
-      if (file) {
-        void readFile(file);
-      }
-      target.value = "";
+      openSelectedFile(target);
       return;
     }
     if (state.status !== "loaded") {
+      return;
+    }
+    if (target.matches("[data-series-visibility]")) {
+      draw();
       return;
     }
     if (target.matches("[data-paired-time], [data-paired-window]")) {
@@ -407,6 +433,11 @@ export const createViewer: CreateViewer = ({ container }) => {
       return;
     }
   }
+  function refreshCompactComparison(): void {
+    if (state.status === "loaded" && state.comparison) {
+      renderPaired(root, state, catalog);
+    }
+  }
   function changeFrameControl(target: Element): void {
     if (state.status !== "loaded" || !state.recording) {
       return;
@@ -420,6 +451,7 @@ export const createViewer: CreateViewer = ({ container }) => {
     } else if (target.matches("[data-viewer-gpu-observation]")) {
       gpuIndex = Number(element<HTMLSelectElement>(root, "[data-viewer-gpu-observation]").value);
       renderFrame(root, state.recording, state.selectedFrameId, gpuIndex);
+      refreshCompactComparison();
       element<HTMLSelectElement>(root, "[data-viewer-gpu-observation]").focus({
         preventScroll: true,
       });
@@ -432,6 +464,14 @@ export const createViewer: CreateViewer = ({ container }) => {
   }
   function click(event: Event): void {
     if (!(event instanceof MouseEvent) || !(event.target instanceof Element)) {
+      return;
+    }
+    if (event.target.matches("[data-session-chart]") && state.status === "loaded") {
+      const bounds = event.target.getBoundingClientRect();
+      selectTimelineTime(
+        Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) *
+          sessionDuration(state),
+      );
       return;
     }
     if (event.target === canvas) {
@@ -513,7 +553,7 @@ export const createViewer: CreateViewer = ({ container }) => {
   root.addEventListener("drop", drop);
   const resize = new ResizeObserver(draw);
   resize.observe(canvas);
-  for (const chart of root.querySelectorAll("[data-paired-chart]")) {
+  for (const chart of root.querySelectorAll("[data-paired-chart], [data-session-chart]")) {
     resize.observe(chart);
   }
   return {

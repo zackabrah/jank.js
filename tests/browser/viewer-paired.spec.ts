@@ -34,31 +34,33 @@ test("linked elapsed selection compares work and preserves gaps, row order and k
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify({ ...report, trials })),
   });
-  const pair = page.getByRole("region", { name: "Synchronized A/B inspection", exact: true });
-  await expect(pair.getByRole("table", { name: "CPU scope comparison" })).toContainText("+2.00 ms");
-  const names = await pair.locator("[data-paired-cpu] tbody tr td:first-child").allTextContents();
+  await page.getByText("COMPARISON DETAILS", { exact: true }).click();
+  await page.getByText("VIEW", { exact: true }).click();
+  await expect(page.getByRole("table", { name: "CPU scope comparison" })).toContainText("+2.00 ms");
+  const names = await page.locator("[data-paired-cpu] tbody tr td:first-child").allTextContents();
   await page.getByLabel("Comparison elapsed time (ms)", { exact: true }).fill("20");
   await page.getByLabel("Comparison elapsed time (ms)", { exact: true }).press("Enter");
-  await expect(pair.locator('[data-paired-frame="a"]')).toContainText("Frame #2");
-  await expect(pair.locator('[data-paired-frame="b"]')).toContainText("No frame");
-  await expect(pair.getByRole("table", { name: "CPU scope comparison" })).toContainText("Unknown");
-  expect(await pair.locator("[data-paired-cpu] tbody tr td:first-child").allTextContents()).toEqual(
+  await expect(page.locator('[data-paired-frame="a"]')).toContainText("Frame #2");
+  await expect(page.locator('[data-paired-frame="b"]')).toContainText("No frame");
+  await expect(page.getByRole("table", { name: "CPU scope comparison" })).toContainText("Unknown");
+  expect(await page.locator("[data-paired-cpu] tbody tr td:first-child").allTextContents()).toEqual(
     names,
   );
   await page.getByLabel("Comparison elapsed time (ms)", { exact: true }).fill("780");
   await page.getByLabel("Comparison elapsed time (ms)", { exact: true }).press("Enter");
-  await expect(pair.locator('[data-paired-frame="b"]')).toContainText("Frame #40");
-  await expect(pair.getByRole("table", { name: "GPU pass comparison" })).toContainText(
+  await expect(page.locator('[data-paired-frame="b"]')).toContainText("Frame #40");
+  await expect(page.getByRole("table", { name: "GPU pass comparison" })).toContainText(
     "No GPU observation",
   );
   await page.getByRole("combobox", { name: "Trial", exact: true }).selectOption("3");
   await expect(page.getByLabel("Comparison elapsed time (ms)", { exact: true })).toHaveValue("780");
-  await expect(pair.getByRole("table", { name: "CPU scope comparison" })).toContainText("−2.00 ms");
+  await expect(page.getByRole("table", { name: "CPU scope comparison" })).toContainText("−2.00 ms");
   await page
     .getByRole("combobox", { name: "Comparison window (ms)", exact: true })
     .selectOption("250");
-  await expect(pair.locator("[data-paired-range]")).toContainText("750.00–1000.00 ms");
-  await pair.locator('[data-paired-chart="b"]').click({ position: { x: 2, y: 20 } });
+  await expect(page.locator("[data-paired-range]")).toContainText("750.00–1000.00 ms");
+  await page.getByText("VIEW", { exact: true }).click();
+  await page.locator('[data-paired-chart="overlay"]').click({ position: { x: 2, y: 20 } });
   await expect(page.locator("[data-viewer-frame]")).toContainText("Frame #38");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
@@ -135,6 +137,7 @@ test("missing partner stays unknown and opening a single recording hides paired 
     ),
   });
   await expect(page.locator('[data-paired-title="b"]')).toContainText("trial unavailable");
+  await page.getByText("COMPARISON DETAILS", { exact: true }).click();
   await expect(page.getByRole("table", { name: "GPU pass comparison" })).toContainText("Unknown");
   await input.setInputFiles({
     name: "no-gpu.json",
@@ -171,9 +174,7 @@ for (const width of [1280, 390]) {
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify(comparisonReportFixture())),
     });
-    await expect(page.getByRole("table", { name: "CPU scope comparison" })).toContainText(
-      "+2.00 ms",
-    );
+    await expect(page.getByRole("table", { name: "CPU selected work" })).toContainText("+2.00");
     await expect(page.locator("[data-paired-section]")).toHaveScreenshot(
       `paired-inspection-${width}.png`,
     );

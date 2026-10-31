@@ -15,12 +15,14 @@ test("opens a comparison, recalculates results and drills into the selected tria
   await page
     .getByLabel("Open recording or comparison")
     .setInputFiles(file(comparisonReportFixture()));
+  await page.getByText("COMPARISON DETAILS", { exact: true }).click();
   await expect(page.getByRole("table", { name: "A/B results" })).toContainText("Mixed results");
   await expect(page.getByRole("table", { name: "A/B results" })).toContainText("Unknown");
   await expect(page.getByRole("table", { name: "Scene settings" })).toContainText("800 × 600");
   await expect(page.getByRole("table", { name: "Scene settings" })).toContainText("400 × 600");
   await page.getByRole("combobox", { name: "Trial", exact: true }).selectOption("1");
   await expect(page.locator("[data-viewer-evidence]")).toContainText("GPU samples 60%");
+  await page.getByText("FRAME DETAILS", { exact: true }).click();
   await page.getByLabel("Frame position", { exact: true }).fill("40");
   await page.getByLabel("Frame position", { exact: true }).press("Enter");
   await expect(page.locator("[data-viewer-frame]")).toContainText("Frame #40");
@@ -61,7 +63,7 @@ test("keyboard navigation, chart selection and trial extraction use the current 
   await page.getByRole("button", { name: "Next frame", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("[data-viewer-frame]")).toContainText("Frame #2");
-  await page.locator("[data-viewer-chart]").click({ position: { x: 2, y: 20 } });
+  await page.locator('[data-paired-chart="overlay"]').click({ position: { x: 2, y: 20 } });
   await expect(page.locator("[data-viewer-frame]")).toContainText("Frame #1");
   const downloading = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export selected recording" }).click();
@@ -89,6 +91,7 @@ test("empty/cancelled reports and rejected GPU evidence remain explicit", async 
     })),
   };
   await page.getByLabel("Open recording or comparison").setInputFiles(file(unknownResolution));
+  await page.getByText("COMPARISON DETAILS", { exact: true }).click();
   const resolutionRow = page
     .getByRole("table", { name: "Scene settings" })
     .getByRole("row")

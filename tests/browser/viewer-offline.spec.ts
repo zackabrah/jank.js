@@ -34,6 +34,7 @@ test("standalone viewer imports a comparison offline without requesting network 
   await expect(page.locator("[data-viewer-mixed]")).toContainText("Mixed results: CPU");
   await expect(page.locator("[data-viewer-gpu]")).toContainText("Ocean FFT");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.getByText("COMPARISON DETAILS", { exact: true }).click();
   const rowHeights = await page
     .locator("[data-viewer-results] tbody tr, [data-viewer-trials] tbody tr")
     .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));

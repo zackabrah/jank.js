@@ -42,13 +42,15 @@ function surface(container: HTMLElement, label: string): SVGSVGElement {
 function renderEvents(container: HTMLElement, model: TimelineModel, name: string): void {
   const document = container.ownerDocument;
   const label = document.createElement("label");
-  label.append(`${name} timeline event `);
+
   const select = document.createElement("select");
   select.className = "jl-select";
   select.dataset.timelineEvent = "";
+  select.dataset.eventSeries = name;
+  select.setAttribute("aria-label", `${name} timeline event`);
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = model.events.length ? "Choose event in window" : "No events in window";
+  placeholder.textContent = `${name === "Recording" ? "Events" : name} · ${model.events.length}`;
   select.append(placeholder);
   select.disabled = model.events.length === 0;
   const svg = surface(container, `${name} event markers`);
@@ -84,10 +86,16 @@ function renderEvents(container: HTMLElement, model: TimelineModel, name: string
     }
   }
   label.append(select);
-  container.append(label, svg);
+  const row = document.createElement("div");
+  row.className = "jank-viewer-events-row";
+  const pickers = document.createElement("div");
+  pickers.className = "jank-viewer-event-pickers";
+  pickers.append(label);
+  row.append(pickers, svg);
+  container.append(row);
 }
 function renderSample(
-  svg: SVGSVGElement,
+  svg: SVGElement,
   sample: LaneSample,
   model: TimelineModel,
   maximumMs: number,
@@ -115,15 +123,26 @@ function renderSample(
 export function renderTimelineLanes(
   container: HTMLElement,
   model: TimelineModel,
-  options: { name: string; maximumMs: number },
+  options: { name: string; maximumMs: number; overlay?: TimelineModel | undefined },
 ): void {
   container.replaceChildren();
-  const note = container.ownerDocument.createElement("p");
-  note.className = "jank-viewer-note";
-  note.textContent = `CPU / GPU durations · shared height scale 0–${milliseconds(options.maximumMs)}. Gaps are unknown; outlined bars are GPU or partial CPU samples. GPU timing is placed at its correlated frame, not on the CPU clock.`;
-  container.append(note);
-  renderEvents(container, model, options.name);
-  for (const lane of model.lanes) {
+  renderEvents(container, model, options.overlay ? "A" : options.name);
+  if (options.overlay) {
+    renderEvents(container, options.overlay, "B");
+  }
+  let previousKind = "";
+  for (const [index, lane] of model.lanes.entries()) {
+    if (previousKind !== lane.identity.kind) {
+      const heading = container.ownerDocument.createElement("div");
+      heading.className = "jank-viewer-lane-group";
+      const title = container.ownerDocument.createElement("b");
+      title.textContent = lane.identity.kind.toUpperCase();
+      const scale = container.ownerDocument.createElement("span");
+      scale.textContent = `0–${options.maximumMs.toFixed(1)} ms`;
+      heading.append(title, scale);
+      container.append(heading);
+      previousKind = lane.identity.kind;
+    }
     const row = container.ownerDocument.createElement("div");
     row.className = "jank-viewer-lane";
     row.dataset.laneKind = lane.identity.kind;
@@ -131,8 +150,8 @@ export function renderTimelineLanes(
     heading.className = "jank-viewer-lane-heading";
     const name = container.ownerDocument.createElement("span");
     name.dataset.laneName = "";
-    name.textContent = `${lane.identity.kind.toUpperCase()} · ${lane.identity.label}`;
-    name.title = name.textContent;
+    name.textContent = lane.identity.displayLabel;
+    name.title = lane.identity.label;
     const value = container.ownerDocument.createElement("span");
     value.dataset.laneReadout = "";
     heading.append(name, value);
@@ -140,23 +159,32 @@ export function renderTimelineLanes(
       container,
       `${options.name} ${lane.identity.label} duration lane; arrow keys select frames`,
     );
+    const a = svgElement(
+      container.ownerDocument,
+      "g",
+      options.overlay ? { "data-series": "a" } : {},
+    );
     for (const sample of lane.samples) {
-      renderSample(svg, sample, model, options.maximumMs);
+      renderSample(a, sample, model, options.maximumMs);
+    }
+    svg.prepend(a);
+    if (options.overlay) {
+      const b = svgElement(container.ownerDocument, "g", { "data-series": "b" });
+      for (const sample of options.overlay.lanes[index]?.samples ?? []) {
+        renderSample(b, sample, options.overlay, options.maximumMs);
+      }
+      a.after(b);
     }
     row.append(heading, svg);
     container.append(row);
   }
-  if (model.lanes.length === 0) {
-    const empty = container.ownerDocument.createElement("p");
-    empty.textContent = "No CPU scopes or GPU pass identities recorded. Timing is unknown.";
-    container.append(empty);
-  }
+  renderEmptyLanes(container, model);
 }
 
 export function updateLaneCursor(
   container: HTMLElement,
   model: TimelineModel,
-  cursor: { selectedMs: number; hoverMs: number | null },
+  cursor: { selectedMs: number; hoverMs: number | null; overlay?: TimelineModel | undefined },
 ): void {
   for (const line of container.querySelectorAll("[data-lane-cursor]")) {
     const time =
@@ -176,8 +204,24 @@ export function updateLaneCursor(
     if (!value) {
       return;
     }
-    value.textContent = `${cursor.hoverMs === null ? "Selected" : "Hover"} ${milliseconds(time)} · ${milliseconds(sample?.durationMs)} · ${sample?.note ?? "No frame in this window"}`;
-    value.title = value.textContent;
+    const b = cursor.overlay?.lanes[index]?.samples.find(
+      (sample) => sample.fromMs <= time && time < sample.toMs,
+    );
+    const format = (value: number | null | undefined) => (value == null ? "—" : value.toFixed(1));
+    value.textContent =
+      format(sample?.durationMs) + (cursor.overlay ? ` / ${format(b?.durationMs)}` : "");
+    value.title = `${cursor.hoverMs === null ? "Selected" : "Hover"} ${milliseconds(time)} · ${milliseconds(sample?.durationMs)} · ${sample?.note ?? "No frame in this window"}${cursor.overlay ? ` · B ${milliseconds(b?.durationMs)} · ${b?.note ?? "No frame in this window"}` : ""}`;
+    value.setAttribute("aria-label", value.title);
+    value.parentElement?.setAttribute("title", value.title);
     value.parentElement?.classList.toggle("jank-viewer-unknown", sample?.durationMs == null);
   });
+}
+
+function renderEmptyLanes(container: HTMLElement, model: TimelineModel): void {
+  if (model.lanes.length) {
+    return;
+  }
+  const empty = container.ownerDocument.createElement("p");
+  empty.textContent = "No CPU scopes or GPU pass identities recorded. Timing is unknown.";
+  container.append(empty);
 }

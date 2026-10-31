@@ -7,6 +7,7 @@ export interface WorkIdentity {
   readonly kind: "cpu" | "gpu";
   readonly key: string;
   readonly label: string;
+  readonly displayLabel: string;
 }
 export interface WorkMeasurement {
   readonly durationMs: number | null;
@@ -46,6 +47,7 @@ function gpuPasses(sample: GpuSample): PassMeasurement[] {
       kind: "gpu",
       key: JSON.stringify([sample.measurement, pass.label]),
       label: `${pass.label} · ${sample.measurement}`,
+      displayLabel: pass.label,
       measurement: {
         durationMs: pass.durationMs,
         comparable: pass.durationMs !== null,
@@ -57,6 +59,7 @@ function gpuPasses(sample: GpuSample): PassMeasurement[] {
     kind: "gpu",
     key: JSON.stringify(["intervals", pass.id, pass.type, pass.invocation]),
     label: `${pass.label} · ${pass.id} / ${pass.type} #${pass.invocation}`,
+    displayLabel: `${pass.label} #${pass.invocation}`,
     measurement:
       "reason" in pass
         ? unknown(`Rejected: ${pass.reason}`)
@@ -80,6 +83,7 @@ export function workCatalog(a: Recording | null, b: Recording | null): WorkIdent
         kind: "cpu" as const,
         key: channel.id,
         label: `${channel.label} · ${channel.id}`,
+        displayLabel: channel.label,
       })),
       ...recording.gpu.flatMap(gpuPasses),
     ];
@@ -87,7 +91,12 @@ export function workCatalog(a: Recording | null, b: Recording | null): WorkIdent
       const key = JSON.stringify([entry.kind, entry.key]);
       const previous = entries.get(key);
       if (!previous) {
-        entries.set(key, { kind: entry.kind, key: entry.key, label: entry.label });
+        entries.set(key, {
+          kind: entry.kind,
+          key: entry.key,
+          label: entry.label,
+          displayLabel: entry.displayLabel,
+        });
       }
     }
   }
