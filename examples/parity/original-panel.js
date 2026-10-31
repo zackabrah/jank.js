@@ -1,10 +1,12 @@
+import { createDiagnosticPreview } from "../ui-library/diagnostic-preview.ts";
+
 const path = "/reference/index.js";
 const { createDiagnostics, createPerformanceTray, createPreparationProfiler } = await import(
   /* @vite-ignore */ path
 );
 const sample = await (await fetch("/samples/rewrite.json")).json();
 const selected = new URLSearchParams(location.search).get("mode") ?? "full";
-const mode = selected === "loading" ? "full" : selected;
+const mode = selected === "loading" || selected === "diagnostics" ? "full" : selected;
 localStorage.setItem("jank.js:panel-mode", mode);
 let now = 0;
 const monitor = createDiagnostics({
@@ -43,9 +45,31 @@ for (const kind of ["fresh-context", "repeat-session"]) {
   decode();
   preparation.finish("ready");
 }
+const diagnostics = createDiagnosticPreview();
+const culling = {
+  ...diagnostics.visibility,
+  read: () => {
+    const source = diagnostics.visibility.read();
+    const main = source.views[0];
+    return {
+      ...source,
+      main,
+      shadow: { tested: 0, visible: 0, culled: 0 },
+      reflection: { tested: 0, visible: 0, culled: 0 },
+      bounds: [],
+      boundsOmitted: 0,
+      viewProjection: null,
+      instances: {
+        ...source.instances,
+        views: source.instances.views.map((view) => ({ ...view, view: view.name })),
+      },
+    };
+  },
+};
 const tray = createPerformanceTray({
   shell: document.body,
   monitor,
+  ...(selected === "diagnostics" ? { culling, temporal: diagnostics.temporal } : {}),
   mode,
   corner: "top-left",
   preparation: { read: () => preparation.snapshot(), history: () => preparation.history() },

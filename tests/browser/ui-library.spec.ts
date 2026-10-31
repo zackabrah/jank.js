@@ -126,6 +126,14 @@ test("sample states preserve unknown timings, keyboard navigation and portable r
         .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-pass-id"))),
     ).toEqual(originalOrder);
   }
+  await expect(full.locator('[data-value="visibility-status"]')).toContainText("SIMULATED");
+  await full.getByRole("button", { name: "Instance culling", exact: true }).click();
+  await expect(full.getByRole("button", { name: "Instance culling", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await full.getByLabel("Temporal debug view").selectOption("history");
+  await expect(full.getByLabel("Temporal debug view")).toHaveValue("history");
   await full.getByRole("tab", { name: "LOADING", exact: true }).click();
   await expect(full.locator('[data-tabpanel="loading"]')).toContainText("Simulated scene loading");
   await full.getByRole("tab", { name: "CAPTURE", exact: true }).click();

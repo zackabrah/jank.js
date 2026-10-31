@@ -7,9 +7,11 @@ import {
   type LoadingSnapshot,
   type PanelMode,
 } from "../../packages/jank/src/index.ts";
+import { createDiagnosticPreview } from "./diagnostic-preview.ts";
 
 /** Synthetic observations exercise real UI states without benchmarking the user's machine. */
 export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>) {
+  const diagnostics = createDiagnosticPreview();
   let clockMs = 0;
   let boundaryMs = 0;
   let sequence = 0;
@@ -107,6 +109,7 @@ export function createProfilerPreview(containers: Record<PanelMode, HTMLElement>
           profiler.observeGpu(gpuState);
         },
       },
+      ...diagnostics,
       loading: { snapshot: () => loading, history: () => [loading] },
     });
     // This gallery mounts three copies; their landmarks need distinct accessible names.

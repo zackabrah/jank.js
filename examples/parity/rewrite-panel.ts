@@ -3,8 +3,8 @@ import {
   createPanel,
   createProfiler,
 } from "../../packages/jank/src/index.ts";
-
 import { readRecording } from "../../packages/jank/src/recordings/codec.ts";
+import { createDiagnosticPreview } from "../ui-library/diagnostic-preview.ts";
 
 const sample = readRecording(await (await fetch("/samples/rewrite.json")).json());
 const selected = new URLSearchParams(location.search).get("mode");
@@ -46,6 +46,7 @@ const panel = createPanel({
   container: document.body,
   profiler,
   loading,
+  ...(selected === "diagnostics" ? createDiagnosticPreview() : {}),
   mode,
   corner: "top-left",
 });
