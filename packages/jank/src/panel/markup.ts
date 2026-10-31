@@ -1,4 +1,5 @@
 import manifest from "../../package.json" with { type: "json" };
+import { integrationMarkup } from "./integration-markup.ts";
 
 const icon = (action: string, label: string, text: string) =>
   `<button type="button" class="jl-btn jl-icon" data-action="${action}" aria-label="${label}" title="${label}">${text}</button>`;
@@ -60,6 +61,7 @@ export function panelMarkup(): string {
               <summary><h2>COUNTERS <span data-value="counter-sources"></span></h2></summary>
               <div><div data-list="counters" class="jank-list jank-counter-list"></div><p class="jank-note" data-value="counter-note"></p></div>
             </details>
+            ${integrationMarkup()}
             <details class="jank-section" data-section="events" open>
               <summary><h2>EVENTS</h2></summary>
               <div><div data-list="events" class="jank-list"></div></div>

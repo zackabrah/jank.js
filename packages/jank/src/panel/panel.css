@@ -604,3 +604,28 @@
   outline: 2px solid var(--jl-text);
   outline-offset: -2px;
 }
+
+.jank .jank-integration-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 10px;
+  color: var(--jl-muted);
+}
+.jank .jank-integration-setting .jl-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+.jank .jank-integration-setting [aria-pressed="true"] {
+  color: var(--jl-ink);
+  background: var(--jl-text);
+}
+.jank [data-list="instances"] .jank-row > :last-child {
+  max-width: 75%;
+  line-height: 15px;
+}
+.jank .jank-integration-setting select {
+  width: 140px;
+}

@@ -14,6 +14,7 @@ import { element, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
 import { createRecordingExporter } from "./export-recording.ts";
 import { createGpuView } from "./gpu-view.ts";
+import { createIntegrationView } from "./integration-view.ts";
 import { createLiveView, renderOverhead } from "./live-view.ts";
 import { createLoadingView } from "./loading-view.ts";
 import { panelMarkup } from "./markup.ts";
@@ -72,6 +73,7 @@ export function createPanel(options: PanelOptions): Panel {
   container.append(root);
   const liveView = createLiveView(root);
   const loadingView = createLoadingView(root, options.loading);
+  const integrationView = createIntegrationView(root, options, safelyRedraw);
   let disposed = false;
   let mode = rememberedMode(window, options.mode ?? "line");
   let selectedTab = "live";
@@ -120,6 +122,7 @@ export function createPanel(options: PanelOptions): Panel {
       liveView.render(displayed, mode, frozen === null);
       if (mode === "full") {
         gpuView.render(displayed.gpu, 1000 / displayed.targetFps);
+        integrationView.render();
       }
     });
     const costMs = current.overhead.refresh.averageMs;
@@ -280,6 +283,7 @@ export function createPanel(options: PanelOptions): Panel {
     freeze: () => {
       liveView.stop();
       loadingView.freeze(frozen === null);
+      integrationView.freeze(frozen === null);
       frozen = frozen ? null : profiler.snapshot();
     },
     record: () => {
@@ -298,6 +302,7 @@ export function createPanel(options: PanelOptions): Panel {
       gpuView.clear();
       frozen = null;
       loadingView.freeze(false);
+      integrationView.freeze(false);
     },
     "open-viewer": () => openViewer(),
     "retry-viewer-download": () => handoff.retry(),
@@ -383,6 +388,7 @@ export function createPanel(options: PanelOptions): Panel {
         releaseScopes?.();
         releaseScopes = null;
         liveView.dispose();
+        integrationView.dispose();
         tabs.dispose();
         root.removeEventListener("click", click);
         comparisonView?.dispose();
