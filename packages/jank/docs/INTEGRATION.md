@@ -1,6 +1,6 @@
 # Integration guide · jank.js 0.2.1-rewrite.6
 
-Version **0.2.1-rewrite.6** is a local test build of the readability rewrite. It includes the
+Version **0.2.1-rewrite.6** is an unstable source preview of the rewrite, distributed as a local archive. It includes the
 profiler, live panel, recording capture/export, optional GPU timers, bundled UI styles and TypeScript declarations.
 It has zero runtime dependencies. The package contains no demo scene, Three.js, private assets
 or development tooling. It is ESM and targets modern browsers.
@@ -348,7 +348,7 @@ with a replacement profiler or lost WebGPU device.
 
 ## Measurement and compatibility limits
 
-- This is a private ESM preview for modern browsers. APIs and file formats may change.
+- This is an unstable ESM source preview for modern browsers. APIs and file formats may change.
   Node is useful for build/analysis; mounting panels requires the browser DOM.
 - This build writes recording schema **5** and comparison version **1**. Legacy recording
   files are rejected rather than silently interpreted.

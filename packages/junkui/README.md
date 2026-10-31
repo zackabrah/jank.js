@@ -1,7 +1,7 @@
 # junkui
 
-Native HTML controls, a scoped neutral theme and horizontal tabs. This package is private while
-the rewrite is in progress. It has no profiler imports, runtime dependencies or font downloads.
+Native HTML controls, a scoped neutral theme and horizontal tabs. This is an unstable source preview; its `private: true` flag
+prevents accidental registry publication. It has no profiler imports, runtime dependencies or font downloads.
 
 ```ts
 import { createTabs } from "junkui";

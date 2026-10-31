@@ -1,95 +1,134 @@
-# jank.js readability rewrite
+# jank.js
 
-This branch contains the development stack, architecture, contracts, and a working public
-profiler. `createProfiler` connects host frames, scopes, counters, events, GPU observations,
-manual/automatic capture and a bounded archive. `parseRecording`, `serializeRecording` and
-`RecordingError` provide validated version 5 files. `createPanel` provides LINE/MINI/FULL views,
-live statistics, freeze, capture controls and local exports. Optional WebGL2 and Three r186
-WebGPU adapters provide correlated GPU timing. WebGPU retains labelled compute/render intervals,
-separate sums, union busy time and elapsed span; `finalizeRecording` collects late results with a bounded wait. The offline viewer now opens recordings and A/B bundles; the loading runtime remains pending.
-`junkui` provides scoped native-control styles, neutral
-theme tokens and accessible tabs. Both packages remain private during the rewrite.
+A local performance profiler for browser applications. Measure frame pacing and CPU scopes,
+inspect optional GPU timings, capture slowdowns with before/after context, and compare recordings
+offline. Your application owns the frame loop; Jank adds no render loop or telemetry service.
 
-- [Architecture and ownership](docs/architecture.md)
-- [Code quality and enforcement](docs/quality.md)
-- [Feature and verification plan](docs/rewrite-plan.md)
-- [Implemented collection behavior and verification](docs/collection.md)
-- [Recording format and validation](docs/recordings.md)
-- [Pure recording inspection](docs/analysis.md)
-- [Live panel, integration and verification](docs/panel.md)
-- [GPU adapters, ownership and measurement limits](docs/gpu-adapters.md)
-- [Basic interactive demo and feature walkthrough](examples/basic/README.md)
-- [Offline recording/comparison viewer](docs/viewer.md) — `pnpm build:viewer` creates a single portable HTML file
-- [Independent UI package and gallery](packages/junkui/README.md)
-- [Standalone UI library: one offline HTML file](examples/ui-library/README.md)
-- [jank.js public type contracts](packages/jank/src/index.ts)
-- [junkui public type contracts](packages/junkui/src/index.ts)
+**Public source preview · `0.2.1-rewrite.6`.** This branch is the rewrite, not the previous API on
+`main` or an npm release. APIs and recording formats may change. Both workspace packages retain
+`private: true` to prevent accidental registry publication. See [preview compatibility and
+limits](docs/public-preview.md) before integrating.
 
-The current application remains available in the original checkout. Its `eeed4c7` commit is
-the historical starting point. Existing uncommitted changes there were not copied or modified
-by this worktree. Use its manual, screenshots and browser fixtures as reference evidence.
+## Try the demo
 
-## Workspace
-
-`packages/jank` owns collection, recordings, analysis, the live panel, the offline viewer,
-and optional renderer adapters. `packages/junkui` owns reusable native controls and the theme.
-The UI package does not know that a profiler exists.
+Use Node **24.22.1** and pnpm **11.24.0**, matching the preview verification environment.
 
 ```sh
+git clone --branch rewrite/architecture https://github.com/zackabrah/jank.js.git
+cd jank.js
 pnpm install --frozen-lockfile
+pnpm dev:demo
+```
+
+Open `http://127.0.0.1:4187/examples/basic/`. The demo includes deliberate CPU hitches, GPU
+arithmetic/texture/volume/diffusion workloads, loading diagnostics, recording, and a quick
+budget-based headroom estimate. Its stress workloads are examples, not a universal hardware
+benchmark. Simulated GPU states are labelled. See the [demo walkthrough](examples/basic/README.md).
+
+For an offline UI demonstration or recording viewer:
+
+```sh
+pnpm build:ui-library
+pnpm build:viewer
+pnpm build:gpu-diagnostic
+```
+
+Open the resulting `artifacts/jank-ui-library.html`, `artifacts/jank-viewer.html`, or
+`artifacts/jank-gpu-diagnostic.html` directly in a browser. Each is a self-contained file. The
+library uses simulated data; the viewer imports your recordings; the diagnostic explicitly
+probes native WebGPU timestamps. No scene is instrumented merely by opening these pages.
+
+## Install the preview in an application
+
+Build and pack from this checkout:
+
+```sh
+pnpm build
+pnpm --filter jank.js pack --pack-destination ../../artifacts
+```
+
+Then, from your application's directory, install the generated archive:
+
+```sh
+pnpm add /path/to/jank.js/artifacts/jank.js-0.2.1-rewrite.6.tgz
+```
+
+The package is ESM with TypeScript declarations, bundled CSS and zero runtime dependencies.
+Optional Three.js adapters use your application's renderer. `junkui` is an independent UI
+package; Jank already bundles the UI code it needs.
+
+## Connect your existing frame loop
+
+After `document.body` exists:
+
+```js
+import { createPanel, createProfiler } from "jank.js";
+import "jank.js/styles.css";
+
+const profiler = createProfiler({ targetFps: 60 });
+const update = profiler.createChannel({ id: "update", label: "Simulation" });
+const panel = createPanel({ container: document.body, profiler, mode: "full" });
+
+// Add these calls to the animation callback your application already invokes.
+function onFrame(timestampMs) {
+  profiler.beginFrame(timestampMs);
+  const token = update.begin();
+  // Run your existing simulation here.
+  update.end(token);
+  // Run your existing renderer here.
+  panel.refresh(timestampMs);
+}
+
+// On teardown: panel.dispose(); profiler.dispose();
+```
+
+Use the animation timestamp with the default clock. Each new frame boundary seals the previous
+frame; an unfinished final frame is not fabricated. CPU submission time is not GPU execution
+time. See the [integration guide](packages/jank/docs/INTEGRATION.md) for renderer adapters,
+scope collection without a full panel, loading sources, capture finalization and disposal.
+
+## What is included
+
+- FULL, MINI and LINE panels; collapsible LIVE, LOADING and CAPTURE groups.
+- CPU scopes, counters, events, frame budgets, graphs and optional renderer diagnostics.
+- Manual recording and automatic spike or sustained-over-budget capture, with bounded episode
+  windows, coverage reporting and explicit export. Automatic capture starts disarmed.
+- Optional WebGL2 and pinned Three r186 WebGPU timing, named passes and rejected-timestamp evidence.
+- Loading stages, overlapping elapsed time, cold baselines and cache observations.
+- Repeatable A/B runs and an offline viewer with overlaid graphs, counter lanes and frame inspection.
+- An independent [junkui](packages/junkui/README.md) theme/control library and a
+  [designer review pack generator](docs/designer-handoff.md).
+
+Unknown measurements stay unknown. GPU support and timing reliability depend on the browser,
+device and adapter. Recordings are bounded, retained in memory and not saved until exported;
+long-session chunk export is not implemented. The [usage guide](packages/jank/docs/USAGE.md)
+explains these states and the controls.
+
+## Development and verification
+
+```sh
+pnpm exec playwright install chromium firefox webkit
 pnpm check:full
-pnpm test:coverage
-pnpm test:package
-pnpm test:browser
-pnpm test:visual
 pnpm bench
 pnpm bench:panel
 ```
 
-`check:full` runs check, coverage, package, browser and visual gates in sequence. The opt-in
-GPU hardware benchmark is run separately as documented in [GPU verification](docs/verification/webgpu.md).
+`check:full` runs lint/types/contracts/tooling/unit tests, coverage, isolated package consumers,
+three-engine browser checks and visual comparisons. Visual baselines require macOS 26 arm64;
+other platforms can run the preceding checks individually. Hardware GPU assertions are
+capability-dependent and some diagnostic cases require explicit opt-in. Skips are reported,
+not counted as successful GPU verification. Do not run competing browser suites on port 4186.
 
-`check` validates formatting, lint rules, types, browser-free core contracts, consumer examples,
-tooling policy and unit/property tests. `test:package` builds the profiler and both packages'
-declarations, then compiles and runs an isolated consumer without workspace sources.
-`test:browser` exercises the host loop, recording download, tabs, native controls and axe checks
-in Chromium, Firefox and WebKit. `test:visual` compares the gallery and panel's desktop/narrow screenshots
-against macOS 26 arm64 baselines. Install those Playwright browsers if they are not available.
+CI checks pushes, pull requests and manual dispatches. It neither bumps versions nor publishes.
+`pnpm build:bundle` creates an immutable, versioned local bundle from clean committed source,
+including packages, offline pages, guides, synthetic sample data, source identity and checksums.
 
-The pre-commit hook runs `check` and `test:package`. CI also runs coverage and browser tests on
-Linux, plus visual comparisons on macOS 26 so native system fonts are compared on the same OS.
-`pnpm install` configures `.githooks`; it does not stage generated artifacts or unrelated work.
-It also builds the local junkui dependency so a clean checkout can resolve its public exports
-before type-checking or running source fixtures. Run `pnpm test:package` before browser tests
-to generate the built-package fixture's assets.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, issue reports and change verification.
+Architecture and ownership are described in [docs/architecture.md](docs/architecture.md);
+remaining work is tracked in [docs/rewrite-plan.md](docs/rewrite-plan.md). Historical verification
+notes describe the specific build and hardware tested, not a guarantee for every current device.
 
-Run `pnpm dev:fixture` and open `http://127.0.0.1:4186/tests/fixtures/collection/` to exercise
-collection, recording/export, clearing and disposal in a small host-owned animation loop.
-This is a test fixture, not the redesigned live panel. Its [host code](tests/fixtures/collection/host.ts)
-demonstrates the public API. `beginFrame` seals the preceding interval; stopping a recording
-excludes the final open frame instead of inventing its ending boundary.
+## License
 
-The independent gallery is at `http://127.0.0.1:4186/packages/junkui/gallery/` on the same server.
-It demonstrates labelled fields, button states, keyboard tabs and control disposal/remounting.
-The deterministic panel fixture is at `http://127.0.0.1:4186/tests/fixtures/panel/?mode=full`;
-its host buttons advance simulated frames without adding a panel-owned animation loop.
-
-Run `pnpm dev:demo` for the [basic Three.js scene](examples/basic/README.md) at
-`http://127.0.0.1:4187/examples/basic/`. It uses real frame/CPU timings and renderer counters,
-with controls for workload, deliberate hitches, recording, markers, errors and lifecycle.
-The WebGL2 timer is connected by default; unsupported devices report unavailable timing.
-Selectable simulated GPU states remain labelled examples. Loading and trace sources belong to the host.
-
-The pinned development stack is retained. No old runtime code, UI CSS, screenshots or demo
-assets were copied. Complete feature/visual parity and release gates arrive with
-their implementation slices.
-
-## Versioned local previews
-
-Versions are bumped deliberately in the package manifest; GitHub Actions runs checks and does
-not increment versions or publish. After verifying and committing a release slice, run
-`pnpm build:bundle`. It builds both packages and offline pages, includes usage/integration docs
-and a synthetic sustained episode, writes BUILD.json and SHA256SUMS, then creates a ZIP under
-`artifacts/bundles`. It refuses dirty source or an existing versioned output directory.
-Production builds embed a Git revision in the panel, viewer and recording `metadata.toolVersion`.
-Source/development runs identify themselves as `+source`; ad hoc dirty builds include `-dirty`.
+[MIT](LICENSE). Repository-specific scene assets and private application recordings are not
+required to build or use the profiler.

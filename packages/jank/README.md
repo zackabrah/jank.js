@@ -1,4 +1,4 @@
-# jank.js · private preview 0.2.1-rewrite.6
+# jank.js · source preview 0.2.1-rewrite.6
 
 Host-owned profiling, live panel, loading diagnostics, capture/export, offline analysis and
 optional renderer integrations. ESM, TypeScript declarations and self-contained CSS are included.
@@ -19,4 +19,5 @@ The separate bundle contains `jank-viewer.html`, `jank-ui-library.html` and
 exported from `jank.js/adapters/webgpu-diagnostic`.
 This build writes recording schemas 5 (ordinary), 6 (spike episodes) and 7 (sustained captures),
 and comparison version 1. The viewer reads all three recording schemas; versions 1–4 are rejected.
-The API remains a private preview. Nothing is published to a registry.
+The API remains an unstable source preview. Nothing from this branch is published to a registry.
+The package retains `private: true` to prevent accidental publication.

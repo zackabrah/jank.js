@@ -66,7 +66,7 @@ available until the complete parity matrix and release checks pass.
    consumers, exports, documentation, visual comparisons, dependency boundaries and overhead
    benchmarks have been reviewed. See the [acceptance report](verification/local-acceptance.md)
    for evidence and limits, including GPU skips and remaining visual differences. Packages remain
-   private; production integration, primary-branch promotion and publication are separate decisions.
+   protected from registry publication; production integration, primary-branch promotion and publication are separate decisions.
 
 The bounds API explicitly declares world AABBs, a column-major world-to-clip matrix and the
 clip-depth convention. Production visibility/temporal implementations remain in the host renderer;

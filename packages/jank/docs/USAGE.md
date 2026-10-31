@@ -2,7 +2,7 @@
 
 Jank helps inspect frame pacing, CPU work, asynchronous GPU observations and recorded A/B
 experiments. It runs locally. Host integration is described in [INTEGRATION.md](INTEGRATION.md).
-This is a private preview: recording schemas 5/6/7, comparison format version 1.
+This is an unstable source preview, not a registry release: recording schemas 5/6/7, comparison format version 1.
 
 ## Open the bundle
 

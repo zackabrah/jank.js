@@ -1,22 +1,27 @@
-name: Rewrite checks
+name: Preview checks
 
 on:
+  push:
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: preview-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24.22.1
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
@@ -27,13 +32,13 @@ jobs:
   visuals:
     # Native system-font baselines are intentionally tied to macOS 26 / arm64.
     runs-on: macos-26
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24.22.1
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install chromium firefox webkit
