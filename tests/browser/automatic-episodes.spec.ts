@@ -56,6 +56,10 @@ test("episode controls merge slow frames, inspect trigger history and export one
 
 for (const width of [390, 1280]) {
   test(`@visual episode settings and inspection at ${width}px`, async ({ page }) => {
+    // Frame time is synthetic; real cost-clock noise would rescale every lane through ×20 overhead.
+    await page.addInitScript(() => {
+      Object.defineProperty(performance, "now", { value: () => 0 });
+    });
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/tests/fixtures/panel/?mode=full");
     await page.evaluate(() => {
