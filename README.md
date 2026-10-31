@@ -6,7 +6,7 @@ manual/automatic capture and a bounded archive. `parseRecording`, `serializeReco
 `RecordingError` provide validated version 5 files. `createPanel` provides LINE/MINI/FULL views,
 live statistics, freeze, capture controls and local exports. Optional WebGL2 and Three r186
 WebGPU adapters provide correlated GPU timing. WebGPU retains labelled compute/render intervals,
-separate sums, union busy time and elapsed span; `finalizeRecording` collects late results with a bounded wait. The viewer and loading runtime remain pending.
+separate sums, union busy time and elapsed span; `finalizeRecording` collects late results with a bounded wait. The offline viewer now opens recordings and A/B bundles; the loading runtime remains pending.
 `junkui` provides scoped native-control styles, neutral
 theme tokens and accessible tabs. Both packages remain private during the rewrite.
 
@@ -19,6 +19,7 @@ theme tokens and accessible tabs. Both packages remain private during the rewrit
 - [Live panel, integration and verification](docs/panel.md)
 - [GPU adapters, ownership and measurement limits](docs/gpu-adapters.md)
 - [Basic interactive demo and feature walkthrough](examples/basic/README.md)
+- [Offline recording/comparison viewer](docs/viewer.md) — `pnpm build:viewer` creates a single portable HTML file
 - [Independent UI package and gallery](packages/junkui/README.md)
 - [Standalone UI library: one offline HTML file](examples/ui-library/README.md)
 - [jank.js public type contracts](packages/jank/src/index.ts)

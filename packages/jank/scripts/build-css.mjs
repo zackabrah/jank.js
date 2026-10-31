@@ -6,5 +6,9 @@ const panel = readFileSync(new URL("../src/panel/panel.css", import.meta.url), "
   '@import "junkui/styles.css";',
   "",
 );
-writeFileSync(new URL("../dist/styles.css", import.meta.url), `${theme}\n${panel}`);
+const viewer = readFileSync(new URL("../src/viewer/viewer.css", import.meta.url), "utf8").replace(
+  '@import "junkui/styles.css";',
+  "",
+);
+writeFileSync(new URL("../dist/styles.css", import.meta.url), `${theme}\n${panel}\n${viewer}`);
 writeFileSync(new URL("../dist/styles.d.ts", import.meta.url), "export {};\n");

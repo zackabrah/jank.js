@@ -115,7 +115,8 @@ larger. CPU and GPU overlap, and host CPU totals exclude browser layout/paint an
 
 **Export comparison** downloads `jank.js-comparison` version 1: options, captured budget, status,
 summary, trial metadata and every completed A/B recording in one JSON file. This is a comparison
-bundle, not a single recording accepted by the existing viewer. Each `trials[i].recording` is a
-normal schema-5 recording that can be extracted and passed to `parseRecording`. There is no new
-bundle import/editor in this slice. Programmatic callers can use `comparison.report()` and
-`serializeComparison(report)`; snapshots/reports are detached from retained state.
+bundle accepted by the [offline viewer](viewer.md), which recalculates results and lets you inspect
+and export individual trials. Each `trials[i].recording` remains a normal schema-5 recording.
+Programmatic callers can use `comparison.report()`, `serializeComparison(report)` and
+`parseComparison(json)`; snapshots/reports are detached from retained state. Import/export validate
+authoritative trial fields and recompute derived summaries rather than trusting stored metrics.

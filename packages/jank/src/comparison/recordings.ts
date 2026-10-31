@@ -1,5 +1,6 @@
-import { serializeRecording } from "../recordings/codec.ts";
+import { checkJsonSize } from "../recordings/json.ts";
 import type { Recording } from "../recordings/recording.ts";
+import { readComparison } from "./codec.ts";
 import type { ComparisonContext, ComparisonOptions, ComparisonReport } from "./comparison.ts";
 
 export const comparisonByteLimit = 32 * 1024 * 1024;
@@ -74,13 +75,9 @@ export function selectComparisonWindow(
 }
 /** A portable bundle; each nested recording remains a normal validated Jank recording. */
 export function serializeComparison(report: ComparisonReport): string {
-  for (const trial of report.trials) {
-    serializeRecording(trial.recording);
-    copyComparisonContext(trial.context);
-  }
-  const json = JSON.stringify(report);
-  if (new TextEncoder().encode(json).byteLength > comparisonByteLimit) {
-    throw new RangeError("Comparison exceeds the 32 MiB export limit.");
-  }
+  // Check the caller's payload before deeper validation; imported/exported files share one limit.
+  checkJsonSize(JSON.stringify(report));
+  const json = JSON.stringify(readComparison(report));
+  checkJsonSize(json);
   return json;
 }

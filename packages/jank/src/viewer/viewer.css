@@ -1,0 +1,174 @@
+@import "junkui/styles.css";
+
+.jl.jank-viewer {
+  --jank-warning: #f26032;
+  color: var(--jl-text);
+  background: var(--jl-ink);
+  font: 12px / 1.6 var(--jl-font);
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+  padding: 20px;
+  text-align: left;
+}
+.jank-viewer *,
+.jank-viewer *::before,
+.jank-viewer *::after {
+  box-sizing: border-box;
+}
+.jank-viewer [hidden] {
+  display: none;
+}
+.jank-viewer-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--jl-line-strong);
+}
+.jank-viewer h1 {
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  margin: 0;
+}
+.jank-viewer h1 span,
+.jank-viewer-note {
+  color: var(--jl-muted);
+}
+.jank-viewer h2 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  margin-top: 24px;
+}
+.jank-viewer p {
+  overflow-wrap: anywhere;
+}
+.jank-viewer label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.jank-viewer input[type="file"] {
+  max-width: 100%;
+  width: 260px;
+}
+.jank-viewer input[type="number"] {
+  width: 84px;
+}
+.jank-viewer select {
+  max-width: 100%;
+}
+.jank-viewer details {
+  border: 1px solid var(--jl-line-strong);
+  padding: 12px;
+  margin-block: 12px;
+  min-width: 0;
+}
+.jank-viewer summary {
+  cursor: pointer;
+  letter-spacing: 0.06em;
+}
+.jank-viewer summary + * {
+  margin-top: 12px;
+}
+.jank-viewer-table {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-block: 12px;
+}
+.jank-viewer table {
+  border-collapse: collapse;
+  width: 100%;
+  font: inherit;
+}
+.jank-viewer caption {
+  text-align: left;
+  color: var(--jl-muted);
+  padding-bottom: 6px;
+}
+.jank-viewer th,
+.jank-viewer td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--jl-line);
+  overflow-wrap: anywhere;
+  min-width: 90px;
+}
+.jank-viewer th {
+  color: var(--jl-muted);
+  font-weight: normal;
+}
+.jank-viewer-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 12px;
+}
+.jank-viewer canvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+  cursor: crosshair;
+}
+.jank-viewer-inspectors {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.jank-viewer-error {
+  border-left: 2px solid var(--jank-warning);
+  padding: 10px;
+}
+.jank-viewer [data-viewer-action="export"] {
+  margin-left: auto;
+}
+.jank-viewer footer {
+  border-top: 1px solid var(--jl-line-strong);
+  padding-top: 16px;
+  margin-top: 24px;
+}
+@media (max-width: 760px) {
+  .jl.jank-viewer {
+    padding: 12px;
+  }
+  .jank-viewer-inspectors {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .jank-viewer [data-viewer-action="export"] {
+    margin-left: 0;
+  }
+  .jank-viewer th,
+  .jank-viewer td {
+    padding: 6px;
+  }
+}
+
+.jank-viewer-mixed {
+  border-left: 2px solid var(--jank-warning);
+  padding: 10px;
+}
+
+.jank-viewer-inspectors table {
+  min-width: 480px;
+}
+
+/* Keep evidence columns readable; narrow screens scroll the table instead of creating tall rows. */
+.jank-viewer [data-viewer-results] table {
+  min-width: 800px;
+}
+.jank-viewer [data-viewer-results] th:last-child {
+  width: 38%;
+}
+.jank-viewer [data-viewer-trials] table {
+  min-width: 850px;
+}
+.jank-viewer [data-viewer-trials] th:last-child {
+  width: 35%;
+}
+.jank-viewer [data-viewer-settings] table {
+  min-width: 480px;
+}

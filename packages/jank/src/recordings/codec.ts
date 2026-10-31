@@ -1,5 +1,5 @@
 import { collectionLimits } from "../core/limits.ts";
-import { recordingLimits } from "./limits.ts";
+import { checkJsonSize, parseJsonData } from "./json.ts";
 import { readFrames } from "./read-frames.ts";
 import { readCapture, readMetadata } from "./read-metadata.ts";
 import { readCounters, readEvents, readGpu } from "./read-observations.ts";
@@ -14,29 +14,6 @@ import {
   text,
 } from "./read-values.ts";
 import type { Recording, RecordingResult } from "./recording.ts";
-
-function checkSize(json: string): void {
-  let bytes = 0;
-  for (const character of json) {
-    const point = character.charCodeAt(0);
-    if (character.length === 2) {
-      bytes += 4;
-    } else if (point <= 0x7f) {
-      bytes += 1;
-    } else if (point <= 0x7ff) {
-      bytes += 2;
-    } else {
-      bytes += 3;
-    }
-    if (bytes > recordingLimits.fileBytes) {
-      throw new RecordingError({
-        code: "too-large",
-        path: "$",
-        message: "Recording exceeds 32 MiB of UTF-8",
-      });
-    }
-  }
-}
 
 export function readRecording(value: unknown): Recording {
   const data = object(value, "$");
@@ -80,26 +57,12 @@ export function readRecording(value: unknown): Recording {
 }
 
 export function parseRecording(json: string): RecordingResult {
-  try {
-    checkSize(json);
-    const value: unknown = JSON.parse(json);
-    return { ok: true, recording: readRecording(value) };
-  } catch (error) {
-    if (error instanceof RecordingError) {
-      return { ok: false, problem: error.problem };
-    }
-    if (error instanceof SyntaxError) {
-      return {
-        ok: false,
-        problem: { code: "invalid-json", path: "$", message: "File is not valid JSON" },
-      };
-    }
-    throw error;
-  }
+  const parsed = parseJsonData(json, readRecording);
+  return parsed.ok ? { ok: true, recording: parsed.value } : parsed;
 }
 
 export function serializeRecording(recording: Recording): string {
   const json = JSON.stringify(readRecording(recording));
-  checkSize(json);
+  checkJsonSize(json);
   return json;
 }

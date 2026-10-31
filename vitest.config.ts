@@ -9,6 +9,7 @@ export default defineConfig({
       include: [
         "packages/jank/src/core/**/*.ts",
         "packages/jank/src/recordings/**/*.ts",
+        "packages/jank/src/comparison/**/*.ts",
         "packages/jank/src/analysis/**/*.ts",
         "packages/jank/src/adapters/**/*.ts",
         "packages/jank/src/profiler.ts",

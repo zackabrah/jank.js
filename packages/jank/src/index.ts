@@ -3,6 +3,7 @@ export { type FrameSummary, type InspectFrame, inspectFrame } from "./analysis/s
 export { createComparison } from "./browser/create-comparison.ts";
 export { createProfiler } from "./browser/create-profiler.ts";
 export { finalizeRecording, type RecordingFinalization } from "./browser/finalize-recording.ts";
+export { type ComparisonResult, parseComparison } from "./comparison/codec.ts";
 export type {
   Comparison,
   ComparisonContext,
@@ -82,4 +83,12 @@ export type {
   VisibilitySnapshot,
   VisibilitySource,
 } from "./sources.ts";
-export type { CreateViewer, Viewer, ViewerState } from "./viewer/viewer.ts";
+
+export { createViewer } from "./viewer/create-viewer.ts";
+export type {
+  CreateViewer,
+  Viewer,
+  ViewerDocument,
+  ViewerImportResult,
+  ViewerState,
+} from "./viewer/viewer.ts";

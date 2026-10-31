@@ -8,7 +8,7 @@ import { parseRecording } from "../../packages/jank/src/recordings/codec.ts";
 
 const artifact = resolve("artifacts/jank-ui-library.html");
 test.beforeAll(() => {
-  execFileSync(process.execPath, ["scripts/build-ui-library.mjs"], { stdio: "pipe" });
+  execFileSync(process.execPath, ["scripts/build-standalone.mjs", "ui-library"], { stdio: "pipe" });
 });
 
 test("the single HTML file works offline with the real controls, effects and profiler", async ({

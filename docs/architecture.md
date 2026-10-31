@@ -5,7 +5,7 @@ profiler composition are implemented. See [collection behavior](collection.md) a
 [recording behavior](recordings.md) for verified semantics. The independent junkui theme,
 native controls and tabs are also implemented. Frame/scope statistics and the core live panel
 are implemented, as are optional [WebGL2 and Three r186 WebGPU timers](gpu-adapters.md).
-Offline analysis/viewer, loading runtime and the remaining integrations are pending.
+Local [recording/comparison review](viewer.md) is implemented. Advanced viewer parity, the loading runtime and remaining integrations are pending.
 
 ## Decisions already made
 

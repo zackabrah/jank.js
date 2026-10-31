@@ -42,7 +42,7 @@ test("built profiler and both declaration packages work without workspace source
       join(directory, "consumer.ts"),
       `
 import type { Channel, CreateProfiler, ScopeToken, ProfilerSnapshot } from "jank.js";
-import { createPanel, createProfiler, finalizeRecording, inspectFrame, summarizeGpuCoverage, type InspectFrame } from "jank.js";
+import { createPanel, createProfiler, createViewer, parseComparison, finalizeRecording, inspectFrame, summarizeGpuCoverage, type InspectFrame } from "jank.js";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from "jank.js/adapters/three-webgpu";
 declare const gl: WebGL2RenderingContext;
@@ -76,6 +76,11 @@ declare const tablist: HTMLElement;
 declare const button: HTMLButtonElement;
 declare const panel: HTMLElement;
 const profiler = factory({ targetFps: 60 });
+const viewer = createViewer({ container: panel });
+viewer.import("{}");
+const comparisonFile = parseComparison("{}");
+if (comparisonFile.ok) { viewer.loadComparison(comparisonFile.comparison); }
+viewer.dispose();
 const livePanel = createPanel({ container: panel, profiler });
 livePanel.refresh(100);
 livePanel.dispose();
@@ -168,10 +173,10 @@ profiler.dispose();
         "--input-type=module",
         "-e",
         `import assert from "node:assert/strict";
-import { createPanel } from "jank.js";
+import { createPanel, createViewer, parseComparison } from "jank.js";
 import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 import { createThreeWebGpuSource } from "jank.js/adapters/three-webgpu";
-for (const factory of [createPanel, createWebGl2GpuSource, createThreeWebGpuSource]) {
+for (const factory of [createPanel, createViewer, parseComparison, createWebGl2GpuSource, createThreeWebGpuSource]) {
   assert.equal(typeof factory, "function");
 }
 assert.throws(() => import.meta.resolve("junkui"));

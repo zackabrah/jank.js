@@ -28,7 +28,8 @@
     "test:tooling": "node --test tests/tooling/*.test.mjs",
     "prepare": "git config core.hooksPath .githooks && pnpm --filter junkui build",
     "check:full": "pnpm check && pnpm test:coverage && pnpm test:package && pnpm test:browser && pnpm test:visual",
-    "build:ui-library": "node scripts/build-ui-library.mjs"
+    "build:ui-library": "node scripts/build-standalone.mjs ui-library",
+    "build:viewer": "node scripts/build-standalone.mjs viewer"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

@@ -1,7 +1,6 @@
 import type {
   ComparisonHost,
   CreateLoadingProfiler,
-  CreateViewer,
   GpuFrameResolver,
   GpuState,
 } from "../../packages/jank/src/index.ts";
@@ -9,13 +8,14 @@ import {
   createComparison,
   createPanel,
   createProfiler,
+  createViewer,
   inspectFrame,
+  parseComparison,
   parseRecording,
 } from "../../packages/jank/src/index.ts";
 import { createTabs } from "../../packages/junkui/src/index.ts";
 
 // These declarations are compile-time consumers, not placeholder implementations.
-declare const createViewer: CreateViewer;
 declare const createLoadingProfiler: CreateLoadingProfiler;
 declare const container: HTMLElement;
 declare const gpuResolver: GpuFrameResolver;
@@ -86,6 +86,13 @@ operation.finish("ready");
 run.finish("ready");
 
 const viewer = createViewer({ container });
+const comparisonFile = parseComparison("{}");
+if (comparisonFile.ok) {
+  viewer.loadComparison(comparisonFile.comparison);
+  viewer.selectTrial(0);
+  viewer.setRange(0, 100);
+}
+viewer.import("{}");
 const result = parseRecording("{}");
 if (result.ok) {
   viewer.load(result.recording);
