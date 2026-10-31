@@ -88,7 +88,12 @@ test("one-click automatic capture retains the deliberately slow frame and export
 test("panel removal preserves manual capture and profiler disposal preserves the scene", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: "REC", exact: true }).click();
+  await expect(page.locator("#host-frames")).not.toHaveText("0");
+  await page.getByRole("button", { name: "REC", exact: true }).press("Enter");
+  await expect(page.getByRole("button", { name: "STOP REC", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await page.getByText("Panel controls", { exact: true }).click();
   await page.getByRole("button", { name: "Detach panel" }).click();
   await expect(page.locator(".jank")).toHaveCount(0);

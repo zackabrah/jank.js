@@ -5,9 +5,11 @@ test("quick headroom uses Jank's budget and restores controls on stop and resize
   page,
 }) => {
   await page.goto("/examples/basic/");
+  await expect(page.locator("#host-frames")).not.toHaveText("0");
   await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
   await page.getByLabel("Target FPS", { exact: true }).fill("30");
-  await page.getByRole("button", { name: "APPLY", exact: true }).click();
+  await page.getByRole("button", { name: "APPLY", exact: true }).press("Enter");
+  await expect(page.locator('[data-value="header-budget"]')).toHaveText("33.3");
   await page.getByRole("tab", { name: "LIVE", exact: true }).click();
   await page.getByRole("button", { name: "Pause motion", exact: true }).click();
   await page.getByText("Sources & files", { exact: true }).click();
