@@ -11,7 +11,7 @@ export function viewerMarkup(): string {
     <section class="jank-viewer-workspace" data-viewer-recording hidden aria-label="Recording inspection">
       <section class="jank-viewer-session" aria-label="Session overview">
         <div class="jank-viewer-session-label">SESSION<span data-session-info></span></div>
-        <div><canvas data-session-chart role="img" aria-label="Session frame overview"></canvas><div class="jank-viewer-axis" data-session-axis></div></div>
+        <div><div class="jank-viewer-session-plot"><canvas data-session-chart role="img" aria-label="Session frame overview"></canvas><div data-session-markers></div></div><div class="jank-viewer-axis" data-session-axis></div></div>
       </section>
       <div class="jank-viewer-main">
         <section class="jank-viewer-timeline" aria-label="Timeline workspace">
@@ -53,7 +53,9 @@ export function viewerMarkup(): string {
             <p>Click to select; hover previews without changing selection. Focus a lane and use Left/Right, Home/End. Ctrl/⌘ + wheel zooms; horizontal or Shift + wheel scrolls.</p>
             <p>A is cyan and solid; B is violet and dashed. Each overlay uses shared time and height scales. Aligning elapsed time does not guarantee identical scene state. Missing samples stay gaps. GPU durations are placed at their correlated CPU frame; CPU and GPU clocks remain separate.</p>
             <p>Scope intervals use their union per channel; channels can overlap. Partial CPU observations have no comparison delta. Individual frames do not establish statistical significance.</p>
+            <p class="jank-viewer-capture-note">Detected spikes are grouped within 10 frames and ranked by duration (up to 50). Exported excerpts preserve timestamps; clipped context and omitted unlinked GPU samples mark the excerpt truncated.</p>
           </details>
+          <details class="jank-viewer-captures" open><summary>CAPTURES</summary><p data-capture-rule></p><div data-capture-list tabindex="0" role="region" aria-label="Capture list"></div></details>
         </section>
         <aside class="jank-viewer-inspector" aria-label="Frame inspector">
           <div class="jank-viewer-inspector-head"><h2 data-viewer-frame>FRAME —</h2><button class="jl-btn" type="button" data-viewer-action="previous" aria-label="Previous frame">◂</button><button class="jl-btn" type="button" data-viewer-action="next" aria-label="Next frame">▸</button></div>
@@ -77,6 +79,7 @@ export function viewerMarkup(): string {
             <p>Results are recalculated from recordings, with equal weight per trial. Paired B − A may differ from the displayed median difference. A range crossing zero means mixed results. Unknown is never zero.</p>
           </details>
           <details><summary>RECORDING &amp; COVERAGE</summary><h3 data-viewer-recording-title></h3><p data-viewer-evidence></p></details>
+          <div class="jank-viewer-capture-actions"><p data-capture-selection>No capture at this frame</p><button type="button" class="jl-btn" data-capture-action="previous" aria-label="Previous capture" disabled>◂</button><button type="button" class="jl-btn" data-capture-action="next" aria-label="Next capture" disabled>▸</button><button type="button" class="jl-btn" data-capture-action="export" aria-label="Export selected capture" disabled>EXPORT CAPTURE</button></div>
           <p class="jank-viewer-mixed" data-viewer-mixed hidden></p>
         </aside>
       </div>

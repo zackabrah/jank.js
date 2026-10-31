@@ -119,6 +119,33 @@ event selector. Selecting an event moves to its exact time, including an unknown
 falls in a gap. Events on the right boundary belong to the next window. Imported labels remain
 text and are never interpreted as HTML. No background refresh or animation loop is added.
 
+## Captures and excerpts
+
+The **CAPTURES** list restores the original spike-review workflow. A schema-5 automatic file
+shows its recorded trigger and retains its original before/after window. Manual and recent
+recordings show **detected spikes**, not an invented saved archive: frames strictly above twice
+the FPS budget, grouped within ten retained frame positions, keeping the longest representative.
+The list ranks up to 50 peaks by duration, with chronological tie-breaking and nearby event labels.
+
+Click **OPEN** or an overview marker to select its trigger; Previous/Next capture moves through
+rank order and wraps. Markers and the list belong to the active trial in A/B mode, using that
+trial's elapsed origin and series color. Changing trials replaces the capture evidence. The
+inspector identifies the nearest listed capture whose context includes the selected frame;
+export is disabled outside those windows or in a timing gap.
+
+Use a row's **EXPORT** or **EXPORT CAPTURE** in the inspector. Automatic captures export their
+complete retained recording, including the trigger, truncation and all GPU diagnostics. Detected
+spikes export a schema-5 manual excerpt with up to 120 frames before and after the trigger.
+CPU timestamps, frame IDs and GPU clocks are preserved; events/counters are filtered to the
+retained time window and GPU samples to the retained frame IDs. Missing window edges preserve
+an explicit truncation flag. Unlinked GPU samples remain only when the entire original recording
+is kept; excluding them from a subset also marks that excerpt truncated. Source truncation is
+never cleared. Failed downloads leave the current recording and selection available.
+
+A recording file contains one capture, not the live profiler's ten-entry archive. This workflow
+does not combine unrelated files into a session or fabricate automatic capture metadata for an
+offline-detected spike.
+
 ## Frame inspection
 
 The timeline displays 50, 100 or 200 frames at a time, with range navigation, an editable range
@@ -172,6 +199,6 @@ Repeated disposal and late load/selection calls after disposal do not remount th
 
 This slice provides local import, A/B review and individual-frame investigation. It does not add
 live-window handoff, editing, statistical significance estimates or
-full parity with the older viewer's saved-capture list, capture markers and counter lanes.
+full parity with the older viewer's counter lanes and frame-copy controls.
 The session overview covers the imported recording or selected A/B pair. Single-recording orange bars use
 the exact budget; A/B frame-pacing comparisons retain their documented 1 ms or 5% tolerance.

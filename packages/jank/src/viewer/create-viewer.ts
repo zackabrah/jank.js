@@ -1,11 +1,14 @@
+import { type CaptureMark, findCaptureMarks } from "../analysis/capture-marks.ts";
 import { frameAtElapsed, type WorkIdentity, workCatalog } from "../analysis/frame-comparison.ts";
 import { summarizeFrames } from "../analysis/statistics.ts";
 import { fitTimelineWindow } from "../analysis/timeline.ts";
 import { drawRecordingChart } from "../charts/recording-chart.ts";
 import { readComparison } from "../comparison/codec.ts";
 import { createDownload } from "../panel/download.ts";
-import { readRecording } from "../recordings/codec.ts";
+import { readRecording, serializeRecording } from "../recordings/codec.ts";
+import { extractCapture } from "../recordings/excerpt.ts";
 import { recordingLimits } from "../recordings/limits.ts";
+import { captureAtSelection, renderCaptures, updateCaptureSelection } from "./capture-view.ts";
 import { renderComparison, renderSettings } from "./comparison-view.ts";
 import { initialViewerState, parseViewerDocument } from "./document.ts";
 import { element, write } from "./dom.ts";
@@ -27,6 +30,7 @@ export const createViewer: CreateViewer = ({ container }) => {
   const canvas = element<HTMLCanvasElement>(root, "[data-viewer-chart]");
   let state: ViewerState = { status: "empty" };
   let gpuIndex = 0;
+  let captures: readonly CaptureMark[] = [];
   let catalog: readonly WorkIdentity[] = [];
   let recordingCatalog: readonly WorkIdentity[] = [];
   const timeline = createTimelineNavigation(root, {
@@ -106,6 +110,8 @@ export const createViewer: CreateViewer = ({ container }) => {
     const { recording, comparison, selectedTrialIndex } = state;
     gpuIndex = 0;
     recordingCatalog = workCatalog(recording, null);
+    captures = findCaptureMarks(recording);
+    renderCaptures(root, state, captures);
     element<HTMLElement>(root, "[data-viewer-recording]").hidden = !recording && !comparison;
     element<HTMLButtonElement>(root, '[data-viewer-action="export"]').disabled = !recording;
     if (comparison) {
@@ -193,6 +199,7 @@ export const createViewer: CreateViewer = ({ container }) => {
         ? `Positions ${state.firstVisibleIndex + 1}–${Math.min(frames.length, state.firstVisibleIndex + state.visibleFrameCount)} of ${frames.length}. Click a bar or use frame controls. Orange bars exceed the exact budget; A/B frame-pacing statistics allow 1 ms or 5% tolerance.`
         : "No frames to display.",
     );
+    updateCaptureSelection(root, state, captures);
     renderFrame(root, state.recording, state.selectedFrameId, gpuIndex);
     if (state.comparison) {
       renderPaired(root, state, catalog);
@@ -462,8 +469,54 @@ export const createViewer: CreateViewer = ({ container }) => {
       );
     }
   }
+  function stepCapture(direction: 1 | -1): void {
+    if (state.status !== "loaded" || captures.length === 0) {
+      return;
+    }
+    const selected = captureAtSelection(state, captures);
+    const initial = direction === 1 ? -1 : 0;
+    const index = selected ? captures.indexOf(selected) : initial;
+    const next = captures[(index + direction + captures.length) % captures.length];
+    if (next) {
+      selectFrame(next.frameId);
+    }
+  }
+  function captureAction(button: HTMLButtonElement): void {
+    if (state.status !== "loaded" || !state.recording) {
+      return;
+    }
+    const mark =
+      captures.find((mark) => mark.frameId === Number(button.dataset.captureFrame)) ??
+      captureAtSelection(state, captures);
+    switch (button.dataset.captureAction) {
+      case "export":
+        if (mark) {
+          download.saveJson(
+            serializeRecording(extractCapture(state.recording, mark.frameId)),
+            `jank-capture-${mark.rank}-frame-${mark.frameId}.json`,
+          );
+        }
+        return;
+      case "open":
+        if (mark) {
+          selectFrame(mark.frameId);
+        }
+        return;
+      case "previous":
+        stepCapture(-1);
+        return;
+      case "next":
+        stepCapture(1);
+        return;
+    }
+  }
   function click(event: Event): void {
     if (!(event instanceof MouseEvent) || !(event.target instanceof Element)) {
+      return;
+    }
+    const captureButton = event.target.closest<HTMLButtonElement>("[data-capture-action]");
+    if (captureButton) {
+      captureAction(captureButton);
       return;
     }
     if (event.target.matches("[data-session-chart]") && state.status === "loaded") {
@@ -596,6 +649,7 @@ export const createViewer: CreateViewer = ({ container }) => {
       root.removeEventListener("drop", drop);
       resize.disconnect();
       download.dispose();
+      captures = [];
       catalog = [];
       recordingCatalog = [];
       timeline.clear();

@@ -617,3 +617,93 @@
     font-size: 11px;
   }
 }
+
+.jank-viewer-session-plot {
+  position: relative;
+}
+.jank-viewer [data-session-markers] {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.jl.jank-viewer [data-session-markers] button {
+  position: absolute;
+  top: 0;
+  height: 76px;
+  min-width: 20px;
+  padding: 0 2px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  border: 0;
+  background: transparent;
+  color: var(--jank-warning);
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.jank-viewer [data-session-markers] button::after {
+  content: "";
+  width: 2px;
+  flex: 1;
+  background: currentColor;
+  opacity: 0.7;
+}
+.jl.jank-viewer [data-session-markers][data-series="a"] button {
+  color: var(--jank-series-a);
+}
+.jl.jank-viewer [data-session-markers][data-series="b"] button {
+  color: var(--jank-series-b);
+}
+.jank-viewer [data-session-markers] button[aria-current="true"]::after {
+  width: 4px;
+  opacity: 1;
+}
+.jank-viewer [data-capture-list] {
+  overflow-x: auto;
+}
+.jank-viewer [data-capture-list] table {
+  min-width: 0;
+}
+.jank-viewer [data-capture-list] caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.jank-viewer [data-capture-list] td {
+  padding-block: 2px;
+}
+.jank-viewer [data-capture-list] td:nth-child(3) {
+  color: var(--jank-warning);
+  white-space: nowrap;
+}
+.jank-viewer [data-capture-list] td:last-child {
+  white-space: nowrap;
+  text-align: right;
+}
+.jank-viewer [data-capture-list] .jl-btn {
+  margin-left: 4px;
+}
+.jank-viewer [data-capture-row][aria-current="true"] {
+  background: var(--jl-line);
+}
+.jank-viewer [data-capture-rule],
+.jank-viewer-capture-note {
+  color: var(--jl-muted);
+  font-size: 10px;
+}
+.jank-viewer-capture-actions {
+  border-top: 1px solid var(--jl-line);
+  margin-top: 12px;
+  padding-top: 8px;
+}
+.jank-viewer-capture-actions p {
+  color: var(--jl-muted);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.jank-viewer [data-capture-list] th:nth-child(-n + 3) {
+  white-space: nowrap;
+}
