@@ -173,7 +173,10 @@ if (process.argv[2] === step.plan) {
 
   git("add", "package.json", ".release-state.json", "VERSION_HISTORY.md");
 
-  git("commit", "-m", `chore(release): v${plan.version}`);
+  // The workflow requires passing check/browser jobs and rechecks the versioned
+  // package before this step. Developer hooks would repeat browser tests on a
+  // runner without browsers and could stage unrelated generated README assets.
+  git("commit", "--no-verify", "-m", `chore(release): v${plan.version}`);
 
   git("tag", `v${plan.version}`);
 

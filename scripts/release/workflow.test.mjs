@@ -115,7 +115,23 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
         "0.2.0",
       );
 
+      // CI already ran its required gates. A developer hook must neither repeat them
+      // on the version runner nor stage unrelated generated files in the release.
+      const hook = join(repo, ".git", "hooks", "pre-commit");
+
+      writeFileSync(hook, "#!/bin/sh\necho developer-hook >&2\nexit 1\n", {
+        mode: 0o755,
+      });
+
       run(process.execPath, [script, "publish"], repo, env);
+
+      // Only the automated version commit bypasses the hook; local commits retain it.
+      assert.throws(
+        () => git("commit", "--allow-empty", "-m", "local commit"),
+        /developer-hook/,
+      );
+
+      rmSync(hook);
 
       assert.equal(git("rev-parse", "v0.2.0"), git("rev-parse", "HEAD"));
       assert.equal(
