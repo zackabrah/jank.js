@@ -78,7 +78,9 @@ await test("accuracy shows sub-millisecond differences and each long frame", () 
     statsGlMsVsJank: spread,
     intervalVsHostMs: spread,
     scopesVsModelMs: spread,
-    longFrames: [{ loafMs: 131.05, traceMs: null, jankCostMs: 130.8 }],
+    longFrames: [
+      { loafMs: 131.05, traceMs: null, callbackMs: 130.9, jankCostMs: 30.8 },
+    ],
   });
 
   assert.match(text, /210 frames in Chromium 153\.0, cross-origin isolated/);
@@ -86,7 +88,8 @@ await test("accuracy shows sub-millisecond differences and each long frame", () 
     text,
     /\| stats\.js work time vs jank\.js \| 0\.001 \| 0\.003 \| 0\.046 \|/,
   );
-  assert.match(text, /\| #1 \| 131\.050 \| – \| 130\.800 \|/);
+  assert.match(text, /\| #1 \| 131\.050 \| – \| 130\.900 \| 30\.800 \|/);
+  assert.match(text, /work outside Jank's instrumentation/);
 });
 
 // What: package sizes read in kilobytes, with the packed tarball named after the table.

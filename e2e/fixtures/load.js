@@ -435,6 +435,8 @@ function frame(at) {
 
   statsGl.update();
 
+  const statsGlAt = performance.now();
+
   tray.refresh(at);
 
   // Render submission: the GPU layer and any new shader, inside the scope a game would use.
@@ -465,6 +467,18 @@ function frame(at) {
     if (stress.layouts) forceLayouts(stress.layouts);
   }
 
+  // Deliberate work outside the measured update/render scopes. Browser callback
+  // timing must include it; the profiler must not claim it as instrumented work.
+  let unprofiledMs = 0;
+
+  if (step?.unprofiledSpike) {
+    const outsideStart = performance.now();
+
+    spike();
+
+    unprofiledMs = performance.now() - outsideStart;
+  }
+
   if (step) {
     log.push({
       id,
@@ -475,6 +489,8 @@ function frame(at) {
       workEnd,
       work: update + render,
       spikeMs,
+      unprofiledMs,
+      statsGlAt,
       statsGl: statsGl.getData(),
     });
 
@@ -482,6 +498,9 @@ function frame(at) {
   }
 
   requestAnimationFrame(frame);
+
+  // Include fixture bookkeeping and scheduling in the independently timed callback.
+  if (step) log.at(-1).end = performance.now();
 }
 
 requestAnimationFrame(frame);
@@ -489,7 +508,12 @@ requestAnimationFrame(frame);
 window.accuracy = {
   sizes,
   /** Runs light frames, then heavy frames with a spike every `spikeEvery` frames. */
-  run({ light = 120, heavy = 90, spikeEvery = 30 } = {}) {
+  run({
+    light = 120,
+    heavy = 90,
+    spikeEvery = 30,
+    unprofiledSpike = false,
+  } = {}) {
     return new Promise((done) => {
       log = [];
 
@@ -499,6 +523,7 @@ window.accuracy = {
         ...Array.from({ length: light }, () => ({ count: sizes.light })),
         ...Array.from({ length: heavy }, (_, i) => ({
           count: sizes.heavy,
+          unprofiledSpike: unprofiledSpike && i === 0,
           // Mid-window, so each spike's long-animation-frame entry arrives before the run ends.
           spike: i % spikeEvery === spikeEvery >> 1,
         })),

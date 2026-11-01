@@ -18,6 +18,9 @@ interface SceneFrame {
   work: number;
   /** The planted sort's own time, read inside its scope; 0 on frames without one. */
   spikeMs: number;
+  /** Deliberate fixture work outside Jank's update/render instrumentation. */
+  unprofiledMs: number;
+  statsGlAt: number;
   statsGl: { fps: number; cpu: number };
 }
 
@@ -192,6 +195,10 @@ test("jank.js frame timings hold to the scene's own clock", async ({
   // Each frame interval is exactly the host's rAF step, so over the run they add up to it.
   expect(measured.intervalVsHostMs.max).toBeLessThan(1e-6);
 
+  // Compare the exact host update/render window, not the whole browser callback.
+  for (const row of rows)
+    expect(Math.abs(row.jankWorkMs - row.work)).toBeLessThan(0.01 + 2 * tickMs);
+
   // Planted work: each sort, timed inside its own scope, shows in full in the spike row, and
   // only once.
   expect(measured.spikeRowMs).toBeGreaterThanOrEqual(measured.spikeMs - 1e-6);
@@ -238,7 +245,11 @@ test("jank.js agrees with Chrome's trace, long-animation-frame timing, stats.js 
     ],
   });
 
-  const run = await page.evaluate(() => window.accuracy.run());
+  const run = await page.evaluate(() =>
+    window.accuracy.run({ unprofiledSpike: true }),
+  );
+
+  expect(run.frames.some((frame) => frame.unprofiledMs > frameMs)).toBe(true);
 
   const traceText = (await browser.stopTracing()).toString();
 
@@ -313,24 +324,26 @@ test("jank.js agrees with Chrome's trace, long-animation-frame timing, stats.js 
   // stats-gl counts its updates in the last second; skip the run's first second for the same
   // reason.
   const statsGlFps = rows
-    .filter((row) => row.end - 1000 >= first.at)
+    .filter((row) => row.statsGlAt - 1000 >= first.at)
     .map((row) => ({
       statsGl: row.statsGlFps,
-      jank: jankFps(row.end - 1000, row.end),
+      jank: jankFps(row.statsGlAt - 1000, row.statsGlAt),
     }));
 
-  // Long animation frames: the browser's own timing of each rAF callback over 50 ms.
+  // LoAF scripts and trace events start at browser callback dispatch, before the
+  // first performance.now() inside the fixture. Match those equivalent boundaries.
   const longFrames = run.loaf.flatMap((entry) =>
     entry.scripts
       .filter((script) => script.invoker === "user-callback")
       .map((script) => {
         const row = rows.find(
-          (candidate) => Math.abs(candidate.start - script.startTime) < 1,
+          (candidate) => Math.abs(candidate.traceStart - script.startTime) < 1,
         );
 
         return {
           loafMs: script.duration,
           traceMs: row?.traceCallbackMs ?? null,
+          callbackMs: row ? row.end - row.start : null,
           jankCostMs: row?.jankCostMs ?? null,
         };
       }),
@@ -390,11 +403,15 @@ test("jank.js agrees with Chrome's trace, long-animation-frame timing, stats.js 
 
   expect(report.statsGlFps.max).toBeLessThanOrEqual(2);
 
-  // Each long frame: the browser's own duration, Chrome's trace and jank.js's cost for it agree
-  // within a frame.
+  // Browser instruments time the whole callback, including work outside Jank.
+  // Keep their agreement gate, and compare to the independently timed callback.
+  // Jank's update/render equality is checked above in every browser; its partial
+  // cost need not equal the whole callback, but must not exceed it by a frame.
   for (const frame of longFrames) {
     expect(frame.traceMs).not.toBeNull();
+    expect(frame.callbackMs).not.toBeNull();
     expect(Math.abs(frame.loafMs - frame.traceMs!)).toBeLessThan(frameMs);
-    expect(Math.abs(frame.loafMs - frame.jankCostMs!)).toBeLessThan(frameMs);
+    expect(Math.abs(frame.loafMs - frame.callbackMs!)).toBeLessThan(frameMs);
+    expect(frame.jankCostMs! - frame.callbackMs!).toBeLessThan(frameMs);
   }
 });
