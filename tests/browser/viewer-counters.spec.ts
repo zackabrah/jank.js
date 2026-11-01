@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { counterComparisonFixture } from "../fixtures/counter-comparison.ts";
 import { recordingFixture } from "../fixtures/recording.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 const file = (value: unknown) => ({
   name: "counters.json",

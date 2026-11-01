@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("@visual collapsed LIVE sections keep their headers and recording controls visible", async ({
   page,

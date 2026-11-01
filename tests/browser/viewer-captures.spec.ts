@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { parseRecording } from "../../packages/jank/src/recordings/codec.ts";
 import { comparisonReportFixture } from "../fixtures/comparison-report.ts";
 import { viewerReferenceFixture } from "../fixtures/viewer-reference.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 const file = (value: unknown) => ({
   name: "captures.json",

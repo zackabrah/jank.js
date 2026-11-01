@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { gpuIntervalFixture } from "../fixtures/gpu-sample.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("GPU intervals show distinct sums, busy union, span, repeated passes and completeness", async ({
   page,

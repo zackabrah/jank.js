@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { gpuIntervalFixture } from "../fixtures/gpu-sample.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("GPU rows retain configured order, DOM identity and space when work is absent", async ({
   page,

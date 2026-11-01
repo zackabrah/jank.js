@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { comparisonReportFixture } from "../fixtures/comparison-report.ts";
 import { recordingFixture } from "../fixtures/recording.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("linked elapsed selection compares work and preserves gaps, row order and keyboard access", async ({
   page,

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { recordingFixture } from "../fixtures/recording.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("LIVE arms the existing default, applies budget presets explicitly and inspects saved context", async ({
   page,

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("loading promises retain their run across replacement in a browser host", async ({ page }) => {
   await page.goto("/tests/fixtures/panel/?mode=full");

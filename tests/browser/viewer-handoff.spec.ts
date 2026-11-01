@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { recordingFixture } from "../fixtures/recording.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 async function mount(page: Page, viewerUrl = "/examples/viewer/") {
   await page.goto("/tests/fixtures/panel/?mode=full");

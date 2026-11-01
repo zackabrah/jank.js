@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { parseRecording } from "../../packages/jank/src/index.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 async function mount(page: Page, mode: "deferred" | "timeout" | "error", timeoutMs = 2000) {
   await page.goto("/tests/fixtures/panel/?mode=full");

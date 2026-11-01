@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("episode controls merge slow frames, inspect trigger history and export one complete episode", async ({
   page,

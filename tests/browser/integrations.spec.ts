@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("optional diagnostics route controls, retain view order and freeze without mutating host state", async ({
   page,

@@ -30,6 +30,12 @@ WebKit. Each enabled gallery panel receives an axe check. Separate visual compar
 desktop and narrow screens on macOS 26 arm64; Linux CI retains all interaction/accessibility
 checks. No DOM mocks or empty Node coverage gate stand in for those browser tests.
 
+Chromium visual tests retain a macOS monospace font override (`Menlo`) for the page lifetime.
+The pinned Chromium 153 otherwise switches Courier/Menlo during full-page screenshots
+([upstream issue](https://github.com/microsoft/playwright/issues/42962)). A capture/navigation
+regression protects this workaround. Baselines use the stable mapping; pixel tolerances and
+application styles are unchanged. Recheck the workaround when upgrading Playwright.
+
 Implementation follows test-driven development: first reproduce behavior with a failing test,
 then implement it, then simplify while retaining the passing tests. Browser-discovered failures
 receive deterministic regressions when possible.

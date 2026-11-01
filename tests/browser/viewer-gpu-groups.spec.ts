@@ -1,8 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
 import { comparisonReportFixture } from "../fixtures/comparison-report.ts";
 import { gpuIntervalFixture } from "../fixtures/gpu-sample.ts";
 import { recordingFixture } from "../fixtures/recording.ts";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("repeated GPU invocations collapse by stable pass identity and retain unknown rows", async ({
   page,

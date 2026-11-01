@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures/visual-test.ts";
 
 test("graph parity: worst marker, fixed annotations, event glyphs and newest-frame emphasis", async ({
   page,
