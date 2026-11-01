@@ -8,7 +8,11 @@ export function element<T extends Element>(root: ParentNode, selector: string): 
 }
 
 export function write(root: ParentNode, name: string, value: string): void {
-  const target = element(root, `[data-value="${name}"]`);
+  updateText(element(root, `[data-value="${name}"]`), value);
+}
+
+/** WebKit can cancel a click if its text node is replaced between pointer down and up. */
+export function updateText(target: Element, value: string): void {
   if (target.textContent !== value) {
     target.textContent = value;
   }

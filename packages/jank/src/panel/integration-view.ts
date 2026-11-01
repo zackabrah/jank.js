@@ -1,5 +1,5 @@
 import type { TemporalSource, VisibilitySnapshot, VisibilitySource } from "../sources.ts";
-import { element, rows, write } from "./dom.ts";
+import { element, rows, updateText, write } from "./dom.ts";
 
 interface Sources {
   readonly visibility?: VisibilitySource | undefined;
@@ -82,7 +82,7 @@ function control(root: HTMLElement, name: string, pressed: boolean, disabled: bo
   const button = element<HTMLButtonElement>(root, `[data-integration="${name}"]`);
   button.disabled = disabled;
   button.setAttribute("aria-pressed", String(pressed));
-  button.textContent = pressed ? "ON" : "OFF";
+  updateText(button, pressed ? "ON" : "OFF");
 }
 function updateControls(
   root: HTMLElement,

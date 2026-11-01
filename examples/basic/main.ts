@@ -247,7 +247,10 @@ function renderReadout(): void {
   const run = loading.source.snapshot();
   loadingButton.disabled = run?.status === "loading";
   element("loading-status").textContent = run ? `Run ${run.id}: ${run.status}` : "No run yet";
-  profilerToggle.textContent = instrumentation ? "Stop profiler" : "Start profiler";
+  const profilerLabel = instrumentation ? "Stop profiler" : "Start profiler";
+  if (profilerToggle.textContent !== profilerLabel) {
+    profilerToggle.textContent = profilerLabel;
+  }
   panelToggle.disabled = instrumentation === null;
   element<HTMLButtonElement>("add-event").disabled = instrumentation === null;
   element("profiler-state").textContent = instrumentation ? "Running" : "Stopped";

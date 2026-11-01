@@ -7,7 +7,7 @@ import { createAutomaticView } from "./automatic-view.ts";
 import { createCaptureInspector } from "./capture-inspector.ts";
 import { createCaptureView, initializeCapture, renderCaptureProgress } from "./capture-view.ts";
 import { createComparisonView } from "./comparison-view.ts";
-import { element, write } from "./dom.ts";
+import { element, updateText, write } from "./dom.ts";
 import { createDownload } from "./download.ts";
 import { createRecordingExporter } from "./export-recording.ts";
 import { createGpuView } from "./gpu-view.ts";
@@ -146,7 +146,7 @@ export function createPanel(options: PanelOptions): Panel {
     write(root, "mini-state", label);
     renderGpuControl(root, options.gpu);
     const recordButton = element<HTMLButtonElement>(root, '[data-action="record"]');
-    recordButton.textContent = recording ? "STOP REC" : "REC";
+    updateText(recordButton, recording ? "STOP REC" : "REC");
     recordButton.setAttribute("aria-pressed", String(recording));
     renderExportState(root, exporter.state(), recording);
     renderViewerTransfer();
@@ -226,8 +226,10 @@ export function createPanel(options: PanelOptions): Panel {
 
   function renderViewerTransfer(): void {
     const transfer = handoff.state();
-    element<HTMLButtonElement>(root, '[data-action="open-viewer"]').textContent =
-      profiler.capture.getState().status === "manual" ? "STOP & VIEWER" : "OPEN VIEWER";
+    updateText(
+      element<HTMLButtonElement>(root, '[data-action="open-viewer"]'),
+      profiler.capture.getState().status === "manual" ? "STOP & VIEWER" : "OPEN VIEWER",
+    );
     const notice = element<HTMLElement>(root, "[data-viewer-transfer-status]");
     element<HTMLButtonElement>(root, '[data-action="retry-viewer-download"]').hidden =
       !transfer.canRetry;
@@ -438,7 +440,7 @@ function renderGpuControl(root: HTMLElement, source?: GpuSource): void {
   const button = element<HTMLButtonElement>(root, '[data-action="gpu"]');
   button.hidden = false;
   button.disabled = status === "unsupported";
-  button.textContent = enabled ? "DISABLE GPU" : "ENABLE GPU";
+  updateText(button, enabled ? "DISABLE GPU" : "ENABLE GPU");
   button.setAttribute("aria-label", enabled ? "Disable GPU timing" : "Enable GPU timing");
   button.setAttribute("aria-pressed", String(enabled));
   button.title = source.label;
@@ -451,9 +453,9 @@ function renderFreezeControls(root: HTMLElement, frozen: boolean): void {
       const label = frozen ? "Resume display" : "Freeze display";
       button.setAttribute("aria-label", label);
       button.title = label;
-      button.textContent = frozen ? "▶" : "Ⅱ";
+      updateText(button, frozen ? "▶" : "Ⅱ");
     } else {
-      button.textContent = frozen ? "RESUME" : "FREEZE";
+      updateText(button, frozen ? "RESUME" : "FREEZE");
     }
   }
 }
@@ -464,10 +466,11 @@ function renderExportState(
   recording: boolean,
 ): void {
   const exportButton = element<HTMLButtonElement>(root, '[data-action="export"]');
-  exportButton.textContent = recording ? "STOP & EXPORT" : "EXPORT JSON";
+  let label = recording ? "STOP & EXPORT" : "EXPORT JSON";
   if (exporting.busy) {
-    exportButton.textContent = "FINALIZING…";
+    label = "FINALIZING…";
   }
+  updateText(exportButton, label);
   exportButton.disabled = exporting.busy;
   const exportStatus = element<HTMLElement>(root, "[data-export-status]");
   exportStatus.hidden = exporting.message === "";

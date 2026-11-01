@@ -3,6 +3,45 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { parseRecording } from "../../packages/jank/src/index.ts";
 
+test("recording, export and freeze clicks survive refresh between pointer press and release", async ({
+  page,
+}) => {
+  await page.goto("/tests/fixtures/panel/?mode=full");
+  await page.getByRole("button", { name: "REC", exact: true }).hover();
+  await page.mouse.down();
+  await page.evaluate(() => window.panelFixture.refresh());
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: "STOP REC", exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    window.panelFixture.advance(3);
+    window.panelFixture.refresh();
+  });
+  await page.getByRole("button", { name: "STOP & EXPORT", exact: true }).hover();
+  await page.mouse.down();
+  await page.evaluate(() => window.panelFixture.refresh());
+  const downloaded = page.waitForEvent("download");
+  await page.mouse.up();
+  const download = await downloaded;
+  const path = await download.path();
+  if (!path) {
+    throw new Error("Recording download missing");
+  }
+  const result = parseRecording(await readFile(path, "utf8"));
+  expect(result.ok).toBe(true);
+  if (result.ok) {
+    expect(result.recording.frames).toHaveLength(3);
+  }
+  const freeze = page.getByRole("button", { name: "Freeze display", exact: true });
+  await freeze.hover();
+  await page.mouse.down();
+  await page.evaluate(() => window.panelFixture.refresh());
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: "Resume display", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});
+
 test("capture coverage shows known losses, missing frames and capacity without changing on freeze", async ({
   page,
 }) => {

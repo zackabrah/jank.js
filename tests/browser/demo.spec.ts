@@ -9,6 +9,20 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator("#host-frames")).not.toHaveText("0");
 });
 
+test("profiler toggle survives a live readout between pointer press and release", async ({
+  page,
+}) => {
+  await page.getByText("Panel controls", { exact: true }).click();
+  const button = page.getByRole("button", { name: "Stop profiler", exact: true });
+  await button.hover();
+  await page.mouse.down();
+  const frames = (await page.locator("#host-frames").textContent()) ?? "0";
+  await expect(page.locator("#host-frames")).not.toHaveText(frames);
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: "Start profiler", exact: true })).toBeVisible();
+  await expect(page.locator("#profiler-state")).toHaveText("Stopped");
+});
+
 test("the default GPU source uses the renderer timer and survives profiler restart", async ({
   page,
 }) => {

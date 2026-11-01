@@ -1,6 +1,19 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "../fixtures/visual-test.ts";
 
+test("diagnostic toggles survive a refresh between pointer press and release", async ({ page }) => {
+  await page.goto("/tests/fixtures/integrations/");
+  const toggle = page.getByRole("button", { name: "Rigid object history", exact: true });
+  await toggle.hover();
+  await page.mouse.down();
+  await page.evaluate(() => window.integrationsFixture.refresh());
+  await page.mouse.up();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  expect(await page.evaluate(() => window.integrationsFixture.state().temporal?.objectMotion)).toBe(
+    false,
+  );
+});
+
 test("optional diagnostics route controls, retain view order and freeze without mutating host state", async ({
   page,
 }) => {
