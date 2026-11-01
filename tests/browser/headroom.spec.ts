@@ -73,9 +73,28 @@ test("quick estimate finishes with honest measurements and a restored scene", as
   await expect(page.locator('[data-list="counters"]')).toContainText("36");
 });
 
-test("budget changes cancel a run and missing timer support never becomes GPU capacity", async ({
-  page,
-}) => {
+test("budget changes cancel an active headroom run", async ({ page }) => {
+  // Lifecycle assertions must not depend on the runner passing a real-time baseline.
+  await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
+  await page.goto("/examples/basic/");
+  await expect(page.locator("#host-frames")).not.toHaveText("0");
+  await page.clock.pauseAt(new Date("2030-01-01T00:01:00Z"));
+  await page.getByText("Quick headroom test", { exact: true }).click();
+  await page.getByRole("button", { name: "Estimate headroom", exact: true }).click();
+  await expect(page.locator("#headroom-status")).toContainText("Running baseline");
+  await expect(page.getByRole("button", { name: "Stop estimate", exact: true })).toBeEnabled();
+  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
+  await page.getByLabel("Target FPS", { exact: true }).fill("30");
+  await page.getByRole("button", { name: "APPLY", exact: true }).press("Enter");
+  await expect(page.locator('[data-value="header-budget"]')).toHaveText("33.3");
+  // Cross the demo's 250 ms readout cadence while staying inside baseline warm-up (600 ms).
+  await page.clock.runFor(300);
+  await expect(page.locator("#headroom-status")).toContainText("Jank budget changed");
+  await expect(page.getByRole("button", { name: "Estimate headroom", exact: true })).toBeEnabled();
+  await expect(page.getByRole("combobox", { name: "Objects", exact: true })).toBeEnabled();
+});
+
+test("missing timer support never becomes GPU capacity", async ({ page }) => {
   await page.addInitScript(() => {
     WebGL2RenderingContext.prototype.getExtension = new Proxy(
       WebGL2RenderingContext.prototype.getExtension,
@@ -89,21 +108,10 @@ test("budget changes cancel a run and missing timer support never becomes GPU ca
     );
   });
   await page.goto("/examples/basic/");
-  // Leave room for the baseline under shared CI load; this test exercises cancellation, not capacity.
-  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
-  await page.getByLabel("Target FPS", { exact: true }).fill("15");
-  await page.getByRole("button", { name: "APPLY", exact: true }).click();
-  await page.getByRole("tab", { name: "LIVE", exact: true }).click();
   await page.getByText("Quick headroom test", { exact: true }).click();
   await page.getByRole("button", { name: "Estimate headroom", exact: true }).click();
   await expect(page.locator("#headroom-baseline")).toContainText("GPU unknown", { timeout: 10000 });
   await expect(page.locator("#headroom-gpu")).toContainText("No level verified");
-  await page.getByRole("tab", { name: "CAPTURE", exact: true }).click();
-  await page.getByLabel("Target FPS", { exact: true }).fill("30");
-  await page.getByRole("button", { name: "APPLY", exact: true }).click();
-  await page.getByRole("tab", { name: "LIVE", exact: true }).click();
-  await expect(page.locator("#headroom-status")).toContainText("Jank budget changed");
-  await expect(page.getByRole("button", { name: "Estimate headroom", exact: true })).toBeEnabled();
 });
 
 test("the GPU probe adds real rendering work and releases its load on restore", async ({
