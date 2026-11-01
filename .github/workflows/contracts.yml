@@ -16,6 +16,11 @@ jobs:
   contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Match @playwright/test exactly; browsers and OS dependencies are already installed.
+    # Avoid per-run APT mirror updates, which can stall before any browser tests start.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host --init
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -27,7 +32,6 @@ jobs:
       - run: pnpm check
       - run: pnpm test:coverage
       - run: pnpm test:package
-      - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm test:browser --project=chromium --project=webkit
       # Linux headless Firefox cannot create the WebGL contexts used by the demo.
       # Xvfb provides a display for real rendering tests without requiring a physical GPU.
