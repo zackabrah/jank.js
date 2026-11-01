@@ -38,7 +38,8 @@ jobs:
       - run: pnpm test:browser --project=chromium --project=webkit
       # Linux headless Firefox cannot create the WebGL contexts used by the demo.
       # Xvfb provides a display for real rendering tests without requiring a physical GPU.
-      - run: xvfb-run -a pnpm test:browser --project=firefox --headed
+      # Run one headed browser at a time on the shared display; retain traces for CI-only failures.
+      - run: xvfb-run -a pnpm test:browser --project=firefox --headed --workers=1 --trace=retain-on-failure
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
