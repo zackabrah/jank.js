@@ -20,7 +20,8 @@ jobs:
     # Avoid per-run APT mirror updates, which can stall before any browser tests start.
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
-      options: --ipc=host --init
+      # Match the mounted workspace/home owner; Firefox refuses root with another user's home.
+      options: --user 1001 --ipc=host --init
     steps:
       - uses: actions/checkout@v6
       # Checkout's temporary Git config does not persist into container install hooks.
