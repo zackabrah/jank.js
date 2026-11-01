@@ -92,6 +92,7 @@
   flex: none;
   min-height: var(--jl-tab-height);
   overflow-x: auto;
+  scrollbar-width: thin;
   border-bottom: 1px solid var(--jl-line);
 }
 

@@ -24,6 +24,20 @@ test("tabs connect labels and panels without notifying on mount", async ({ page 
   await expect(page.locator("#changes")).toHaveText("1");
 });
 
+test("overflowing tabs remain clickable above their horizontal scrollbar", async ({ page }) => {
+  const tabs = page.getByRole("tablist", { name: "Control examples" });
+  await tabs.evaluate((element) => {
+    element.style.width = "200px";
+  });
+  expect(await tabs.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  for (const name of ["FIELDS", "DETAILS", "CONTROLS"]) {
+    const tab = tabs.getByRole("tab", { name, exact: true });
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tabpanel", { name, exact: true })).toBeVisible();
+  }
+});
+
 test("keyboard selection wraps, skips disabled tabs and leaves vertical scrolling alone", async ({
   page,
 }) => {
