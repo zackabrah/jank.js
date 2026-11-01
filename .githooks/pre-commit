@@ -1,0 +1,16 @@
+#!/bin/sh
+# The release gate before every commit: boundary, format, lint, types, unit tests with the
+# coverage floors in vitest.config.ts, build, the packed-package consumer check and the
+# browser suite, then the README's chips from those runs. Coverage below any floor fails the
+# commit. It checks the working tree, not only what is staged. Skip once with
+# `git commit --no-verify`.
+set -e
+
+pnpm check
+pnpm test:package
+# One retry: Playwright still reports a test that passes only on retry as flaky.
+pnpm test:e2e --retries=1
+# Every suite passed: redraw the README's version, test and coverage chips from these runs and
+# commit them too.
+chips=$(node scripts/readme/update.mjs)
+git add -- $chips

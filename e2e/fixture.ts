@@ -4,6 +4,8 @@ import type { Page } from "@playwright/test";
 
 import type { Diagnostics } from "../src/core/diagnostics.ts";
 
+import { fixtureFile, fixtureHeaders } from "./fixtures/files.mjs";
+
 declare global {
   interface Window {
     fixture: {
@@ -17,12 +19,26 @@ declare global {
   }
 }
 
-const types: Record<string, string> = {
-  css: "text/css",
-  html: "text/html",
-  js: "text/javascript",
-  woff2: "font/woff2",
-};
+/** Serves the fixtures and the built package under /__fixture/ on the viewer's origin. */
+export async function serveFixtures(page: Page) {
+  await page.route("**/__fixture/**", async (route) => {
+    const name =
+      new URL(route.request().url()).pathname.split("/__fixture/")[1] ?? "";
+
+    if (name.includes("..")) return route.fulfill({ status: 404 });
+
+    const file = fixtureFile(name);
+
+    try {
+      await route.fulfill({
+        body: await readFile(file),
+        headers: fixtureHeaders(name, file),
+      });
+    } catch {
+      await route.fulfill({ status: 404 });
+    }
+  });
+}
 
 /**
  * Serve the fixture game beside the built package, on the viewer server's origin so the
@@ -32,28 +48,7 @@ export async function openFixture(
   page: Page,
   query: Record<string, string> = {},
 ) {
-  await page.route("**/__fixture/**", async (route) => {
-    const name =
-      new URL(route.request().url()).pathname.split("/__fixture/")[1] ?? "";
-
-    if (name.includes("..")) return route.fulfill({ status: 404 });
-
-    const file =
-      name === "" || name === "index.html"
-        ? "e2e/fixtures/game.html"
-        : name === "game.js"
-          ? "e2e/fixtures/game.js"
-          : `dist-package/${name}`;
-
-    try {
-      await route.fulfill({
-        body: await readFile(file),
-        contentType: types[file.split(".").pop() ?? ""] ?? "text/plain",
-      });
-    } catch {
-      await route.fulfill({ status: 404 });
-    }
-  });
+  await serveFixtures(page);
 
   await page.goto(`/__fixture/index.html?${new URLSearchParams(query)}`);
 

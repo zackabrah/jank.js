@@ -13,6 +13,7 @@ export default defineConfig({
         index: "src/index.ts",
         "adapters/three": "src/adapters/three.ts",
         "adapters/three-webgpu": "src/adapters/three-webgpu.ts",
+        "adapters/webgl2": "src/adapters/webgl2.ts",
       },
       formats: ["es"],
     },

@@ -14,24 +14,16 @@ const pr = (number, title) => ({
 
 await test("conventional messages choose the strongest bump, including pre-1.0 breaking changes", () => {
   assert.equal(bumpKind(["fix: repair"]), "patch");
-
   assert.equal(bumpKind(["feat(panel): new view", "fix: repair"]), "minor");
-
   assert.equal(bumpKind(["feat!: remove API"]), "major");
-
   assert.equal(bumpKind(["refactor(core)!: remove API"]), "major");
-
   assert.equal(
     bumpKind(["feat: view\n\nBREAKING CHANGE: old API removed"]),
     "major",
   );
-
   assert.equal(bumpKind(["docs: wording"]), "patch");
-
   assert.equal(bumpVersion("0.9.3", "major"), "1.0.0");
-
   assert.equal(bumpVersion("2.4.9", "minor"), "2.5.0");
-
   assert.throws(() => bumpVersion("1.2.3-beta", "patch"));
 });
 
@@ -48,8 +40,6 @@ await test("catch-up bumps once for each merged main PR in order, ignoring dupli
     plan.entries.map((e) => e.version),
     ["0.2.0", "0.2.1", "1.0.0"],
   );
-
   assert.equal(plan.version, "1.0.0");
-
   assert.deepEqual(planVersions("1.0.0", []).entries, []);
 });

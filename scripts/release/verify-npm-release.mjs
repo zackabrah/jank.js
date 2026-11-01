@@ -10,12 +10,11 @@ import { pathToFileURL } from "node:url";
 
 const manifest = JSON.parse(readFileSync("package.json", "utf8"));
 
+/** Runs git and returns its trimmed stdout. */
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
 
 assert.equal(manifest.name, "jank.js");
-
 assert.match(manifest.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
-
 assert.equal(
   process.env.GITHUB_REF,
   `refs/tags/v${manifest.version}`,
@@ -37,11 +36,8 @@ assert.equal(
   "",
   "Release checkout must be clean",
 );
-
 assert.equal(manifest.publishConfig?.registry, "https://registry.npmjs.org/");
-
 assert.equal(manifest.publishConfig?.access, "public");
-
 assert.equal(manifest.publishConfig?.tag, "latest");
 
 if (process.argv.includes("--built")) {

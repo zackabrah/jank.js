@@ -4,6 +4,25 @@ import { createDevToolsSink, type DiagnosticTraceSink } from "./devtools.ts";
 
 import { intervalUnion } from "./inspection.ts";
 
+import {
+  automaticCapture,
+  defaultTargetFps,
+  maxAfterFrames,
+  maxBeforeFrames,
+  maxDetailLength,
+  maxEvents,
+  maxLabelLength,
+  maxSamples,
+  maxScopesPerFrame,
+  maxSystemValues,
+  maxSystems,
+  maxTargetFps,
+  msPerSecond,
+  overheadFrames,
+  recordingFrameCapacity,
+  toolEvent,
+} from "./recording.ts";
+
 import type { GpuProfile } from "../types/gpu-profile-types.ts";
 
 import type {
@@ -100,26 +119,27 @@ class History<T> {
   private cursor = 0;
   private count = 0;
   private readonly capacity: number;
+  /** Preallocates the slots; nothing is copied until a read. */
   constructor(capacity: number) {
     this.capacity = capacity;
-
     this.items = Array.from({ length: capacity });
   }
+  /** Entries held, up to the capacity. */
   get length() {
     return this.count;
   }
+  /** Overwrites the oldest entry once full. */
   push(value: T) {
     this.items[this.cursor] = value;
-
     this.cursor = (this.cursor + 1) % this.capacity;
-
     this.count = Math.min(this.count + 1, this.capacity);
   }
+  /** Drops every entry and releases the references. */
   clear() {
     this.items.fill(undefined);
-
     this.cursor = this.count = 0;
   }
+  /** Entries in order, oldest first. */
   read(): T[] {
     return Array.from(
       { length: this.count },
@@ -149,16 +169,55 @@ interface OpenScope {
 const overheadDescription =
   "Synchronous instrumentation and UI refresh; excludes deferred browser layout, paint and GPU work" as const;
 
+/** True for a usable duration: finite and not negative. */
 const finiteDuration = (value: number) => Number.isFinite(value) && value >= 0;
 
-// The schema contains primitives and these two nested collections. Copy them
-// explicitly so a live view stays detached without serializing 600 frame objects.
+const ready = "ready";
+
+const liveHistoryFrames = 600;
+
+const defaultScopesPerFrame = 128;
+
+const sampleIntervalMs = 250;
+
+export const defaultBeforeFrames = 120;
+
+export const defaultAfterFrames = 120;
+
+export const defaultCooldownMs = 5000;
+
+/** A counter value as recorded: finite number, trimmed string, boolean or null. */
+function counterValue(value: DiagnosticValues[string]) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+
+  if (typeof value === "string") return value.slice(0, maxDetailLength);
+
+  if (typeof value === "boolean") return value;
+
+  return null;
+}
+
+/** How much of a frame's work its scopes account for. */
+function frameCoverage(
+  detailed: boolean,
+  droppedScopes: number,
+): DiagnosticFrame["coverage"] {
+  if (!detailed) return "unavailable";
+
+  return droppedScopes ? "truncated" : "complete";
+}
+
+/**
+ * The schema contains primitives and these two nested collections. Copy them
+ * explicitly so a live view stays detached without serializing 600 frame objects.
+ */
 const copyFrame = (frame: DiagnosticFrame): DiagnosticFrame => ({
   ...frame,
   scopes: frame.scopes.map((scope) => ({ ...scope })),
   overhead: { ...frame.overhead },
 });
 
+/** The monitor: collects frames, scopes, systems and events, and runs recording and auto capture. */
 export function createDiagnostics(
   input: DiagnosticsOptions | (() => number) = {},
 ): Diagnostics {
@@ -182,27 +241,34 @@ export function createDiagnostics(
 
   const application = options.application
     ? {
-        name: options.application.name.slice(0, 240),
-        version: options.application.version?.slice(0, 240) ?? null,
+        name: options.application.name.slice(0, maxLabelLength),
+        version: options.application.version?.slice(0, maxLabelLength) ?? null,
       }
     : null;
 
   let metadata = recordingMetadata(timer, application, trace.enabled);
 
-  let budget: FrameBudget = { targetFps: 60, frameMs: 1000 / 60 };
+  let budget: FrameBudget = {
+    targetFps: defaultTargetFps,
+    frameMs: msPerSecond / defaultTargetFps,
+  };
 
-  const scopeLimit = options.maxScopesPerFrame ?? 128;
+  const scopeLimit = options.maxScopesPerFrame ?? defaultScopesPerFrame;
 
-  if (!Number.isInteger(scopeLimit) || scopeLimit < 1 || scopeLimit > 1024)
+  if (
+    !Number.isInteger(scopeLimit) ||
+    scopeLimit < 1 ||
+    scopeLimit > maxScopesPerFrame
+  )
     throw new RangeError("Scope capacity must be 1–1024");
 
-  const history = new History<DiagnosticFrame>(600),
-    recorded = new History<DiagnosticFrame>(6000);
+  const history = new History<DiagnosticFrame>(liveHistoryFrames),
+    recorded = new History<DiagnosticFrame>(recordingFrameCapacity);
 
   const channels = new Map<string, Channel>(),
     open = new Map<number, OpenScope>();
 
-  const gpu = new History<GpuProfile>(6000);
+  const gpu = new History<GpuProfile>(recordingFrameCapacity);
 
   let latestGpu: GpuProfile | null = null,
     lastGpuFrame = -1;
@@ -243,12 +309,13 @@ export function createDiagnostics(
     state: "idle",
     triggerFrame: null,
     thresholdMs: null,
-    beforeFrames: 120,
-    afterFrames: 120,
-    cooldownMs: 5000,
+    beforeFrames: defaultBeforeFrames,
+    afterFrames: defaultAfterFrames,
+    cooldownMs: defaultCooldownMs,
     remainingFrames: 0,
   };
 
+  /** Adds time spent since start to this frame's and the session's collection cost. */
   const collectCost = (start: number) => {
     const duration = Math.max(0, costClock() - start);
 
@@ -257,6 +324,7 @@ export function createDiagnostics(
     totalCollectionMs += duration;
   };
 
+  /** Records a labelled event, timed from the monitor's origin. */
   const event = (label: string, detail = "") => {
     if (disposed) return;
 
@@ -264,34 +332,34 @@ export function createDiagnostics(
 
     events.push({
       at: at - origin,
-      label: label.slice(0, 240),
-      detail: detail.slice(0, 2000),
+      label: label.slice(0, maxLabelLength),
+      detail: detail.slice(0, maxDetailLength),
     });
 
-    if (events.length > 200) events.shift();
+    if (events.length > maxEvents) events.shift();
 
-    trace.marker(label.slice(0, 240), detail.slice(0, 2000), at);
+    trace.marker(
+      label.slice(0, maxLabelLength),
+      detail.slice(0, maxDetailLength),
+      at,
+    );
   };
 
+  /** Each system's CPU mean, peak and capped counter values; a throwing provider reports an error. */
   const systems = (): DiagnosticSystem[] =>
     [...channels.values()].map((channel) => {
       let values: DiagnosticValues = {};
 
       try {
-        const entries = Object.entries(channel.read?.() ?? {}).slice(0, 64);
+        const entries = Object.entries(channel.read?.() ?? {}).slice(
+          0,
+          maxSystemValues,
+        );
 
         values = Object.fromEntries(
           entries.map(([key, value]) => [
-            key.slice(0, 240),
-            typeof value === "number"
-              ? Number.isFinite(value)
-                ? value
-                : null
-              : typeof value === "string"
-                ? value.slice(0, 2000)
-                : typeof value === "boolean"
-                  ? value
-                  : null,
+            key.slice(0, maxLabelLength),
+            counterValue(value),
           ]),
         );
       } catch {
@@ -307,7 +375,9 @@ export function createDiagnostics(
       };
     });
 
+  /** The monitor's own collection and refresh costs over the given frames. */
   const overhead = (frames = history.read()): DiagnosticOverhead => {
+    /** Last, mean and peak of one cost. */
     const summarize = (key: "collectionMs" | "refreshMs") => ({
       last: frames.at(-1)?.overhead[key] ?? 0,
       mean: frames.length
@@ -328,6 +398,7 @@ export function createDiagnostics(
     };
   };
 
+  /** Ends a recording and starts the auto capture cooldown. */
   function finishRecording(at: number) {
     recording = false;
 
@@ -338,13 +409,14 @@ export function createDiagnostics(
     capture.state = armed ? "cooldown" : "idle";
 
     event(
-      "Recording complete",
-      capture.mode === "automatic"
+      toolEvent.recordingComplete,
+      capture.mode === automaticCapture
         ? "Spike window captured"
         : "6000-frame limit reached",
     );
   }
 
+  /** Stores a finished frame, triggers auto capture on a spike and appends to a running recording. */
   function commit(frame: DiagnosticFrame) {
     history.push(frame);
 
@@ -365,10 +437,8 @@ export function createDiagnostics(
 
         metadata = recordingMetadata(timer, application, trace.enabled);
 
-        capture.mode = "automatic";
-
+        capture.mode = automaticCapture;
         capture.state = "recording";
-
         capture.triggerFrame = frame.id;
 
         autoRemaining = capture.afterFrames;
@@ -380,7 +450,7 @@ export function createDiagnostics(
         lastSample = -Infinity;
 
         event(
-          "Spike captured",
+          toolEvent.spikeCaptured,
           `Frame ${frame.id}: ${frame.interval.toFixed(2)} ms`,
         );
 
@@ -389,24 +459,26 @@ export function createDiagnostics(
     } else if (recording) {
       recorded.push(frame);
 
-      if (capture.mode === "automatic") {
+      if (capture.mode === automaticCapture) {
         capture.remainingFrames = --autoRemaining;
 
         if (autoRemaining <= 0) finishRecording(absolute);
       }
 
-      if (recorded.length === 6000 && recording) finishRecording(absolute);
+      if (recorded.length === recordingFrameCapacity && recording)
+        finishRecording(absolute);
     }
 
-    if (recording && absolute - lastSample >= 250) {
+    if (recording && absolute - lastSample >= sampleIntervalMs) {
       samples.push({ at: frame.at, systems: systems() });
 
-      if (samples.length > 1200) samples.shift();
+      if (samples.length > maxSamples) samples.shift();
 
       lastSample = absolute;
     }
   }
 
+  /** Closes the pending frame: clips its scopes, updates system totals and commits it. */
   function seal(at: number) {
     if (!pending) return;
 
@@ -414,6 +486,7 @@ export function createDiagnostics(
 
     const scopes: DiagnosticScope[] = [];
 
+    /** Clips a scope to the frame and keeps it if room remains. */
     const add = (scope: DiagnosticScope) => {
       const a = Math.max(start - origin, scope.start),
         b = Math.min(at - origin, scope.end);
@@ -442,9 +515,7 @@ export function createDiagnostics(
         );
 
         channel.total += duration;
-
         channel.samples++;
-
         channel.peak = Math.max(channel.peak, duration);
       }
 
@@ -458,11 +529,7 @@ export function createDiagnostics(
       update: pending.update,
       render: pending.render,
       scopes,
-      coverage: !pending.detailed
-        ? "unavailable"
-        : droppedScopes
-          ? "truncated"
-          : "complete",
+      coverage: frameCoverage(pending.detailed, droppedScopes),
       droppedScopes,
       overhead: { collectionMs, refreshMs },
     };
@@ -530,9 +597,15 @@ export function createDiagnostics(
 
       const cost = costClock();
 
-      if (finiteDuration(update) && finiteDuration(render)) {
+      // Repeated coarse timestamps add work into one frame. Each value can be finite while
+      // the total overflows, and an Infinity would make the recording unloadable.
+      if (
+        finiteDuration(update) &&
+        finiteDuration(render) &&
+        finiteDuration(pending.update + update) &&
+        finiteDuration(pending.render + render)
+      ) {
         pending.update += update;
-
         pending.render += render;
       }
 
@@ -555,9 +628,7 @@ export function createDiagnostics(
         for (const channel of channels.values()) {
           if (api.detailed) {
             channel.total += channel.current;
-
             channel.samples++;
-
             channel.peak = Math.max(channel.peak, channel.current);
           }
 
@@ -591,10 +662,10 @@ export function createDiagnostics(
       if (pending && !api.detailed) pending.detailed = false;
     },
     setTargetFps(value) {
-      if (!Number.isFinite(value) || value < 1 || value > 1000)
+      if (!Number.isFinite(value) || value < 1 || value > maxTargetFps)
         throw new RangeError("Target FPS must be between 1 and 1000");
 
-      budget = { targetFps: value, frameMs: 1000 / value };
+      budget = { targetFps: value, frameMs: msPerSecond / value };
     },
     setDevToolsEnabled(value) {
       trace.setEnabled(value);
@@ -605,19 +676,19 @@ export function createDiagnostics(
     },
     armCapture(settings = {}) {
       const thresholdMs = settings.thresholdMs ?? budget.frameMs * 2,
-        beforeFrames = settings.beforeFrames ?? 120,
-        afterFrames = settings.afterFrames ?? 120,
-        cooldownMs = settings.cooldownMs ?? 5000;
+        beforeFrames = settings.beforeFrames ?? defaultBeforeFrames,
+        afterFrames = settings.afterFrames ?? defaultAfterFrames,
+        cooldownMs = settings.cooldownMs ?? defaultCooldownMs;
 
       if (
         !Number.isFinite(thresholdMs) ||
         thresholdMs <= 0 ||
         !Number.isInteger(beforeFrames) ||
         beforeFrames < 0 ||
-        beforeFrames > 599 ||
+        beforeFrames > maxBeforeFrames ||
         !Number.isInteger(afterFrames) ||
         afterFrames < 0 ||
-        afterFrames > 5400 ||
+        afterFrames > maxAfterFrames ||
         !Number.isFinite(cooldownMs) ||
         cooldownMs < 0
       )
@@ -650,12 +721,17 @@ export function createDiagnostics(
       if (!recording) capture.state = "idle";
     },
     register(id, label, read) {
-      if (!id.trim() || id.length > 240 || !label.trim() || label.length > 240)
+      if (
+        !id.trim() ||
+        id.length > maxLabelLength ||
+        !label.trim() ||
+        label.length > maxLabelLength
+      )
         throw new Error("System IDs and labels must be 1–240 characters");
 
       if (channels.has(id)) throw new Error(`System already registered: ${id}`);
 
-      if (channels.size >= 64)
+      if (channels.size >= maxSystems)
         throw new RangeError("At most 64 diagnostic systems may be registered");
 
       const channel: Channel = {
@@ -771,7 +847,7 @@ export function createDiagnostics(
       if (profile.available) metadata.environment.gpuTimer.source = "host";
 
       if (
-        profile.status !== "ready" ||
+        profile.status !== ready ||
         profile.sampleFrame === null ||
         profile.sampleFrame <= lastGpuFrame
       ) {
@@ -818,19 +894,16 @@ export function createDiagnostics(
       lastSample = -Infinity;
 
       capture.mode = "manual";
-
       capture.state = "recording";
-
       capture.triggerFrame = null;
-
       capture.remainingFrames = 0;
 
       metadata = recordingMetadata(timer, application, trace.enabled);
 
-      event("Recording started");
+      event(toolEvent.recordingStarted);
     },
     stopRecording() {
-      if (recording) event("Recording stopped");
+      if (recording) event(toolEvent.recordingStopped);
 
       recording = false;
 
@@ -872,11 +945,8 @@ export function createDiagnostics(
       recording = false;
 
       capture.mode = "recent";
-
       capture.state = armed ? "armed" : "idle";
-
       capture.triggerFrame = null;
-
       capture.remainingFrames = 0;
 
       nextAllowed = -Infinity;
@@ -896,11 +966,11 @@ export function createDiagnostics(
         format: "jank.js-recording",
         version: 2,
         units: "milliseconds",
-        frameCapacity: 6000,
+        frameCapacity: recordingFrameCapacity,
         metadata,
         budget,
         capture,
-        overhead: overhead(frames.slice(-600)),
+        overhead: overhead(frames.slice(-overheadFrames)),
         frames,
         samples,
         events,
@@ -955,7 +1025,7 @@ export function createDiagnostics(
     },
   };
 
-  api.setTargetFps(options.targetFps ?? 60);
+  api.setTargetFps(options.targetFps ?? defaultTargetFps);
 
   return api;
 }

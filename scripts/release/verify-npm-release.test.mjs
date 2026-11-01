@@ -92,7 +92,6 @@ await test("rejects branch dispatches and tags that do not match the package ver
     const result = verify(ref);
 
     assert.notEqual(result.status, 0);
-
     assert.match(result.stderr, /Run this workflow from the vX.Y.Z tag/);
   }
 });
@@ -105,7 +104,6 @@ await test("rejects a checkout different from the selected tag", (t) => {
   const result = verify();
 
   assert.notEqual(result.status, 0);
-
   assert.match(result.stderr, /checkout must match the selected release tag/);
 });
 
@@ -134,7 +132,6 @@ await test("rejects tracked edits and untracked release inputs", (t) => {
     const result = verify();
 
     assert.notEqual(result.status, 0);
-
     assert.match(result.stderr, /Release checkout must be clean/);
   }
 });
@@ -152,7 +149,6 @@ await test("rejects stale versions, stale commits and dirty build artifacts", (t
     const result = verify("refs/tags/v0.1.0", ["--built"]);
 
     assert.notEqual(result.status, 0);
-
     assert.match(
       result.stderr,
       /built package must identify the clean tagged source/,

@@ -10,17 +10,14 @@ it("keeps a valid recording after import errors and exposes independent inspecti
   const monitor = createDiagnostics(() => 0);
 
   monitor.frame(10, 10, 1, 2);
-
   monitor.frame(30, 20, 2, 3);
 
   const viewer = createRecordingViewModel();
 
   viewer.load(JSON.stringify(monitor.export()));
-
   viewer.selectFrame(2);
 
   expect(() => viewer.load("invalid")).toThrow("valid JSON");
-
   expect(viewer.snapshot()?.selected?.frame.id).toBe(2);
 
   viewer.setRange(11, 30);
@@ -36,7 +33,6 @@ it("keeps a valid recording after import errors and exposes independent inspecti
   state.metadata.jankVersion = "changed";
 
   expect(viewer.snapshot()?.metadata.jankVersion).toBe(buildInfo.version);
-
   expect(() => viewer.selectFrame(999)).toThrow("not in");
 
   viewer.clear();

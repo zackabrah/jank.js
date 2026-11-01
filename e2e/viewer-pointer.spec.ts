@@ -18,7 +18,6 @@ function recording() {
   const monitor = createDiagnostics({ now: () => now });
 
   monitor.startRecording();
-
   monitor.beginFrame(now);
 
   for (let i = 0; i < 600; i++) {

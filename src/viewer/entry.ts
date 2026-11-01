@@ -4,10 +4,15 @@ import { createRecordingViewModel } from "./model.ts";
 
 import { MAX_RECORDING_BYTES, serializeRecording } from "../core/recording.ts";
 
+import { eventsNear, iconLabel } from "../core/inspection.ts";
+
+import { compactMarkup, download, findIn } from "../performance/ui/dom.ts";
+
+import markup from "./markup.html?raw";
+
 import {
   buildLanes,
   environmentLine,
-  eventsNear,
   findCaptures,
   likelyScope,
   primaryCounters,
@@ -23,6 +28,7 @@ import {
   budgetLimit,
   count,
   counter,
+  counterSources,
   fixed,
   observedTick,
   shorten,
@@ -31,6 +37,7 @@ import {
 import {
   graphTheme,
   prepareCanvas,
+  strokeBudgetLine,
   type GraphTheme,
 } from "../performance/ui/graph.ts";
 
@@ -40,36 +47,26 @@ import "./viewer.css";
 
 // The jank.js viewer. Offline: it reads files, drops and its opener's handoff, and
 // never fetches. Host-provided strings are written as text, never as HTML.
-document.documentElement.classList.add("jank-viewer");
+document.documentElement.classList.add("jank-viewer", "jl");
 
 const app = document.querySelector<HTMLElement>("#app")!;
 
-app.innerHTML = `<header class="jank-viewer-top"><h1 class="jank-viewer-brand"><span class="jank-viewer-word">JANK.JS</span><span class="jank-viewer-dim jank-viewer-tracked">VIEWER</span></h1><span class="jank-viewer-dim">/</span><span class="jank-viewer-file" data-k="file">no recording</span><span class="jank-viewer-chip" title="nothing is fetched or uploaded">OFFLINE</span><span class="jank-viewer-push"><label class="jank-viewer-btn" for="recording-file">OPEN</label><input id="recording-file" class="jank-viewer-picker" type="file" accept=".json,application/json" aria-label="Recording file"><button type="button" class="jank-viewer-btn" data-action="export" disabled>EXPORT</button></span></header>
-<p class="jank-viewer-env"><span data-k="env">open a recording exported by the panel</span><span data-k="totals"></span></p>
-<div class="jank-viewer-empty" data-k="empty"><p>drop a recording here, or OPEN one.</p><p class="jank-viewer-dim">nothing leaves this machine.</p></div>
-<section class="jank-viewer-session" aria-label="Session overview" data-k="session-box" hidden><div class="jank-viewer-side"><span class="jank-viewer-tracked jank-viewer-muted">SESSION</span><span class="jank-viewer-dim" data-k="bucket"></span></div><canvas data-k="session" aria-hidden="true" title="Click to jump; drag to pan the visible range"></canvas></section>
-<div class="jank-viewer-main" data-k="main" hidden><div class="jank-viewer-left"><div class="jank-viewer-timeline" tabindex="0" role="slider" aria-label="Playhead" data-k="slider"><canvas data-k="timeline" aria-hidden="true"></canvas></div>
-<section class="jank-viewer-captures" aria-label="Captures"><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">CAPTURES</span><span class="jank-viewer-dim" data-k="rule"></span></h2><div role="table" aria-label="Captures" data-k="capture-table"><div role="rowgroup"><div role="row" class="jank-viewer-sr"><span role="columnheader">rank</span><span role="columnheader">frame</span><span role="columnheader">frame time</span><span role="columnheader">nearest event</span><span role="columnheader">open</span></div></div><div data-k="capture-rows" role="rowgroup"></div></div><p class="jank-viewer-dim jank-viewer-pad" data-k="capture-empty" hidden>no frame crossed the threshold in this recording.</p></section></div>
-<aside class="jank-viewer-inspector" aria-label="Frame inspector"><div class="jank-viewer-ihead"><span class="jank-viewer-chip jank-viewer-on" data-k="i-frame"></span><span class="jank-viewer-push jank-viewer-dim"><span data-k="i-capture"></span><button type="button" class="jank-viewer-icon" data-action="prev-capture" aria-label="Previous capture">◂</button><button type="button" class="jank-viewer-icon" data-action="next-capture" aria-label="Next capture">▸</button></span></div>
-<p class="jank-viewer-headline"><span><b data-k="i-ms"></b><span class="jank-viewer-muted"> ms</span></span><span class="jank-viewer-muted" data-k="i-ratio"></span></p><p class="jank-viewer-dim" data-k="i-over"></p>
-<p class="jank-viewer-likely" data-k="i-likely-row"><span class="jank-viewer-tag" title="a heuristic: the scope furthest above its own median across this recording">LIKELY</span><b data-k="i-likely"></b><span class="jank-viewer-muted" data-k="i-likely-delta"></span></p>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">CPU</span><span class="jank-viewer-dim jank-viewer-legend"><i class="jank-viewer-solid"></i>exact</span></h2><div data-k="i-cpu"></div></section>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">GPU</span><span class="jank-viewer-dim jank-viewer-legend"><i class="jank-viewer-dashed"></i><span data-k="i-gpu-meta"></span></span></h2><div data-k="i-gpu"></div></section>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">COUNTERS</span><span class="jank-viewer-dim" data-k="i-counter-meta"></span></h2><div class="jank-viewer-grid" data-k="i-counters"></div></section>
-<section><h2 class="jank-viewer-h"><span class="jank-viewer-tracked">EVENTS</span><span class="jank-viewer-dim">within 10 frames</span></h2><div data-k="i-events"></div></section>
-<p class="jank-viewer-legend-text">solid: measured in this frame<br>dashed: periodic or delayed sample<br>unattributed frame interval: browser work, scheduling, waiting or idle, not only uninstrumented code</p>
-<div class="jank-viewer-actions"><button type="button" class="jank-viewer-btn jank-viewer-primary" data-action="export-capture">EXPORT CAPTURE</button><button type="button" class="jank-viewer-btn" data-action="copy-frame">COPY FRAME</button></div></aside></div>
-<footer class="jank-viewer-status"><span class="jank-viewer-dim" data-k="build-info" aria-label="jank.js viewer build">${buildLabel}</span><span><i class="jank-viewer-mark"></i><b data-k="s-frame">FRAME –</b><span class="jank-viewer-muted" data-k="s-range"></span></span><span class="jank-viewer-push"><span role="alert" data-k="error"></span><span class="jank-viewer-dim" role="status" data-k="s-format">no recording open</span></span></footer>`;
+app.innerHTML = compactMarkup(markup);
 
-const slot = (key: string) =>
-  app.querySelector<HTMLElement>(`[data-k="${key}"]`)!;
+/** The element bound to a data-k key in the viewer markup. */
+const slot = (key: string) => findIn(app, `[data-k="${key}"]`, HTMLElement);
 
+/** The canvas bound to a data-k key. */
 const surface = (key: string) =>
-  app.querySelector<HTMLCanvasElement>(`canvas[data-k="${key}"]`)!;
+  findIn(app, `canvas[data-k="${key}"]`, HTMLCanvasElement);
 
+/** The button bound to a data-action name. */
 const action = (name: string) =>
-  app.querySelector<HTMLButtonElement>(`[data-action="${name}"]`)!;
+  findIn(app, `[data-action="${name}"]`, HTMLButtonElement);
 
+slot("build-info").textContent = buildLabel;
+
+/** Creates an element with an optional class and text. */
 const element = (tag: string, className = "", text = "") => {
   const node = document.createElement(tag);
 
@@ -85,7 +82,23 @@ const model = createRecordingViewModel();
 const PITCH = 4,
   BAR = 3,
   LEFT = 160,
-  RIGHT = 44;
+  RIGHT = 44,
+  LABEL_X = 20,
+  MIN_PLOT_WIDTH = 40,
+  MIN_SESSION_WIDTH = 200,
+  DEFAULT_SESSION_WIDTH = 1270,
+  DEFAULT_TIMELINE_WIDTH = 1000,
+  HALF_PIXEL = 0.5,
+  /** Graphs show at least this many budgets of headroom. */
+  CEILING_BUDGETS = 3;
+
+const SHIFT_STEP = 10,
+  MAX_COUNTERS = 12,
+  PERCENT = 100;
+
+const UNAVAILABLE = "unavailable",
+  TRUNCATED = "truncated",
+  RECORDING_MESSAGE = "jank.js:recording";
 
 let recording: PerformanceRecording | null = null,
   lanes: Lanes | null = null,
@@ -95,18 +108,21 @@ let recording: PerformanceRecording | null = null,
   selected = 0,
   start = 0,
   theme: GraphTheme | undefined,
-  sessionWidth = 1270,
-  timelineWidth = 1000,
+  sessionWidth = DEFAULT_SESSION_WIDTH,
+  timelineWidth = DEFAULT_TIMELINE_WIDTH,
   queued = false;
 
+/** How many frames fit across the timeline plot at its current width. */
 const inViewCount = () =>
   Math.max(1, Math.floor((timelineWidth - LEFT - RIGHT) / PITCH));
 
 /** The panel's over-budget rule: the budget plus two timer ticks, set on load. */
 let limitMs = 0;
 
+/** The open recording's over-budget threshold in ms; opening a recording changes it. */
 const limit = () => limitMs;
 
+/** Opens recording JSON at its worst capture; a parse error is shown and the current recording kept. */
 function load(source: string, file: string) {
   try {
     model.load(source);
@@ -149,27 +165,21 @@ function load(source: string, file: string) {
   update();
 }
 
+/** Fills what only changes when a recording opens: header, totals and the capture list. */
 function renderStatic() {
   if (!recording || !lanes) return;
 
   const migrated = recording.metadata.importedFromVersion === 1;
 
   slot("file").textContent = name;
-
   slot("file").title = name;
-
   slot("env").textContent = environmentLine(recording, lanes);
-
   slot("totals").textContent =
     `${framesText(recording.frames.length)} · ${span(recording)} · ${marks.length} captures`;
-
   slot("s-format").textContent =
     `format ${migrated ? "1, migrated" : String(recording.version)} · validated on open`;
-
   slot("rule").textContent = findCaptures(recording).rule;
-
   slot("empty").hidden = true;
-
   slot("main").hidden = slot("session-box").hidden = false;
 
   action("export").disabled = false;
@@ -180,7 +190,6 @@ function renderStatic() {
       const row = element("div", "jank-viewer-row");
 
       row.setAttribute("role", "row");
-
       row.dataset["frame"] = String(mark.at);
 
       const ms = element("span", "jank-viewer-miss", `${fixed(mark.ms)} ms`);
@@ -190,7 +199,6 @@ function renderStatic() {
       const go = element("button", "jank-viewer-link", "OPEN");
 
       go.setAttribute("aria-label", `Open capture ${mark.rank}`);
-
       go.addEventListener("click", () => select(mark.at, true));
 
       const open = element("span", "jank-viewer-end");
@@ -198,7 +206,7 @@ function renderStatic() {
       open.append(go);
 
       for (const cell of [
-        element("span", "jank-viewer-dim", `#${mark.rank}`),
+        element("span", "jl-dim", `#${mark.rank}`),
         element("span", "", count(recording!.frames[mark.at]!.id)),
         ms,
         element("span", "jank-viewer-muted", mark.near),
@@ -213,9 +221,7 @@ function renderStatic() {
     });
 
   slot("capture-rows").replaceChildren(...rows);
-
   slot("capture-table").hidden = !rows.length;
-
   slot("capture-empty").hidden = rows.length > 0;
 }
 
@@ -229,31 +235,34 @@ function select(at: number, center = false) {
 
   const visible = inViewCount();
 
-  if (center || selected < start || selected >= start + visible)
-    start =
-      selected - (center ? visible >> 1 : selected < start ? 0 : visible - 1);
+  if (center) start = selected - (visible >> 1);
+  else if (selected < start) start = selected;
+  else if (selected >= start + visible) start = selected - (visible - 1);
 
   clampStart();
 
   update();
 }
 
+/** Keeps the in-view range inside the recording. */
 function clampStart() {
   if (!recording) return;
 
   start = Math.max(0, Math.min(recording.frames.length - inViewCount(), start));
 }
 
-// The canvases are hidden until a recording opens. Observe and measure their
-// own layout, which can change without resizing the outer app.
+/**
+ * The canvases are hidden until a recording opens. Observe and measure their
+ * own layout, which can change without resizing the outer app.
+ */
 function measureSurfaces() {
   const nextSession = Math.max(
-    200,
+    MIN_SESSION_WIDTH,
     Math.floor(surface("session").clientWidth || sessionWidth),
   );
 
   const nextTimeline = Math.max(
-    LEFT + RIGHT + 40,
+    LEFT + RIGHT + MIN_PLOT_WIDTH,
     Math.floor(surface("timeline").clientWidth || timelineWidth),
   );
 
@@ -267,6 +276,7 @@ function measureSurfaces() {
   return changed;
 }
 
+/** Schedules one redraw on the next animation frame; calls before then are merged. */
 function update() {
   if (queued) return;
 
@@ -294,18 +304,14 @@ function update() {
     const last = Math.min(recording.frames.length, start + inViewCount()) - 1;
 
     slot("s-frame").textContent = `FRAME ${count(frame.id)}`;
-
     slot("s-range").textContent =
       `range ${count(recording.frames[start]!.id)} to ${count(recording.frames[last]!.id)} · ${PITCH} px per frame`;
 
     const slider = slot("slider");
 
     slider.setAttribute("aria-valuemin", String(recording.frames[0]!.id));
-
     slider.setAttribute("aria-valuemax", String(recording.frames.at(-1)!.id));
-
     slider.setAttribute("aria-valuenow", String(frame.id));
-
     slider.setAttribute(
       "aria-valuetext",
       `frame ${count(frame.id)}, ${fixed(frame.interval)} ms${frame.interval > limit() ? ", over budget" : ""}`,
@@ -320,6 +326,7 @@ function update() {
   });
 }
 
+/** The whole-recording strip: frame times, capture marks and the in-view range. */
 function drawSession(
   data: PerformanceRecording,
   info: Lanes,
@@ -330,7 +337,16 @@ function drawSession(
   const width = sessionWidth,
     height = 96,
     top = 16,
-    tall = 60;
+    tall = 60,
+    markTop = 4,
+    markHeight = 8,
+    markLabelX = 4,
+    markBaseline = 11,
+    markGap = 6,
+    rangePad = 2,
+    minRangeWidth = 3,
+    axisBaseline = 16,
+    axisGap = 8;
 
   const context = prepareCanvas(canvas, width, height);
 
@@ -346,7 +362,7 @@ function drawSession(
 
   slot("bucket").textContent = `peak per ${bucket} fr`;
 
-  const ceiling = data.budget.frameMs * 3;
+  const ceiling = data.budget.frameMs * CEILING_BUDGETS;
 
   const scale = tall / ceiling;
 
@@ -369,28 +385,17 @@ function drawSession(
     // Taller than the strip: a bright cap says the bar is cut, the timeline has it whole.
     if (peak > ceiling) {
       context.fillStyle = colors.bright;
-
       context.fillRect(left, top, barWidth, 1);
     }
   }
 
+  /** Frame index to x on the session strip. */
   const x = (at: number) => (at / bucket) * step;
 
-  const budgetY = Math.round(top + tall - data.budget.frameMs * scale) + 0.5;
+  const budgetY =
+    Math.round(top + tall - data.budget.frameMs * scale) + HALF_PIXEL;
 
-  context.strokeStyle = colors.muted;
-
-  context.setLineDash([4, 4]);
-
-  context.beginPath();
-
-  context.moveTo(0, budgetY);
-
-  context.lineTo(width, budgetY);
-
-  context.stroke();
-
-  context.setLineDash([]);
+  strokeBudgetLine(context, budgetY, 0, width, colors.muted);
 
   context.font = `10px ${colors.font}`;
 
@@ -400,26 +405,25 @@ function drawSession(
     const at = Math.round(x(mark.at));
 
     context.fillStyle = colors.miss;
+    context.fillRect(at, markTop, 1, markHeight);
 
-    context.fillRect(at, 4, 1, 8);
+    if (at + markLabelX < free) continue;
 
-    if (at + 4 < free) continue;
+    context.fillText(`#${mark.rank}`, at + markLabelX, markBaseline);
 
-    context.fillText(`#${mark.rank}`, at + 4, 11);
-
-    free = at + 4 + context.measureText(`#${mark.rank}`).width + 6;
+    free =
+      at + markLabelX + context.measureText(`#${mark.rank}`).width + markGap;
   }
 
   const left = Math.round(x(start)),
     right = Math.round(x(Math.min(n, start + inViewCount())));
 
   context.strokeStyle = colors.text;
-
   context.strokeRect(
-    left + 0.5,
-    top - 2.5,
-    Math.max(3, right - left),
-    tall + 4,
+    left + HALF_PIXEL,
+    top - (rangePad + HALF_PIXEL),
+    Math.max(minRangeWidth, right - left),
+    tall + 2 * rangePad,
   );
 
   const tick = axisStep(Math.max(1, info.ids.at(-1)! - info.ids[0]!));
@@ -446,9 +450,9 @@ function drawSession(
 
     if (labelX < free) continue;
 
-    context.fillText(label, labelX, top + tall + 16);
+    context.fillText(label, labelX, top + tall + axisBaseline);
 
-    free = labelX + context.measureText(label).width + 8;
+    free = labelX + context.measureText(label).width + axisGap;
   }
 }
 
@@ -460,6 +464,7 @@ interface Row {
   dashed?: boolean;
 }
 
+/** The zoomed timeline: frame-time graph, axis and events, then the CPU, GPU and counter lanes. */
 function drawTimeline(
   data: PerformanceRecording,
   info: Lanes,
@@ -467,12 +472,47 @@ function drawTimeline(
 ) {
   const canvas = surface("timeline");
 
+  // Frame time graph, axis, events row, then sections of lane rows.
+  const top = 18,
+    tall = 120,
+    axisRow = 18,
+    eventsRow = 30,
+    rowHeight = 28,
+    laneHeight = 24,
+    bottom = 8,
+    chipBaseline = 13,
+    titleBaseline = 14,
+    unitBaseline = 34,
+    axisBaseline = 14,
+    rowBaseline = 16,
+    eventBaseline = 15,
+    legendGap = 12,
+    labelGap = 10,
+    budgetLabelX = 6,
+    budgetLabelY = 4,
+    minAxisStep = 10,
+    minGpuScaleMs = 5,
+    peakHeadroom = 1.05,
+    overheadZoom = 20,
+    tickTop = 4,
+    tickHeight = 14,
+    tickLabelX = 6,
+    tickPadding = 12,
+    outlineLeft = 1.5,
+    outlineTop = 2.5,
+    outlineGrow = 3,
+    /** Approximate width of one 11px character. */
+    charWidth = 6.6,
+    maxLabelChars = 18;
+
   const visible = inViewCount();
 
   const end = Math.min(info.intervals.length, start + visible);
 
+  /** Frame index to x in the timeline plot. */
   const x = (at: number) => LEFT + (at - start) * PITCH;
 
+  /** The peak of a lane's values among the frames in view. */
   const range = (values: Float64Array) => {
     let peak = 0;
 
@@ -485,7 +525,10 @@ function drawTimeline(
   // recordings; a taller value is capped bright. The tool's own cost is drawn ×20.
   const cpuScale = data.budget.frameMs;
 
-  const gpuScale = Math.max(5, ...info.gpu.map((lane) => range(lane.values)));
+  const gpuScale = Math.max(
+    minGpuScaleMs,
+    ...info.gpu.map((lane) => range(lane.values)),
+  );
 
   const counters = primaryCounters(info);
 
@@ -511,9 +554,9 @@ function drawTimeline(
           scale: cpuScale,
         },
         {
-          label: "jank.js ×20",
+          label: `jank.js ×${overheadZoom}`,
           dim: true,
-          values: info.overhead.map((value) => value * 20),
+          values: info.overhead.map((value) => value * overheadZoom),
           scale: cpuScale,
         },
       ],
@@ -543,15 +586,16 @@ function drawTimeline(
   ];
 
   const height =
-    18 +
-    120 +
-    18 +
-    30 +
+    top +
+    tall +
+    axisRow +
+    eventsRow +
     sections.reduce(
-      (sum, section) => sum + 28 + Math.max(1, section.rows.length) * 28,
+      (sum, section) =>
+        sum + rowHeight + Math.max(1, section.rows.length) * rowHeight,
       0,
     ) +
-    8;
+    bottom;
 
   if (canvas.style.height !== `${height}px`)
     canvas.style.height = `${height}px`;
@@ -563,42 +607,32 @@ function drawTimeline(
   const playhead = x(selected);
 
   context.fillStyle = colors.line;
-
-  context.fillRect(playhead - 0.5, 18, PITCH, height - 18);
-
+  context.fillRect(playhead - HALF_PIXEL, top, PITCH, height - top);
   context.font = `600 10px ${colors.font}`;
 
   const chip = count(data.frames[selected]!.id);
 
   context.fillStyle = colors.text;
-
   context.fillText(
     chip,
     playhead + 1 - context.measureText(chip).width / 2,
-    13,
+    chipBaseline,
   );
 
   // Frame time
-  const top = 18,
-    tall = 120;
-
   let peak = 0;
 
   for (let i = start; i < end; i++) peak = Math.max(peak, info.intervals[i]!);
 
-  const scale = tall / Math.max(data.budget.frameMs * 3, peak * 1.05);
+  const scale =
+    tall / Math.max(data.budget.frameMs * CEILING_BUDGETS, peak * peakHeadroom);
 
   context.font = `12px ${colors.font}`;
-
   context.fillStyle = colors.muted;
-
-  context.fillText("frame time", 20, top + 14);
-
+  context.fillText("frame time", LABEL_X, top + titleBaseline);
   context.font = `11px ${colors.font}`;
-
   context.fillStyle = colors.dim;
-
-  context.fillText("ms", 20, top + 34);
+  context.fillText("ms", LABEL_X, top + unitBaseline);
 
   for (let i = start; i < end; i++) {
     const value = info.intervals[i]!;
@@ -606,7 +640,6 @@ function drawTimeline(
     const h = Math.max(1, Math.round(value * scale));
 
     context.fillStyle = value > limitMs ? colors.miss : colors.graph;
-
     context.fillRect(x(i), top + tall - h, BAR, h);
   }
 
@@ -616,43 +649,28 @@ function drawTimeline(
   );
 
   context.strokeStyle = colors.bright;
-
   context.strokeRect(
-    playhead - 1.5,
-    top + tall - selectedHeight - 2.5,
-    BAR + 3,
-    selectedHeight + 3,
+    playhead - outlineLeft,
+    top + tall - selectedHeight - outlineTop,
+    BAR + outlineGrow,
+    selectedHeight + outlineGrow,
   );
 
-  const budgetY = Math.round(top + tall - data.budget.frameMs * scale) + 0.5;
+  const budgetY =
+    Math.round(top + tall - data.budget.frameMs * scale) + HALF_PIXEL;
 
-  context.strokeStyle = colors.text;
-
-  context.setLineDash([4, 4]);
-
-  context.beginPath();
-
-  context.moveTo(LEFT, budgetY);
-
-  context.lineTo(LEFT + visible * PITCH, budgetY);
-
-  context.stroke();
-
-  context.setLineDash([]);
+  strokeBudgetLine(context, budgetY, LEFT, LEFT + visible * PITCH, colors.text);
 
   context.font = `10px ${colors.font}`;
-
   context.fillStyle = colors.muted;
-
   context.fillText(
     fixed(data.budget.frameMs),
-    LEFT + visible * PITCH + 6,
-    budgetY + 4,
+    LEFT + visible * PITCH + budgetLabelX,
+    budgetY + budgetLabelY,
   );
-
   context.fillStyle = colors.dim;
 
-  const axis = Math.max(10, axisStep(visible));
+  const axis = Math.max(minAxisStep, axisStep(visible));
 
   let free = -Infinity;
 
@@ -669,20 +687,17 @@ function drawTimeline(
 
     if (labelX < free) continue;
 
-    context.fillText(label, labelX, top + tall + 14);
+    context.fillText(label, labelX, top + tall + axisBaseline);
 
-    free = labelX + width + 10;
+    free = labelX + width + labelGap;
   }
 
   // Events: labelled ticks, never overlapping, never cut mid-word.
-  let y = top + tall + 18;
+  let y = top + tall + axisRow;
 
   context.font = `12px ${colors.font}`;
-
   context.fillStyle = colors.muted;
-
-  context.fillText("events", 20, y + 15);
-
+  context.fillText("events", LABEL_X, y + eventBaseline);
   context.font = `11px ${colors.font}`;
 
   // Ticks first; each label then ends before the next tick, losing whole words if it must.
@@ -704,7 +719,7 @@ function drawTimeline(
     ticks.push({
       at: x(frame) + 1,
       here: frame === selected,
-      label: event.label,
+      label: iconLabel(event.label),
     });
   }
 
@@ -712,61 +727,63 @@ function drawTimeline(
 
   ticks.forEach((tick, i) => {
     context.fillStyle = tick.here ? colors.text : colors.muted;
-
-    context.fillRect(tick.at, y + 4, 1, 14);
+    context.fillRect(tick.at, y + tickTop, 1, tickHeight);
 
     const next = ticks.slice(i + 1).find((later) => later.at > tick.at)?.at;
 
     const edge = next ?? LEFT + visible * PITCH;
 
-    const label = shorten(tick.label, Math.floor((edge - tick.at - 12) / 6.6));
+    const label = shorten(
+      tick.label,
+      Math.floor((edge - tick.at - tickPadding) / charWidth),
+    );
 
-    if (!label || tick.at + 6 < free) return;
+    if (!label || tick.at + tickLabelX < free) return;
 
-    context.fillText(label, tick.at + 6, y + 15);
+    context.fillText(label, tick.at + tickLabelX, y + eventBaseline);
 
-    free = tick.at + 6 + context.measureText(label).width + 10;
+    free = tick.at + tickLabelX + context.measureText(label).width + labelGap;
   });
 
-  y += 30;
+  y += eventsRow;
 
   for (const section of sections) {
     context.font = `11px ${colors.font}`;
-
     context.fillStyle = colors.muted;
-
-    context.fillText(section.title, 20, y + 16);
+    context.fillText(section.title, LABEL_X, y + rowBaseline);
 
     const titleWidth = context.measureText(section.title).width;
 
     context.fillStyle = colors.dim;
+    context.fillText(
+      section.legend,
+      LABEL_X + titleWidth + legendGap,
+      y + rowBaseline,
+    );
 
-    context.fillText(section.legend, 20 + titleWidth + 12, y + 16);
-
-    y += 28;
+    y += rowHeight;
 
     if (!section.rows.length) {
-      context.fillText(section.empty ?? "", LEFT, y + 16);
+      context.fillText(section.empty ?? "", LEFT, y + rowBaseline);
 
-      y += 28;
+      y += rowHeight;
 
       continue;
     }
 
     for (const row of section.rows) {
+      const fill = row.dim ? colors.line : colors.graph,
+        selectedFill = row.dim ? colors.muted : colors.bright;
+
       context.font = `12px ${colors.font}`;
-
       context.fillStyle = row.dim ? colors.dim : colors.muted;
-
       context.fillText(
-        shorten(row.label, 18) || row.label.slice(0, 18),
-        20,
-        y + 16,
+        shorten(row.label, maxLabelChars) || row.label.slice(0, maxLabelChars),
+        LABEL_X,
+        y + rowBaseline,
       );
-
       context.fillStyle = colors.line;
-
-      context.fillRect(LEFT, y + 24, visible * PITCH, 1);
+      context.fillRect(LEFT, y + laneHeight, visible * PITCH, 1);
 
       for (let i = start; i < end; i++) {
         const value = row.values[i]!;
@@ -775,39 +792,36 @@ function drawTimeline(
 
         const h = Math.max(
           1,
-          Math.min(24, Math.round((value / row.scale) * 24)),
+          Math.min(laneHeight, Math.round((value / row.scale) * laneHeight)),
         );
 
         const on = i === selected;
 
         if (row.dashed) {
           context.strokeStyle = on ? colors.bright : colors.faint;
-
-          context.strokeRect(x(i) + 0.5, y + 24 - h + 0.5, BAR - 1, h - 1);
+          context.strokeRect(
+            x(i) + HALF_PIXEL,
+            y + laneHeight - h + HALF_PIXEL,
+            BAR - 1,
+            h - 1,
+          );
         } else {
-          context.fillStyle = on
-            ? row.dim
-              ? colors.muted
-              : colors.bright
-            : row.dim
-              ? colors.line
-              : colors.graph;
-
-          context.fillRect(x(i), y + 24 - h, BAR, h);
+          context.fillStyle = on ? selectedFill : fill;
+          context.fillRect(x(i), y + laneHeight - h, BAR, h);
 
           if (value > row.scale) {
             context.fillStyle = colors.bright;
-
             context.fillRect(x(i), y, BAR, 1);
           }
         }
       }
 
-      y += 28;
+      y += rowHeight;
     }
   }
 }
 
+/** The GPU lanes' caption: sampling cadence and how samples were placed. */
 function gpuLegend(info: Lanes) {
   if (!info.gpu.length) return "";
 
@@ -839,6 +853,7 @@ function gpuLegend(info: Lanes) {
   ].join(" · ");
 }
 
+/** The counters' caption: their sources and median sample interval. */
 function counterLegend(data: PerformanceRecording) {
   const times = data.samples.map((sample) => sample.at);
 
@@ -847,17 +862,8 @@ function counterLegend(data: PerformanceRecording) {
     .map((value, i) => value - times[i]!)
     .toSorted((a, b) => a - b);
 
-  const sources = [
-    ...new Set(
-      data.samples
-        .flatMap((sample) => sample.systems)
-        .filter((system) => Object.keys(system.values).length)
-        .map((system) => system.label.split(" ")[0]!.toLowerCase()),
-    ),
-  ];
-
   return [
-    ...sources,
+    ...counterSources(data.samples.flatMap((sample) => sample.systems)),
     gaps.length
       ? `sampled every ${Math.round(gaps[gaps.length >> 1]!)} ms`
       : "",
@@ -866,12 +872,13 @@ function counterLegend(data: PerformanceRecording) {
     .join(" · ");
 }
 
+/** An inspector row: label, a bar filled to `fraction`, and the value. */
 function leaderRow(label: string, value: string, fraction: number, kind = "") {
   const row = element("div", `jank-viewer-row-k ${kind}`);
 
   const fill = element("i");
 
-  fill.style.width = `${(Math.min(1, Math.max(0, fraction)) * 100).toFixed(1)}%`;
+  fill.style.width = `${(Math.min(1, Math.max(0, fraction)) * PERCENT).toFixed(1)}%`;
 
   const lead = element("span", "jank-viewer-lead");
 
@@ -886,6 +893,7 @@ function leaderRow(label: string, value: string, fraction: number, kind = "") {
   return row;
 }
 
+/** Fills the inspector with the selected frame's timings, scopes, counters and events. */
 function renderInspector(data: PerformanceRecording, info: Lanes) {
   const frame = data.frames[selected]!;
 
@@ -902,12 +910,10 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
   const ms = slot("i-ms");
 
   ms.textContent = fixed(frame.interval);
-
   ms.dataset["tone"] = over ? "miss" : "";
 
   slot("i-ratio").textContent =
     `${(frame.interval / budget).toFixed(1)}× budget`;
-
   slot("i-over").textContent =
     frame.interval > budget
       ? `+${fixed(frame.interval - budget)} ms over ${fixed(budget)}`
@@ -916,17 +922,15 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
   const likely = likelyScope(info, selected);
 
   slot("i-likely-row").hidden = !likely;
-
   slot("i-likely").textContent = likely?.label.toLowerCase() ?? "";
-
   slot("i-likely-delta").textContent = likely
     ? `+${fixed(likely.delta)} ms vs median`
     : "";
 
   const cpu: HTMLElement[] = [];
 
-  if (frame.coverage === "unavailable")
-    cpu.push(element("p", "jank-viewer-dim", "not recorded"));
+  if (frame.coverage === UNAVAILABLE)
+    cpu.push(element("p", "jl-dim", "not recorded"));
   else {
     for (const lane of info.cpu) {
       const value = lane.values[selected]!;
@@ -956,11 +960,11 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
       ),
     );
 
-    if (frame.coverage === "truncated")
+    if (frame.coverage === TRUNCATED)
       cpu.push(
         element(
           "p",
-          "jank-viewer-dim",
+          "jl-dim",
           `${frame.droppedScopes} scopes omitted; unattributed includes them`,
         ),
       );
@@ -977,7 +981,6 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
   slot("i-gpu-meta").textContent = samples.length
     ? `this frame${age == null ? "" : ` · resolved ${age} frames later`}`
     : "";
-
   slot("i-gpu").replaceChildren(
     ...(samples.length
       ? samples.flatMap((sample) =>
@@ -993,7 +996,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
       : [
           element(
             "p",
-            "jank-viewer-dim",
+            "jl-dim",
             data.gpu ? "no sample from this frame" : "not recorded",
           ),
         ]),
@@ -1034,7 +1037,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
             shown.append(
               element(
                 "span",
-                "jank-viewer-dim",
+                "jl-dim",
                 ` ${value > old ? "+" : ""}${counter(value - old)}`,
               ),
             );
@@ -1055,8 +1058,8 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
 
   slot("i-counters").replaceChildren(
     ...(cells.length
-      ? cells.slice(0, 12)
-      : [element("p", "jank-viewer-dim", "not recorded")]),
+      ? cells.slice(0, MAX_COUNTERS)
+      : [element("p", "jl-dim", "not recorded")]),
   );
 
   const events = eventsNear(data, selected);
@@ -1069,13 +1072,13 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
           row.append(
             element(
               "span",
-              "jank-viewer-dim jank-viewer-offset",
+              "jl-dim jank-viewer-offset",
               event.offset > 0 ? `+${event.offset}` : String(event.offset),
             ),
             element(
               "span",
               event.offset ? "jank-viewer-muted" : "",
-              event.label,
+              iconLabel(event.label),
             ),
           );
 
@@ -1083,7 +1086,7 @@ function renderInspector(data: PerformanceRecording, info: Lanes) {
 
           return row;
         })
-      : [element("p", "jank-viewer-dim", "no events")]),
+      : [element("p", "jl-dim", "no events")]),
   );
 
   action("export-capture").disabled = !captureAround();
@@ -1101,6 +1104,7 @@ function captureAround() {
   );
 }
 
+/** Jumps to the next or previous capture in rank order, wrapping around. */
 function stepCapture(direction: 1 | -1) {
   if (!marks.length) return;
 
@@ -1108,38 +1112,20 @@ function stepCapture(direction: 1 | -1) {
 
   const current = ranked.findIndex((mark) => mark.at === selected);
 
-  const next =
-    current < 0
-      ? direction > 0
-        ? 0
-        : ranked.length - 1
-      : (current + direction + ranked.length) % ranked.length;
+  let next = direction > 0 ? 0 : ranked.length - 1;
+
+  if (current >= 0)
+    next = (current + direction + ranked.length) % ranked.length;
 
   select(ranked[next]!.at, true);
 }
 
-function download(json: string, file: string) {
-  const url = URL.createObjectURL(
-    new Blob([json], { type: "application/json" }),
-  );
-
-  const a = document.createElement("a");
-
-  a.href = url;
-
-  a.download = file;
-
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
+/** The open file's name without .json, for naming exports. */
 const base = () => name.replace(/\.json$/i, "") || "jank-recording";
 
 action("export").addEventListener("click", () => {
   if (text) download(text, name || "jank-recording.json");
 });
-
 action("export-capture").addEventListener("click", () => {
   const mark = captureAround();
 
@@ -1189,7 +1175,6 @@ action("export-capture").addEventListener("click", () => {
       caught instanceof Error ? caught.message : "capture export failed";
   }
 });
-
 action("copy-frame").addEventListener("click", () => {
   if (!recording) return;
 
@@ -1220,9 +1205,7 @@ action("copy-frame").addEventListener("click", () => {
           "clipboard unavailable here; use EXPORT CAPTURE"),
     );
 });
-
 action("prev-capture").addEventListener("click", () => stepCapture(-1));
-
 action("next-capture").addEventListener("click", () => stepCapture(1));
 
 const slider = slot("slider");
@@ -1230,7 +1213,7 @@ const slider = slot("slider");
 slider.addEventListener("keydown", (event) => {
   if (!recording) return;
 
-  const step = event.shiftKey ? 10 : 1;
+  const step = event.shiftKey ? SHIFT_STEP : 1;
 
   const visible = inViewCount();
 
@@ -1276,6 +1259,7 @@ const session = surface("session");
 
 let dragging: number | null = null;
 
+/** The frame index under the pointer on the session strip. */
 const sessionFrame = (event: PointerEvent) => {
   const bounds = session.getBoundingClientRect();
 
@@ -1298,12 +1282,10 @@ session.addEventListener("pointerdown", (event) => {
   clampStart();
 
   session.setPointerCapture(event.pointerId);
-
   session.style.cursor = "grabbing";
 
   update();
 });
-
 session.addEventListener("pointermove", (event) => {
   if (dragging === null || !recording) return;
 
@@ -1317,6 +1299,7 @@ session.addEventListener("pointermove", (event) => {
   update();
 });
 
+/** Ends a session-strip drag and commits the selected frame to the model. */
 function endSessionDrag() {
   dragging = null;
 
@@ -1326,9 +1309,7 @@ function endSessionDrag() {
 }
 
 session.addEventListener("pointerup", endSessionDrag);
-
 session.addEventListener("pointercancel", endSessionDrag);
-
 session.addEventListener("lostpointercapture", endSessionDrag);
 
 const resize = new ResizeObserver(() => {
@@ -1340,11 +1321,11 @@ const resize = new ResizeObserver(() => {
 });
 
 resize.observe(session);
-
 resize.observe(surface("timeline"));
 
 let generation = 0;
 
+/** Opens a chosen file, rejecting oversized ones; when opens overlap, only the latest loads. */
 async function openFile(file: File | undefined) {
   if (!file) return;
 
@@ -1371,7 +1352,6 @@ const picker = app.querySelector<HTMLInputElement>("#recording-file")!;
 picker.addEventListener("change", () => void openFile(picker.files?.[0]));
 
 document.addEventListener("dragover", (event) => event.preventDefault());
-
 document.addEventListener("drop", (event) => {
   event.preventDefault();
 
@@ -1388,7 +1368,7 @@ if (window.opener) {
       typeof data !== "object" ||
       data === null ||
       !("type" in data) ||
-      data.type !== "jank.js:recording" ||
+      data.type !== RECORDING_MESSAGE ||
       !("json" in data) ||
       typeof data.json !== "string"
     )

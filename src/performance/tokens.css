@@ -25,15 +25,26 @@
   --jank-track-label: 0.12em;
   --jank-track-wordmark: 0.18em;
 
-  --jank-pad-x: 10px;
-  --jank-pad-y: 8px;
   --jank-header-h: 28px;
   --jank-tabs-h: 24px;
-  --jank-button-h: 20px;
   --jank-panel-w: 360px;
   --jank-mini-w: 240px;
   --jank-line-h: 28px;
-  --jank-bar-pitch: 3px; /* 4px in the viewer */
   --jank-radius: 0;
   --jank-inset: 20px; /* distance from the docked corner */
+
+  /* junkui reads --jl-*; these keep the --jank-* names above the ones to override. */
+  --jl-ink: var(--jank-ink);
+  --jl-line-strong: var(--jank-line-strong);
+  --jl-control: var(--jank-control);
+  --jl-faint: var(--jank-faint);
+  --jl-dim: var(--jank-dim);
+  --jl-muted: var(--jank-muted);
+  --jl-text: var(--jank-text);
+  --jl-bright: var(--jank-bright);
+  --jl-font: var(--jank-font);
+  --jl-size-label: var(--jank-size-label);
+  --jl-size-body: var(--jank-size-body);
+  --jl-track-label: var(--jank-track-label);
+  --jl-radius: var(--jank-radius);
 }

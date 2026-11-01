@@ -1,18 +1,47 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "promise", "vitest"],
-  "jsPlugins": ["@stylistic/eslint-plugin"],
+  "jsPlugins": ["@stylistic/eslint-plugin", "./scripts/lint/plugin.mjs"],
   "rules": {
     "@stylistic/padding-line-between-statements": [
       "error",
-      { "blankLine": "always", "prev": "*", "next": "*" }
-    ]
+      { "blankLine": "always", "prev": "*", "next": "*" },
+      { "blankLine": "any", "prev": "expression", "next": "expression" }
+    ],
+    "no-nested-ternary": "error",
+    "no-magic-numbers": [
+      "error",
+      {
+        "ignore": [-1, 0, 1, 2],
+        "ignoreArrayIndexes": true,
+        "ignoreDefaultValues": true,
+        "ignoreClassFieldInitialValues": true,
+        "enforceConst": true,
+        "ignoreEnums": true,
+        "ignoreNumericLiteralTypes": true,
+        "ignoreReadonlyClassProperties": true,
+        "ignoreTypeIndexes": true
+      }
+    ],
+    "jank/no-magic-strings": "error",
+    "jank/require-function-comment": "error",
+    "jank/group-object-statements": "error"
   },
   "categories": {
     "correctness": "error",
     "suspicious": "error",
     "perf": "error"
   },
+  "overrides": [
+    {
+      "files": ["**/*.test.*", "**/*.spec.*", "e2e/**"],
+      "rules": {
+        "no-magic-numbers": "off",
+        "jank/no-magic-strings": "off",
+        "jank/require-function-comment": "off"
+      }
+    }
+  ],
   "env": {
     "builtin": true
   },

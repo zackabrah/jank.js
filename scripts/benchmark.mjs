@@ -8,10 +8,19 @@ import { dirname, resolve } from "node:path";
 
 import { cpus, platform, arch } from "node:os";
 
+const indexPath = "/";
+
+const viewport = { width: 1200, height: 800 };
+
+const states = ["baseline", "collapsed", "expanded", "recording", "armed"];
+
+const repetitions = 3;
+
+const reportDecimals = 4;
+
 // Serve only the built library and this small fixture, on a loopback ephemeral port.
 const server = createServer(async (request, response) => {
   response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-
   response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 
   const files = {
@@ -20,9 +29,8 @@ const server = createServer(async (request, response) => {
   };
 
   try {
-    if (request.url === "/") {
+    if (request.url === indexPath) {
       response.setHeader("Content-Type", "text/html");
-
       response.end(
         '<!doctype html><html lang="en"><head><link rel="stylesheet" href="/style.css"></head><body style="margin:0"><main id="app" style="position:relative;width:1200px;height:800px"><canvas width="1200" height="800"></canvas></main></body></html>',
       );
@@ -30,16 +38,13 @@ const server = createServer(async (request, response) => {
       const [file, type] = files[request.url];
 
       response.setHeader("Content-Type", type);
-
       response.end(await readFile(file));
     } else {
       response.statusCode = 404;
-
       response.end();
     }
   } catch {
     response.statusCode = 500;
-
     response.end();
   }
 });
@@ -53,9 +58,7 @@ let browser;
 try {
   browser = await chromium.launch({ headless: true });
 
-  const page = await browser.newPage({
-    viewport: { width: 1200, height: 800 },
-  });
+  const page = await browser.newPage({ viewport });
 
   const address = server.address();
 
@@ -65,17 +68,30 @@ try {
 
   // Sequential runs prevent the benchmark competing with itself for CPU time.
   /* oxlint-disable no-await-in-loop */
-  for (let repetition = 0; repetition < 3; repetition++) {
-    for (const state of [
-      "baseline",
-      "collapsed",
-      "expanded",
-      "recording",
-      "armed",
-    ]) {
+  for (let repetition = 0; repetition < repetitions; repetition++) {
+    for (const state of states) {
       await page.goto(url);
 
       const result = await page.evaluate(async (mode) => {
+        // Playwright serializes this callback into the browser, so its constants live inside it.
+        const baseline = "baseline",
+          expanded = "expanded",
+          recording = "recording",
+          armed = "armed",
+          seededFrames = 600,
+          seededIntervalMs = 16.67,
+          seededRenderMs = 0.1,
+          sceneLines = 24,
+          lineStepPx = 8,
+          waveTopPx = 350,
+          lineSpacingPx = 5,
+          waveFrequency = 0.01,
+          waveSpeed = 0.001,
+          waveAmplitudePx = 50,
+          warmupFrames = 30,
+          totalFrames = 150,
+          p95Rank = 0.95;
+
         const { createDiagnostics, createPerformanceTray } =
           await import("/index.js");
 
@@ -88,28 +104,33 @@ try {
 
         const ctx = canvas.getContext("2d");
 
-        const monitor = mode === "baseline" ? undefined : createDiagnostics();
+        const monitor = mode === baseline ? undefined : createDiagnostics();
 
         const tray = monitor
           ? createPerformanceTray({ shell, monitor })
           : undefined;
 
         const channel = monitor?.register("scene", "Canvas drawing", () => ({
-          strokes: 24,
+          strokes: sceneLines,
         }));
 
         // Expanded is the full panel with the LIVE tab, its most expensive view.
-        if (mode === "expanded" || mode === "recording")
+        if (mode === expanded || mode === recording)
           shell.querySelector('[data-action="line-grow"]').click();
 
         const seed = performance.now();
 
-        for (let i = 0; i < 600; i++)
-          monitor?.frame(seed - (600 - i) * 16.67, 16.67, 0, 0.1);
+        for (let i = 0; i < seededFrames; i++)
+          monitor?.frame(
+            seed - (seededFrames - i) * seededIntervalMs,
+            seededIntervalMs,
+            0,
+            seededRenderMs,
+          );
 
-        if (mode === "recording") monitor.startRecording();
+        if (mode === recording) monitor.startRecording();
 
-        if (mode === "armed") monitor.armCapture();
+        if (mode === armed) monitor.armCapture();
 
         const costs = [],
           intervals = [],
@@ -119,6 +140,7 @@ try {
           count = 0;
 
         await new Promise((done) => {
+          /** One measured animation frame: draws the scene, then times the monitor and panel around it. */
           function frame(at) {
             const before = performance.now();
 
@@ -128,15 +150,18 @@ try {
 
             const drawStart = performance.now();
 
-            ctx.clearRect(0, 0, 1200, 800);
-
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = "#a3e635";
 
-            for (let line = 0; line < 24; line++) {
+            for (let line = 0; line < sceneLines; line++) {
               ctx.beginPath();
 
-              for (let x = 0; x < 1200; x += 8) {
-                const y = 350 + line * 5 + Math.sin(x * 0.01 + at * 0.001) * 50;
+              for (let x = 0; x < canvas.width; x += lineStepPx) {
+                const y =
+                  waveTopPx +
+                  line * lineSpacingPx +
+                  Math.sin(x * waveFrequency + at * waveSpeed) *
+                    waveAmplitudePx;
 
                 if (x === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
@@ -155,7 +180,7 @@ try {
 
             const after = performance.now();
 
-            if (count >= 30) {
+            if (count >= warmupFrames) {
               costs.push(after - before - (drawEnd - drawStart));
 
               sceneCosts.push(drawEnd - drawStart);
@@ -165,20 +190,21 @@ try {
 
             previous = at;
 
-            if (++count < 150) requestAnimationFrame(frame);
+            if (++count < totalFrames) requestAnimationFrame(frame);
             else done();
           }
 
           requestAnimationFrame(frame);
         });
 
+        /** Mean, p95 and max of one series. */
         // oxlint-disable-next-line unicorn/consistent-function-scoping -- Playwright serializes this callback into the browser; helpers must live inside it.
         const summarize = (values) => {
           const sorted = values.toSorted((a, b) => a - b);
 
           return {
             mean: values.reduce((sum, value) => sum + value, 0) / values.length,
-            p95: sorted[Math.floor((sorted.length - 1) * 0.95)],
+            p95: sorted[Math.floor((sorted.length - 1) * p95Rank)],
             max: sorted.at(-1),
           };
         };
@@ -221,13 +247,7 @@ try {
 
   await writeFile(destination, JSON.stringify(report, null, 2) + "\n");
 
-  for (const state of [
-    "baseline",
-    "collapsed",
-    "expanded",
-    "recording",
-    "armed",
-  ]) {
+  for (const state of states) {
     const selected = runs.filter((run) => run.state === state);
 
     const mean =
@@ -235,7 +255,7 @@ try {
       selected.length;
 
     console.log(
-      `${state}: ${mean.toFixed(4)} ms/frame mean across ${selected.length} runs`,
+      `${state}: ${mean.toFixed(reportDecimals)} ms/frame mean across ${selected.length} runs`,
     );
   }
 

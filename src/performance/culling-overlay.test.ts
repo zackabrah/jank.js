@@ -37,7 +37,6 @@ describe("main-view culling bounds projection", () => {
     );
 
     expect(count).toBe(12);
-
     expect(coordinates(projector, count).slice(0, 4)).toEqual([30, 50, 70, 50]);
 
     const translated = new Matrix4().makeTranslation(0.2, 0.25, 0).toArray();
@@ -81,7 +80,6 @@ describe("main-view culling bounds projection", () => {
         100,
       ),
     ).toBe(8);
-
     expect(
       projector.project(
         box([-0.2, -0.2, 0.8], [0.2, 0.2, 1.5]),
@@ -90,7 +88,6 @@ describe("main-view culling bounds projection", () => {
         100,
       ),
     ).toBe(8);
-
     expect(
       projector.project(
         box([-0.2, -0.2, -1], [0.2, 0.2, -0.5]),
@@ -99,7 +96,6 @@ describe("main-view culling bounds projection", () => {
         100,
       ),
     ).toBe(0);
-
     expect(
       projector.project(
         box([-0.2, -0.2, 1.5], [0.2, 0.2, 2]),
@@ -137,9 +133,7 @@ describe("main-view culling bounds projection", () => {
 
     for (const [i, value] of coordinates(projector, count).entries()) {
       expect(Number.isFinite(value)).toBe(true);
-
       expect(value).toBeGreaterThanOrEqual(0);
-
       expect(value).toBeLessThanOrEqual(i % 2 ? 200 : 300);
     }
 
@@ -159,15 +153,12 @@ describe("main-view culling bounds projection", () => {
     expect(
       projector.project(box([2, 0, 0.2], [3, 0.2, 0.5]), identity, 100, 100),
     ).toBe(0);
-
     expect(
       projector.project(box([NaN, 0, 0.2], [3, 0.2, 0.5]), identity, 100, 100),
     ).toBe(0);
-
     expect(
       projector.project(box([2, 0, 0.2], [1, 0.2, 0.5]), identity, 100, 100),
     ).toBe(0);
-
     expect(
       projector.project(
         box([0, 0, 0.2], [1, 0.2, 0.5]),
@@ -176,7 +167,6 @@ describe("main-view culling bounds projection", () => {
         100,
       ),
     ).toBe(0);
-
     expect(
       projector.project(
         box([0, 0, 0.2], [1, 0.2, 0.5]),
@@ -185,7 +175,6 @@ describe("main-view culling bounds projection", () => {
         100,
       ),
     ).toBe(0);
-
     expect(
       projector.project(
         box([0, 0, 0.2], [1, 0.2, 0.5]),
@@ -194,7 +183,6 @@ describe("main-view culling bounds projection", () => {
         100,
       ),
     ).toBe(0);
-
     expect(
       projector.project(box([0, 0, 0.2], [1, 0.2, 0.5]), identity, 0, 100),
     ).toBe(0);
@@ -222,9 +210,7 @@ describe("main-view culling bounds projection", () => {
     );
 
     expect(projector.segments).toBe(output);
-
     expect(output[0]).not.toBe(first);
-
     expect(output.length).toBe(48);
   });
 });
@@ -262,7 +248,6 @@ function overlayHost() {
   vi.stubGlobal("document", {
     createElement: vi.fn<() => typeof canvas>(() => canvas),
   });
-
   vi.stubGlobal("window", { devicePixelRatio: 2 });
 
   return {
@@ -292,17 +277,12 @@ describe("host-owned culling bounds overlay", () => {
     const { overlay, context, viewport, canvas } = overlayHost();
 
     overlay.refresh(undefined);
-
     overlay.refresh({ ...profile([]), debugBounds: false });
-
     overlay.refresh({ ...profile([]), viewProjection: null });
 
     expect(viewport.append).not.toHaveBeenCalled();
-
     expect(context.setTransform).not.toHaveBeenCalled();
-
     expect(context.clearRect).not.toHaveBeenCalled();
-
     expect(canvas.remove).not.toHaveBeenCalled();
 
     overlay.dispose();
@@ -318,13 +298,9 @@ describe("host-owned culling bounds overlay", () => {
     overlay.refresh(current);
 
     expect(viewport.append).toHaveBeenCalledOnce();
-
     expect(context.setTransform).toHaveBeenCalledWith(2, 0, 0, 2, 0, 0);
-
     expect(canvas.width).toBe(600);
-
     expect(canvas.height).toBe(400);
-
     expect(canvas.dataset).toMatchObject({
       renderedBounds: "1",
       segments: "12",
@@ -345,13 +321,10 @@ describe("host-owned culling bounds overlay", () => {
     expect(viewport.append).toHaveBeenCalledTimes(2);
 
     overlay.dispose();
-
     overlay.dispose();
-
     overlay.refresh(current);
 
     expect(canvas.remove).toHaveBeenCalledTimes(2);
-
     expect(viewport.append).toHaveBeenCalledTimes(2);
   });
 
@@ -363,7 +336,6 @@ describe("host-owned culling bounds overlay", () => {
     overlay.refresh(profile(Array.from({ length: 129 }, () => current)));
 
     expect(context.stroke).toHaveBeenCalledTimes(128);
-
     expect(canvas.dataset).toMatchObject({
       renderedBounds: "128",
       segments: "1536",
@@ -374,7 +346,6 @@ describe("host-owned culling bounds overlay", () => {
     overlay.refresh(profile([box([NaN, 0, 0], [1, 1, 1])]));
 
     expect(context.stroke).not.toHaveBeenCalled();
-
     expect(canvas.dataset).toMatchObject({
       renderedBounds: "0",
       segments: "0",

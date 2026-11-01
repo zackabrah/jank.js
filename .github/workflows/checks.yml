@@ -32,6 +32,9 @@ jobs:
       - run: pnpm check
       - run: pnpm test:package
       - run: pnpm pack --pack-destination artifacts
+      - name: Summarise coverage and package size
+        if: ${{ !cancelled() }}
+        run: node scripts/ci/summary.mjs check
       - uses: actions/upload-artifact@v6
         with:
           name: jank-js-build-${{ matrix.os }}
@@ -54,6 +57,9 @@ jobs:
       - run: pnpm exec playwright install chromium firefox webkit
       - run: pnpm build
       - run: pnpm test:e2e
+      - name: Summarise browser results and accuracy
+        if: ${{ !cancelled() }}
+        run: node scripts/ci/summary.mjs browser
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
@@ -109,3 +115,22 @@ jobs:
         with:
           name: versioned-jank-js-${{ steps.release.outputs.version }}
           path: artifacts/*.tgz
+      - name: Summarise the version
+        if: ${{ !cancelled() }}
+        env:
+          CHANGED: ${{ steps.plan.outputs.changed }}
+          CREATED: ${{ steps.release.outputs.created }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          {
+            echo "### Version"
+            echo
+            if [ "$CREATED" = "true" ]; then
+              echo "Tagged \`v$VERSION\` at \`${COMMIT:0:8}\`."
+            elif [ "$CHANGED" = "true" ]; then
+              echo "Merged PRs were waiting for \`v$VERSION\`, but no tag was created. See the job log."
+            else
+              echo "No merged PRs were waiting for a version."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

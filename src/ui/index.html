@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>junkui</title>
+    <link rel="stylesheet" href="./junkui.css" />
+    <link rel="stylesheet" href="./junkui-extras.css" />
+    <link rel="stylesheet" href="./page.css" />
+  </head>
+  <body class="jl">
+    <a class="jl-btn jl-skip" href="#controls">SKIP TO CONTROLS</a>
+    <main class="page">
+      <header>
+        <h1>JUNKUI</h1>
+        <p class="jl-dim">
+          Junklab's interface layer: CSS variables on plain HTML, scoped under
+          <code>.jl</code>. junkui.css holds the controls jank.js uses;
+          junkui-extras.css adds the rest from TEXT on.
+        </p>
+        <nav aria-label="junkui pages">
+          <a href="./" aria-current="page">COMPONENTS</a> ·
+          <a href="./experiments.html">EXPERIMENTS</a>
+        </nav>
+      </header>
+
+      <section aria-labelledby="colour">
+        <h2 id="colour">COLOUR</h2>
+        <div class="swatches">
+          <div class="swatch">
+            <i style="background: var(--jl-ink)"></i>--jl-ink
+            <div class="jl-dim">background</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-line-strong)"></i>--jl-line-strong
+            <div class="jl-dim">input borders</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-control)"></i>--jl-control
+            <div class="jl-dim">button borders</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-faint)"></i>--jl-faint
+            <div class="jl-dim">disabled text</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-dim)"></i>--jl-dim
+            <div class="jl-dim">labels, footnotes</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-muted)"></i>--jl-muted
+            <div class="jl-dim">secondary values</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-text)"></i>--jl-text
+            <div class="jl-dim">text, inverted fills</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-bright)"></i>--jl-bright
+            <div class="jl-dim">hover text</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-purple)"></i>--jl-purple
+            <div class="jl-dim">Junklab purple</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-purple-lit)"></i>--jl-purple-lit
+            <div class="jl-dim">purple, lit</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-green)"></i>--jl-green
+            <div class="jl-dim">Junklab green</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-green-lit)"></i>--jl-green-lit
+            <div class="jl-dim">green, lit</div>
+          </div>
+          <div class="swatch">
+            <i style="background: var(--jl-orange)"></i>--jl-orange
+            <div class="jl-dim">the Junklab mark</div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="type">
+        <h2 id="type">TYPE</h2>
+        <p>Body 12 px in --jl-font, tabular figures: 0123456789</p>
+        <p style="font-size: var(--jl-size-label)">
+          Label 11 px, the size of controls and footnotes
+        </p>
+        <p
+          style="
+            font-size: var(--jl-size-label);
+            letter-spacing: var(--jl-track-label);
+          "
+        >
+          TRACKED LABEL, --jl-track-label
+        </p>
+        <p class="jl-dim">Dim text, .jl-dim</p>
+      </section>
+
+      <section aria-labelledby="text">
+        <h2 id="text">TEXT</h2>
+        <div class="stack">
+          <p class="jl-title">JUNKLAB · .jl-title</p>
+          <p class="jl-label">SECTION LABEL · .jl-label</p>
+          <p>
+            A <a class="jl-link" href="#text">link</a>,
+            <code class="jl-code">inline code</code>, and a key:
+            <kbd class="jl-kbd">Tab</kbd> moves focus.
+          </p>
+          <blockquote class="jl-quote">
+            Quoted text sits in from a hairline, in muted grey.
+          </blockquote>
+          <hr class="jl-rule" style="justify-self: stretch" />
+          <pre class="jl-pre">
+pnpm add jank.js
+import "jank.js/style.css";</pre>
+        </div>
+        <p class="note jl-dim">
+          .jl-link, .jl-code, .jl-kbd, .jl-quote, .jl-rule and .jl-pre.
+        </p>
+      </section>
+
+      <section aria-labelledby="controls">
+        <h2 id="controls">BUTTONS · .jl-btn</h2>
+        <div class="row">
+          <button type="button" class="jl-btn">EXPORT JSON</button>
+          <button type="button" class="jl-btn jl-primary">
+            OPEN IN VIEWER
+          </button>
+          <button type="button" class="jl-btn" aria-pressed="true">
+            FREEZE
+          </button>
+          <button type="button" class="jl-btn jl-small">OPEN</button>
+          <button type="button" class="jl-btn" disabled>DISABLED</button>
+        </div>
+        <p class="note jl-dim">
+          Default, .jl-primary, aria-pressed="true", .jl-small, disabled. Hover
+          brightens; Tab shows the dotted focus ring.
+        </p>
+      </section>
+
+      <section aria-labelledby="toggles">
+        <h2 id="toggles">TOGGLES · .jl-toggle</h2>
+        <div class="row">
+          <button
+            type="button"
+            class="jl-toggle"
+            aria-pressed="false"
+            aria-label="Off example"
+          >
+            OFF
+          </button>
+          <button
+            type="button"
+            class="jl-toggle"
+            aria-pressed="true"
+            aria-label="On example"
+          >
+            ON
+          </button>
+          <button
+            type="button"
+            class="jl-toggle"
+            aria-pressed="false"
+            aria-label="Disabled example"
+            disabled
+          >
+            OFF
+          </button>
+        </div>
+        <p class="note jl-dim">
+          One box wide enough for OFF, so ON and OFF line up down a column.
+        </p>
+      </section>
+
+      <section aria-labelledby="icons">
+        <h2 id="icons">ICON BUTTONS · .jl-icon</h2>
+        <div class="row">
+          <button type="button" class="jl-icon" aria-label="Open">+</button>
+          <button type="button" class="jl-icon" aria-label="Close">×</button>
+          <button
+            type="button"
+            class="jl-icon"
+            aria-label="Pinned"
+            aria-pressed="true"
+          >
+            ●
+          </button>
+        </div>
+      </section>
+
+      <section aria-labelledby="chips">
+        <h2 id="chips">CHIPS · .jl-chip</h2>
+        <div class="row">
+          <span class="jl-chip">REC</span>
+          <span class="jl-chip">LIVE</span>
+          <span class="jl-chip" data-tone="off">OFF</span>
+        </div>
+      </section>
+
+      <section aria-labelledby="inputs">
+        <h2 id="inputs">INPUTS</h2>
+        <div class="row">
+          <input type="number" value="60" aria-label="Target FPS" />
+          <input
+            type="number"
+            value="-1"
+            aria-label="Invalid example"
+            aria-invalid="true"
+          />
+          <select aria-label="Debug view">
+            <option>final image</option>
+            <option>motion vectors</option>
+            <option>history validity</option>
+          </select>
+        </div>
+        <p class="note jl-dim">Number, aria-invalid="true", select.</p>
+      </section>
+
+      <section aria-labelledby="fields">
+        <h2 id="fields">FIELDS · .jl-field, .jl-input, .jl-textarea</h2>
+        <div class="stack">
+          <div class="jl-field">
+            <label for="f-name">RECORDING NAME</label>
+            <input
+              id="f-name"
+              class="jl-input"
+              type="text"
+              placeholder="spike at frame 612"
+              aria-describedby="f-name-help"
+            />
+            <p id="f-name-help" class="jl-help">Shown as the viewer's title.</p>
+          </div>
+          <div class="jl-field">
+            <label for="f-budget">BUDGET MS</label>
+            <input
+              id="f-budget"
+              type="number"
+              value="-4"
+              aria-invalid="true"
+              aria-describedby="f-budget-error"
+            />
+            <p id="f-budget-error" class="jl-error">Use a number above 0.</p>
+          </div>
+          <div class="jl-field">
+            <label for="f-notes">NOTES</label>
+            <textarea id="f-notes" class="jl-textarea" rows="3">
+Stutter when the second level loads.</textarea>
+          </div>
+        </div>
+        <p class="note jl-dim">
+          Label, control, then .jl-help or .jl-error, joined by
+          aria-describedby.
+        </p>
+      </section>
+
+      <section aria-labelledby="choices">
+        <h2 id="choices">CHOICES · .jl-check, .jl-radio, .jl-range</h2>
+        <div class="stack">
+          <fieldset class="jl-fieldset">
+            <legend>RECORD</legend>
+            <label class="jl-choice"
+              ><input type="checkbox" class="jl-check" checked /> cpu
+              scopes</label
+            >
+            <label class="jl-choice"
+              ><input type="checkbox" class="jl-check" /> gpu timing</label
+            >
+            <label class="jl-choice"
+              ><input type="checkbox" class="jl-check" checked disabled /> frame
+              times</label
+            >
+          </fieldset>
+          <fieldset class="jl-fieldset">
+            <legend>DOCK</legend>
+            <label class="jl-choice"
+              ><input type="radio" class="jl-radio" name="dock" checked /> top
+              right</label
+            >
+            <label class="jl-choice"
+              ><input type="radio" class="jl-radio" name="dock" /> bottom
+              right</label
+            >
+            <label class="jl-choice"
+              ><input type="radio" class="jl-radio" name="dock" disabled />
+              centre</label
+            >
+          </fieldset>
+          <div class="jl-field">
+            <label for="c-range">HISTORY</label>
+            <div class="row">
+              <input
+                id="c-range"
+                class="jl-range"
+                type="range"
+                min="30"
+                max="600"
+                step="30"
+                value="120"
+              /><output for="c-range">120 frames</output>
+            </div>
+          </div>
+        </div>
+        <p class="note jl-dim">
+          Checkboxes and radios in a .jl-fieldset, each in a .jl-choice label;
+          checked, unchecked and disabled.
+        </p>
+      </section>
+
+      <section aria-labelledby="navigation">
+        <h2 id="navigation">NAVIGATION · .jl-tabs, .jl-seg, .jl-crumbs</h2>
+        <div class="jl-tabs" role="tablist" aria-label="Example views">
+          <button
+            type="button"
+            role="tab"
+            class="jl-tab"
+            id="t-live"
+            aria-controls="p-live"
+            aria-selected="true"
+          >
+            LIVE
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="jl-tab"
+            id="t-loading"
+            aria-controls="p-loading"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            LOADING
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="jl-tab"
+            id="t-capture"
+            aria-controls="p-capture"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            CAPTURE
+          </button>
+        </div>
+        <div role="tabpanel" id="p-live" aria-labelledby="t-live" tabindex="0">
+          Frame times as they happen.
+        </div>
+        <div
+          role="tabpanel"
+          id="p-loading"
+          aria-labelledby="t-loading"
+          tabindex="0"
+          hidden
+        >
+          How long the page took to become ready.
+        </div>
+        <div
+          role="tabpanel"
+          id="p-capture"
+          aria-labelledby="t-capture"
+          tabindex="0"
+          hidden
+        >
+          Spikes kept for the viewer.
+        </div>
+        <div class="row" style="margin-top: 16px">
+          <div class="jl-seg" role="group" aria-label="Frame budget">
+            <button type="button" aria-pressed="false">30</button>
+            <button type="button" aria-pressed="true">60</button>
+            <button type="button" aria-pressed="false">120</button>
+          </div>
+          <nav aria-label="Breadcrumb">
+            <ol class="jl-crumbs" role="list">
+              <li><a href="#navigation">JUNKLAB</a></li>
+              <li><a href="#navigation">JANK.JS</a></li>
+              <li><span aria-current="page">VIEWER</span></li>
+            </ol>
+          </nav>
+        </div>
+        <p class="note jl-dim">
+          Arrow keys move between tabs. A segmented group keeps one button
+          pressed.
+        </p>
+      </section>
+
+      <section aria-labelledby="lists">
+        <h2 id="lists">LISTS · .jl-list, .jl-kv</h2>
+        <div class="stack">
+          <ul class="jl-list" role="list">
+            <li>frame times</li>
+            <li>cpu scopes by system</li>
+            <li>
+              gpu passes, when the renderer has timer queries; a longer item
+              wraps under its own text, not under the marker
+            </li>
+          </ul>
+          <ol class="jl-list" role="list">
+            <li>Record</li>
+            <li>Capture a spike</li>
+            <li>Open it in the viewer</li>
+          </ol>
+          <dl class="jl-kv" style="width: 320px">
+            <div>
+              <dt>collection</dt>
+              <dd>0.04 ms</dd>
+            </div>
+            <div>
+              <dt>panel refresh</dt>
+              <dd>0.11 ms</dd>
+            </div>
+            <div>
+              <dt>frames kept</dt>
+              <dd>600</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section aria-labelledby="table">
+        <h2 id="table">TABLE · .jl-table</h2>
+        <table class="jl-table">
+          <thead>
+            <tr>
+              <th scope="col">SYSTEM</th>
+              <th scope="col" class="jl-num">AVG MS</th>
+              <th scope="col" class="jl-num">P95 MS</th>
+              <th scope="col" class="jl-num">SCOPES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>physics</td>
+              <td class="jl-num">2.41</td>
+              <td class="jl-num">3.90</td>
+              <td class="jl-num">12</td>
+            </tr>
+            <tr>
+              <td>render</td>
+              <td class="jl-num">5.08</td>
+              <td class="jl-num">7.62</td>
+              <td class="jl-num">31</td>
+            </tr>
+            <tr>
+              <td>audio</td>
+              <td class="jl-num">0.37</td>
+              <td class="jl-num">0.52</td>
+              <td class="jl-num">4</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note jl-dim">.jl-num right-aligns a column of figures.</p>
+      </section>
+
+      <section aria-labelledby="progress">
+        <h2 id="progress">
+          PROGRESS AND METERS · .jl-progress, .jl-meter, .jl-spin
+        </h2>
+        <div class="stack">
+          <div class="row">
+            <progress
+              class="jl-progress"
+              value="64"
+              max="100"
+              aria-label="Export"
+            ></progress
+            ><span>64%</span>
+          </div>
+          <div class="row">
+            <meter
+              class="jl-meter"
+              min="0"
+              max="33.3"
+              low="16.7"
+              high="25"
+              optimum="8"
+              value="12"
+              aria-label="Frame time, within budget"
+            ></meter
+            ><span>12 ms</span>
+          </div>
+          <div class="row">
+            <meter
+              class="jl-meter"
+              min="0"
+              max="33.3"
+              low="16.7"
+              high="25"
+              optimum="8"
+              value="20"
+              aria-label="Frame time, over budget"
+            ></meter
+            ><span>20 ms</span>
+          </div>
+          <div class="row">
+            <meter
+              class="jl-meter"
+              min="0"
+              max="33.3"
+              low="16.7"
+              high="25"
+              optimum="8"
+              value="31"
+              aria-label="Frame time, far over budget"
+            ></meter
+            ><span>31 ms</span>
+          </div>
+          <div class="row">
+            <span class="jl-spin" aria-hidden="true"></span><span>LOADING</span>
+          </div>
+        </div>
+        <p class="note jl-dim">
+          A meter below its low mark is full text colour, between low and high
+          muted, past high orange, as a frame over budget is in jank.js.
+        </p>
+      </section>
+
+      <section aria-labelledby="boxes">
+        <h2 id="boxes">BOXES · .jl-box, .jl-notice, .jl-details, .jl-pop</h2>
+        <div class="stack">
+          <div class="jl-box">
+            <header>
+              <span>OVERHEAD</span><span class="jl-dim">ms avg</span>
+            </header>
+            <p>Collection and panel refresh, measured every frame.</p>
+          </div>
+          <div class="jl-notice">
+            <span class="jl-chip">NOTE</span>
+            <p>Recordings stay on this machine; the viewer never fetches.</p>
+          </div>
+          <details class="jl-details">
+            <summary>BUILD</summary>
+            <p>Version, commit and build time, as the panel's footer shows.</p>
+          </details>
+          <details class="jl-details" open>
+            <summary>ENVIRONMENT</summary>
+            <p>Browser, GPU and timer resolution for this recording.</p>
+          </details>
+          <button type="button" class="jl-btn" popovertarget="pop-demo">
+            SHOW POPOVER
+          </button>
+          <div id="pop-demo" class="jl-pop" popover>
+            <p>
+              In the top layer, above the page. Esc or a click outside closes
+              it.
+            </p>
+          </div>
+        </div>
+        <p class="note jl-dim">
+          A box has a tracked header; details open with + and close with –.
+        </p>
+      </section>
+
+      <section aria-labelledby="hidden">
+        <h2 id="hidden">HIDDEN FROM SIGHT · .jl-sr, .jl-skip</h2>
+        <p>
+          This line ends with text only screen readers hear.<span class="jl-sr">
+            Read aloud, never shown.</span
+          >
+        </p>
+        <p class="note jl-dim">
+          .jl-skip stays hidden until focused: press Tab at the top of this
+          page.
+        </p>
+      </section>
+    </main>
+    <script>
+      // Demo only: tabs as in the WAI-ARIA pattern; arrow keys move between them.
+      const tabs = [...document.querySelectorAll(".jl-tab")];
+
+      const select = (tab) => {
+        for (const other of tabs) {
+          const on = other === tab;
+
+          other.ariaSelected = String(on);
+          other.tabIndex = on ? 0 : -1;
+          document.getElementById(other.getAttribute("aria-controls")).hidden =
+            !on;
+        }
+
+        tab.focus();
+      };
+
+      for (const tab of tabs) {
+        tab.addEventListener("click", () => select(tab));
+        tab.addEventListener("keydown", (event) => {
+          const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+
+          if (step) select(tabs.at((tabs.indexOf(tab) + step) % tabs.length));
+        });
+      }
+
+      // Demo only: a segmented group keeps one button pressed.
+      for (const group of document.querySelectorAll(".jl-seg"))
+        group.addEventListener("click", (event) => {
+          const pressed = event.target.closest("button");
+
+          if (pressed)
+            for (const button of group.children)
+              button.ariaPressed = String(button === pressed);
+        });
+
+      // Demo only: show the range's value beside it.
+      const range = document.querySelector("#c-range");
+
+      range.addEventListener("input", () => {
+        range.nextElementSibling.value = `${range.value} frames`;
+      });
+    </script>
+  </body>
+</html>

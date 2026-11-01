@@ -18,6 +18,7 @@ const notices = (
   )
 ).join("\n\n────────────────────────────────────────\n\n");
 
+/** Escapes text for an HTML element body; attribute quotes aren't needed there. */
 const escapeHtml = (value) =>
   value
     .replaceAll("&", "&amp;")

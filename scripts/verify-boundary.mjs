@@ -9,6 +9,8 @@ const allowedSource = new Set([
   "types",
   "adapters",
   "viewer",
+  // junkui, the shared interface layer; extracted to its own package once Junktro uses it.
+  "ui",
 ]);
 
 for (const entry of await readdir("src")) {
@@ -51,7 +53,6 @@ await Promise.all(
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 
 assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);
-
 assert.equal(Object.keys(manifest.peerDependencies ?? {}).length, 0);
 
 // npm links the package page and the README's relative links through these.

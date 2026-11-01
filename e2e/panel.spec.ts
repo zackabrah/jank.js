@@ -136,7 +136,6 @@ test("full panel reads a running game, freezes the display and exports the recor
   );
 
   expect(recording.events.map((event) => event.label)).toContain("spawn ×184");
-
   expect(recording.frames.some((frame) => frame.scopes.length > 0)).toBe(true);
 
   await page.getByRole("button", { name: "RESUME", exact: true }).click();
@@ -187,7 +186,9 @@ test("line and mini sizes report the same frames and the size is remembered", as
 
   await expect(slot(page, "mini-worst")).toHaveAttribute("data-tone", "miss");
 
-  await expect(slot(page, "mini-top")).toHaveText(/^\S+ \d+\.\d$/);
+  await expect(slot(page, "mini-top")).toHaveText(/^\S+$/);
+
+  await expect(slot(page, "mini-top-ms")).toHaveText(/^\d+\.\d$/);
 
   await page.waitForTimeout(600);
 
@@ -289,11 +290,13 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
 
   await threshold.click();
 
-  await page.getByLabel("threshold ms").fill("30");
+  // Above one or two dropped frames, so a busy CI runner's own hitches can't trigger the
+  // capture before the spike does.
+  await page.getByLabel("threshold ms").fill("40");
 
   await page.keyboard.press("Enter");
 
-  await expect(threshold).toHaveText("30.0 ms");
+  await expect(threshold).toHaveText("40.0 ms");
 
   await expect(threshold).toBeFocused();
 
@@ -311,15 +314,17 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
 
   await expect(slot(page, "state")).toHaveText("armed");
 
-  await page.evaluate(() => window.fixture.spike(45));
+  // However the browser stamps 100 ms of work across frames, one interval clears 40 ms.
+  await page.evaluate(() => window.fixture.spike(100));
 
   await expect(slot(page, "captured-meta")).toHaveText(
     /^1 \/ 10 · \d+\.\d MB$/,
     { timeout: 10000 },
   );
 
+  // Each nearby event leads with its icon, the same one the viewer and recordings show.
   await expect(page.locator('[data-k="captures"] .jank-near')).toHaveText(
-    "wave 3 · spawn ×184",
+    "+ wave 3 · △ spawn ×184",
   );
 
   await expect(page.locator('[data-k="captures"] .jank-ms')).toHaveAttribute(
@@ -332,6 +337,5 @@ test("CAPTURE sets the budget, edits the capture window in place and keeps captu
   expect(
     (await new AxeBuilder({ page }).include(".jank").analyze()).violations,
   ).toEqual([]);
-
   expect(seen).toEqual([]);
 });

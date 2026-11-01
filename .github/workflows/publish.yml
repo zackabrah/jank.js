@@ -53,6 +53,7 @@ jobs:
           path: artifacts/npm/*.tgz
           if-no-files-found: error
       - name: Publish the verified tarball with npm trusted publishing
+        id: publish
         if: ${{ !inputs.dry_run }}
         run: npm publish ./artifacts/npm/*.tgz --ignore-scripts
       - uses: actions/upload-artifact@v6
@@ -61,3 +62,28 @@ jobs:
           name: npm-release-failure-traces
           path: test-results
           retention-days: 7
+      - name: Summarise the release
+        if: ${{ !cancelled() }}
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          OUTCOME: ${{ steps.publish.outcome }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          {
+            echo "### npm"
+            echo
+            for tarball in artifacts/npm/*.tgz; do
+              if [ -f "$tarball" ]; then
+                echo "Packed \`$(basename "$tarball")\` ($(wc -c < "$tarball" | tr -d ' ') bytes) from \`$TAG\`."
+              fi
+            done
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run: nothing was published."
+            elif [ "$OUTCOME" = "success" ]; then
+              echo "Published to npm under the \`latest\` tag."
+            elif [ "$OUTCOME" = "skipped" ]; then
+              echo "An earlier step failed: nothing was published."
+            else
+              echo "Publishing failed. See the job log."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -15,6 +15,20 @@ export const defaultPreparationStages = [
 
 export type PreparationStage = string;
 
+const abortError = "AbortError";
+
+const failed = "failed";
+
+const cancelled = "cancelled";
+
+const hit = "hit";
+
+const miss = "miss";
+
+const maxLabelLength = 240;
+
+const maxFinishedRuns = 8;
+
 export type PreparationKind = "fresh-context" | "repeat-session" | "editor";
 
 export type PreparationStatus = "ready" | "failed" | "cancelled";
@@ -108,6 +122,7 @@ interface Run {
   sealed?: PreparationSnapshot;
 }
 
+/** Shared do-nothing callback for the inert recorder. */
 const noop = () => {};
 
 const inert: PreparationRecorder = {
@@ -117,20 +132,23 @@ const inert: PreparationRecorder = {
   bytes: noop,
 };
 
+/** Copies a snapshot deeply enough that callers can't mutate the profiler's stages. */
 const copy = (snapshot: PreparationSnapshot): PreparationSnapshot => ({
   ...snapshot,
   stages: snapshot.stages.map((stage) => ({ ...stage })),
 });
 
+/** True for an AbortError, which ends a run as cancelled rather than failed. */
 function cancellation(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
     "name" in error &&
-    error.name === "AbortError"
+    error.name === abortError
   );
 }
 
+/** Times loading stages per run and keeps the last few finished runs for the LOADING view. */
 export function createPreparationProfiler(
   options: {
     readonly now?: () => number;
@@ -141,6 +159,7 @@ export function createPreparationProfiler(
 
   let lastTime = 0;
 
+  /** The host clock, clamped so it never goes backwards or reports a non-finite time. */
   function now(): number {
     const time = clock();
 
@@ -155,6 +174,7 @@ export function createPreparationProfiler(
 
   const finished: PreparationSnapshot[] = [];
 
+  /** Freezes a run's stages, in the configured order, into a snapshot at the given time. */
   function snapshot(
     run: Run,
     time: number,
@@ -203,9 +223,11 @@ export function createPreparationProfiler(
     };
   }
 
+  /** Records stages into a run; an ended or missing run gets the inert recorder. */
   function recorder(run: Run | undefined): PreparationRecorder {
     if (!run || run.sealed) return inert;
 
+    /** Looks up a stage's state, creating it on first use. */
     function stageFor(stage: PreparationStage): StageState {
       if (!stage.trim()) throw new Error("Preparation stage must have a name");
 
@@ -262,9 +284,9 @@ export function createPreparationProfiler(
 
           if (--state.active === 0) state.busyMs += end - state.busyStart;
 
-          if (status === "failed") state.errors++;
+          if (status === failed) state.errors++;
 
-          if (status === "cancelled") state.cancelled++;
+          if (status === cancelled) state.cancelled++;
         };
       },
       measure<T>(
@@ -316,8 +338,8 @@ export function createPreparationProfiler(
 
         const state = stageFor(stage);
 
-        if (outcome === "hit") state.cacheHits++;
-        else if (outcome === "miss") state.cacheMisses++;
+        if (outcome === hit) state.cacheHits++;
+        else if (outcome === miss) state.cacheMisses++;
         else state.cacheInflight++;
       },
       bytes(stage, bytes) {
@@ -330,16 +352,16 @@ export function createPreparationProfiler(
     return result;
   }
 
+  /** Seals the current run with a status and keeps it among the recent finished runs. */
   function finish(status: PreparationStatus): void {
     if (!current || current.sealed) return;
 
     current.sealed = snapshot(current, now(), status);
-
     current.active.clear();
 
     finished.push(current.sealed);
 
-    if (finished.length > 8) finished.shift();
+    if (finished.length > maxFinishedRuns) finished.shift();
   }
 
   return {
@@ -348,7 +370,7 @@ export function createPreparationProfiler(
 
       current = {
         id: ++nextId,
-        label: label.slice(0, 240),
+        label: label.slice(0, maxLabelLength),
         kind,
         start: now(),
         stages: new Map(),

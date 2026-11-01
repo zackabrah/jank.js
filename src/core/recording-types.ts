@@ -44,7 +44,7 @@ export interface FrameBudget {
   frameMs: number;
 }
 
-export interface CostSummary {
+interface CostSummary {
   last: number;
   mean: number;
   peak: number;
@@ -102,7 +102,7 @@ export interface CaptureStatus {
   remainingFrames: number;
 }
 
-export interface RecordedGpuData {
+interface RecordedGpuData {
   units: "milliseconds";
   measurement: string;
   latest: GpuProfile | null;

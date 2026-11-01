@@ -9,7 +9,8 @@ export default defineConfig({
   testDir: "./e2e",
   workers: 1,
   retries: 0,
-  reporter: "list",
+  // The JSON results feed the CI job summary (scripts/ci/summary.mjs).
+  reporter: [["list"], ["json", { outputFile: "artifacts/e2e/results.json" }]],
   use: {
     headless: true,
     baseURL: origin,

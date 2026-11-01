@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>junkui experiments</title>
+    <link rel="stylesheet" href="./junkui.css" />
+    <link rel="stylesheet" href="./page.css" />
+    <style>
+      /* Experiments, not junkui yet: buttons shaded and raised with block glyphs, after
+         DOS text-mode interfaces. The glyphs are decoration, so they have an empty alternative
+         for screen readers; the first content line is for browsers without that syntax. */
+      .jl .x-shade {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+      }
+      .jl .x-shade::before {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        overflow: hidden;
+        font-size: 12px;
+        line-height: 1;
+        letter-spacing: 0;
+        /* Wraps the glyphs into rows that fill the box; the label's colour, faded, shades it. */
+        white-space: normal;
+        word-break: break-all;
+        color: color-mix(in srgb, currentColor 30%, transparent);
+        pointer-events: none;
+      }
+      .jl .x-shade:hover::before {
+        content: "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░";
+        content: "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░" /
+          "";
+      }
+      .jl .x-shade:active::before {
+        content: "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓";
+        content: "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓" /
+          "";
+      }
+      .jl .x-raised {
+        position: relative;
+        margin: 0 4px 4px 0;
+      }
+      .jl .x-raised::after {
+        content: "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀";
+        content: "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀" / "";
+        position: absolute;
+        top: calc(100% + 1px);
+        left: 4px;
+        width: 100%;
+        height: 3px;
+        overflow: hidden;
+        font-size: 12px;
+        line-height: 12px;
+        letter-spacing: 0;
+        white-space: nowrap;
+        color: var(--jl-line-strong);
+        pointer-events: none;
+      }
+      .jl .x-raised:active {
+        transform: translate(4px, 4px);
+      }
+      .jl .x-raised:active::after {
+        visibility: hidden;
+      }
+      /* Experiments: icons as monospace glyphs. U+FE0E asks for the text form of symbols that
+         macOS would otherwise draw as colour emoji. */
+      .jl .icons {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 10px 12px;
+      }
+      .jl .icons > div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: var(--jl-size-label);
+        color: var(--jl-dim);
+      }
+      .jl .jl-icon.x-wide {
+        width: auto;
+        padding: 0 4px;
+      }
+      /* A toggle that swaps its glyph with its state; both glyphs come from the markup. */
+      .jl .x-swap::before {
+        content: var(--off);
+        content: var(--off) / "";
+      }
+      .jl .x-swap[aria-pressed="true"]::before {
+        content: var(--on);
+        content: var(--on) / "";
+      }
+      /* Animated glyphs: CSS steps through the characters. Still under reduced motion. */
+      .jl .x-anim {
+        flex: none;
+        display: inline-block;
+        min-width: 2ch;
+        /* Block glyphs can draw past their advance; a cell of space keeps the label clear. */
+        padding-right: 1ch;
+        color: var(--jl-text);
+      }
+      .jl .x-anim::before {
+        animation: 0.8s steps(1) infinite;
+      }
+      /* Eighth-height steps need more than the label size to read as a chart. */
+      .jl .x-spark {
+        font-size: 16px;
+        line-height: 1;
+      }
+      .jl .x-braille::before {
+        content: "⠋";
+        animation-name: x-braille;
+      }
+      .jl .x-line::before {
+        content: "|";
+        animation-name: x-line;
+      }
+      .jl .x-pulse::before {
+        content: "░";
+        animation-name: x-pulse;
+      }
+      .jl .x-grow::before {
+        content: "▏";
+        animation-name: x-grow;
+        animation-duration: 1.2s;
+      }
+      @keyframes x-braille {
+        0% {
+          content: "⠋";
+        }
+        10% {
+          content: "⠙";
+        }
+        20% {
+          content: "⠹";
+        }
+        30% {
+          content: "⠸";
+        }
+        40% {
+          content: "⠼";
+        }
+        50% {
+          content: "⠴";
+        }
+        60% {
+          content: "⠦";
+        }
+        70% {
+          content: "⠧";
+        }
+        80% {
+          content: "⠇";
+        }
+        90% {
+          content: "⠏";
+        }
+      }
+      @keyframes x-line {
+        0% {
+          content: "|";
+        }
+        25% {
+          content: "/";
+        }
+        50% {
+          content: "-";
+        }
+        75% {
+          content: "\\";
+        }
+      }
+      @keyframes x-pulse {
+        0% {
+          content: "░";
+        }
+        17% {
+          content: "▒";
+        }
+        33% {
+          content: "▓";
+        }
+        50% {
+          content: "█";
+        }
+        67% {
+          content: "▓";
+        }
+        83% {
+          content: "▒";
+        }
+      }
+      @keyframes x-grow {
+        0% {
+          content: "▏";
+        }
+        12% {
+          content: "▎";
+        }
+        25% {
+          content: "▍";
+        }
+        37% {
+          content: "▌";
+        }
+        50% {
+          content: "▋";
+        }
+        62% {
+          content: "▊";
+        }
+        75% {
+          content: "▉";
+        }
+        87% {
+          content: "█";
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .jl .x-anim::before {
+          animation: none;
+        }
+      }
+      /* Glyph combos: glyphs in one column, what they are in the next. Frames and pixel art
+         use the font's own line height so rows touch. */
+      .jl .combos {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 8px 24px;
+        align-items: center;
+      }
+      .jl .combos > :nth-child(even) {
+        font-size: var(--jl-size-label);
+        color: var(--jl-dim);
+      }
+      .jl .combo-g {
+        font-size: 14px;
+        white-space: pre;
+      }
+      .jl .combo-block {
+        line-height: normal;
+      }
+      /* Hairline sliders, after the panel's FPS range: a 1 px track, a 1 px tick across it at
+         the value, small labels at the ends. The thumb is 9 px for grabbing; only its centre
+         line is drawn. Logical sizes keep one rule set for both orientations. */
+      .jl .x-slider {
+        appearance: none;
+        inline-size: 160px;
+        block-size: 20px;
+        padding: 0;
+        color: var(--jl-text);
+        background: none;
+        border: 0;
+        cursor: pointer;
+      }
+      .jl .x-slider::-webkit-slider-runnable-track {
+        block-size: 1px;
+        background: var(--jl-line-strong);
+      }
+      .jl .x-slider::-moz-range-track {
+        block-size: 1px;
+        background: var(--jl-line-strong);
+      }
+      .jl .x-slider::-webkit-slider-thumb {
+        appearance: none;
+        inline-size: 9px;
+        block-size: 9px;
+        margin-block-start: -4px;
+        background: linear-gradient(currentColor 0 0) center / 1px 100%
+          no-repeat;
+        border: 0;
+      }
+      .jl .x-slider::-moz-range-thumb {
+        inline-size: 9px;
+        block-size: 9px;
+        background: linear-gradient(currentColor 0 0) center / 1px 100%
+          no-repeat;
+        border: 0;
+        border-radius: 0;
+      }
+      .jl .x-slider:hover,
+      .jl .x-slider:focus-visible {
+        color: var(--jl-bright);
+      }
+      /* Vertical: the larger value on top, like the FPS range; the tick turns across the line. */
+      .jl .x-slider.x-vertical {
+        writing-mode: vertical-lr;
+        direction: rtl;
+        inline-size: 72px;
+      }
+      .jl .x-slider.x-vertical::-webkit-slider-thumb {
+        background-size: 100% 1px;
+      }
+      .jl .x-slider.x-vertical::-moz-range-thumb {
+        background-size: 100% 1px;
+      }
+      .jl .sliders {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 32px;
+      }
+      .jl .x-hrange,
+      .jl .x-vrange {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+        color: var(--jl-dim);
+      }
+      .jl .x-vrange {
+        flex-direction: column;
+        gap: 2px;
+      }
+      .jl .sliders output {
+        min-width: 7ch;
+        color: var(--jl-text);
+      }
+      /* p10k prompts: Powerlevel10k concepts in ascii mode, drawn as a terminal. Rows sit at the
+         font's own line height, so segment fills and shade glyphs meet like terminal cells;
+         the whitespace between rows is not rendered. */
+      .jl .x-term {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 14px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: normal;
+        border: 1px solid var(--jl-line-strong);
+      }
+      .jl .x-term > span {
+        display: flex;
+        min-height: 1lh;
+      }
+      .jl .x-term .muted {
+        color: var(--jl-muted);
+      }
+      .jl .x-term .dim {
+        color: var(--jl-dim);
+      }
+      .jl .x-term .faint {
+        color: var(--jl-faint);
+      }
+      .jl .x-term .line {
+        color: var(--jl-line-strong);
+      }
+      .jl .x-term .text {
+        color: var(--jl-text);
+      }
+      .jl .x-term .anchor,
+      .jl .x-term .newest {
+        color: var(--jl-bright);
+      }
+      .jl .x-term .anchor {
+        font-weight: 700;
+      }
+      /* Each colour means one thing: green a clean tree, orange a miss (a failed command or one
+         over the time budget), purple another machine. */
+      .jl .x-term .clean {
+        color: var(--jl-green);
+      }
+      .jl .x-term .miss {
+        color: var(--jl-orange);
+      }
+      .jl .x-term .away {
+        color: var(--jl-purple);
+      }
+      /* Rainbow segments, flat like junkui chips. */
+      .jl .x-term .fill {
+        color: var(--jl-ink);
+        background: var(--jl-text);
+      }
+      .jl .x-term .fill .anchor {
+        color: inherit;
+      }
+      .jl .x-term .fill-dark {
+        color: var(--jl-muted);
+        background: var(--jl-line-strong);
+      }
+      .jl .x-term .fill.clean,
+      .jl .x-term .fill.miss,
+      .jl .x-term .fill.away {
+        font-weight: 700;
+      }
+      .jl .x-term .fill.clean {
+        background: var(--jl-green);
+      }
+      .jl .x-term .fill.miss {
+        background: var(--jl-orange);
+      }
+      .jl .x-term .fill.away {
+        color: var(--jl-bright);
+        background: var(--jl-purple);
+      }
+      .jl .x-term .cursor {
+        background: var(--jl-text);
+      }
+      /* The gap between the left and right prompts: p10k's gap character, or a plain spacer. */
+      .jl .x-term .gap,
+      .jl .x-term .leader {
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        margin: 0 1ch;
+        color: var(--jl-line-strong);
+      }
+      .jl .x-term .gap::before {
+        content: "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────";
+        content: "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────" /
+          "";
+      }
+      .jl .x-term .leader {
+        color: var(--jl-faint);
+      }
+      .jl .x-term .leader::before {
+        content: "································································································································································";
+        content: "································································································································································" /
+          "";
+      }
+      .jl .x-term .push {
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body class="jl">
+    <main class="page">
+      <header>
+        <h1>JUNKUI · EXPERIMENTS</h1>
+        <p class="jl-dim">
+          Ideas being tried before they join junkui. Nothing on this page is
+          part of the library yet.
+        </p>
+        <nav aria-label="junkui pages">
+          <a href="./">COMPONENTS</a> ·
+          <a href="./experiments.html" aria-current="page">EXPERIMENTS</a>
+        </nav>
+      </header>
+
+      <section aria-labelledby="glyphs">
+        <h2 id="glyphs">GLYPH BUTTONS</h2>
+        <div class="row">
+          <button type="button" class="jl-btn x-shade">SHADED</button>
+          <button type="button" class="jl-btn jl-primary x-shade">
+            SHADED PRIMARY
+          </button>
+          <button type="button" class="jl-btn x-raised">RAISED</button>
+          <button type="button" class="jl-btn jl-primary x-raised">
+            RAISED PRIMARY
+          </button>
+        </div>
+        <p class="note jl-dim">
+          Shaded: plain at rest, ░ on hover, ▓ while pressed. Raised: a ▀
+          half-block shadow one step right and below; pressing moves the button
+          into it.
+        </p>
+      </section>
+
+      <section aria-labelledby="glyph-icons">
+        <h2 id="glyph-icons">GLYPH ICONS</h2>
+        <div class="icons">
+          <div>
+            <button type="button" class="jl-icon" aria-label="Play">
+              &#x25B6;&#xFE0E;</button
+            >play
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Pause">
+              &#x2016;</button
+            >pause
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Stop">
+              &#x25A0;</button
+            >stop
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Record">
+              &#x25CF;</button
+            >record
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Close">
+              &#xD7;</button
+            >close
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Add">+</button>add
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Minimise">
+              &#x2212;</button
+            >minimise
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Menu">
+              &#x2261;</button
+            >menu
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="More">
+              &#x22EF;</button
+            >more
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Back">
+              &#x2039;</button
+            >back
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Forward">
+              &#x203A;</button
+            >forward
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Up">
+              &#x2191;</button
+            >up
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Down">
+              &#x2193;</button
+            >down
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Refresh">
+              &#x21BB;</button
+            >refresh
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Download">
+              &#x2913;</button
+            >download
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Open outside">
+              &#x2197;</button
+            >external
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Copy">
+              &#x29C9;</button
+            >copy
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Done">
+              &#x2713;</button
+            >check
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Warning">
+              &#x25B2;</button
+            >warning
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Information">
+              &#x24D8;</button
+            >info
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Settings">
+              &#x2699;&#xFE0E;</button
+            >settings
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Grid">
+              &#x229E;</button
+            >grid
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Sidebar">
+              &#x25E7;</button
+            >sidebar
+          </div>
+          <div>
+            <button type="button" class="jl-icon" aria-label="Sort">
+              &#x21C5;</button
+            >sort
+          </div>
+        </div>
+        <p class="note jl-dim">
+          Unicode symbols in the monospace font, each in a .jl-icon with an
+          aria-label.
+        </p>
+
+        <h2 style="padding-top: 20px">GLYPH-SWAP TOGGLES</h2>
+        <div class="icons">
+          <div>
+            <button
+              type="button"
+              class="jl-icon x-swap"
+              style="--off: &quot;☆&quot;; --on: &quot;★&quot;"
+              aria-pressed="false"
+              aria-label="Favourite"
+            ></button
+            >favourite
+          </div>
+          <div>
+            <button
+              type="button"
+              class="jl-icon x-swap"
+              style="--off: &quot;○&quot;; --on: &quot;●&quot;"
+              aria-pressed="false"
+              aria-label="Pin"
+            ></button
+            >pin
+          </div>
+          <div>
+            <button
+              type="button"
+              class="jl-icon x-swap x-wide"
+              style="--off: &quot;[ ]&quot;; --on: &quot;[x]&quot;"
+              aria-pressed="false"
+              aria-label="Include"
+            ></button
+            >include
+          </div>
+          <div>
+            <button
+              type="button"
+              class="jl-icon x-swap"
+              style="--off: &quot;▶\FE0E&quot;; --on: &quot;‖&quot;"
+              aria-pressed="false"
+              aria-label="Playing"
+            ></button
+            >play/pause
+          </div>
+        </div>
+        <p class="note jl-dim">
+          The glyph follows aria-pressed; click one to flip it.
+        </p>
+
+        <h2 style="padding-top: 20px">ANIMATED GLYPHS</h2>
+        <div class="icons">
+          <div>
+            <span class="x-anim x-braille" aria-hidden="true"></span>braille
+          </div>
+          <div><span class="x-anim x-line" aria-hidden="true"></span>line</div>
+          <div>
+            <span class="x-anim x-pulse" aria-hidden="true"></span>pulse
+          </div>
+          <div><span class="x-anim x-grow" aria-hidden="true"></span>grow</div>
+          <div style="grid-column: span 2">
+            <span class="x-anim x-spark" aria-hidden="true">▃▄▂▅▃█▄▂▃▂</span
+            >sparkline
+          </div>
+        </div>
+        <p class="note jl-dim">
+          CSS steps through the characters; they hold still when the system asks
+          for reduced motion.
+        </p>
+      </section>
+
+      <section aria-labelledby="sliders">
+        <h2 id="sliders">HAIRLINE SLIDERS</h2>
+        <div class="sliders">
+          <div class="x-hrange">
+            <span>0</span>
+            <input
+              type="range"
+              class="x-slider"
+              min="0"
+              max="100"
+              value="35"
+              aria-label="Volume"
+              data-unit="%"
+            />
+            <span>100</span>
+            <output>35%</output>
+          </div>
+          <div class="x-hrange">
+            <span>30</span>
+            <input
+              type="range"
+              class="x-slider"
+              min="30"
+              max="120"
+              step="30"
+              value="60"
+              aria-label="Frame budget"
+              data-unit=" fps"
+            />
+            <span>120</span>
+            <output>60 fps</output>
+          </div>
+          <div class="x-hrange">
+            <div class="x-vrange">
+              <span>120</span>
+              <input
+                type="range"
+                class="x-slider x-vertical"
+                min="30"
+                max="120"
+                value="60"
+                aria-label="Target FPS"
+                data-unit=" fps"
+              />
+              <span>30</span>
+            </div>
+            <output>60 fps</output>
+          </div>
+          <div class="x-hrange">
+            <div class="x-vrange">
+              <span>1.0</span>
+              <input
+                type="range"
+                class="x-slider x-vertical"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.7"
+                aria-label="Glow"
+                data-unit=""
+              />
+              <span>0</span>
+            </div>
+            <output>0.7</output>
+          </div>
+        </div>
+        <p class="note jl-dim">
+          Native range inputs: drag, click or use the arrow keys. A 1 px track
+          and a 1 px tick, as in the panel's FPS range; vertical ones put the
+          larger value on top.
+        </p>
+      </section>
+
+      <section aria-labelledby="combos">
+        <h2>
+          <span id="combos">GLYPH COMBOS</span>
+          · PROGRESS AND METERS
+        </h2>
+        <div class="combos">
+          <pre class="combo-g">████████▍       </pre>
+          <div>53% · eighth blocks give smooth partial cells</div>
+          <pre class="combo-g">██████▓▒░░░░░░</pre>
+          <div>shaded fade</div>
+          <pre class="combo-g">▰▰▰▰▰▱▱▱▱▱</pre>
+          <div>pills</div>
+          <pre class="combo-g">━━━━━━╸<span class="jl-dim">━━━━━━━</span></pre>
+          <div>gauge: ╸ marks the head, the rest dims</div>
+          <pre class="combo-g">[■■■■■□□□□□]  [====&gt;    ]</pre>
+          <div>bracketed</div>
+          <pre class="combo-g">▁▂▃▄▅▆▇█  ▮▮▮▮▮▮▯▯▯▯</pre>
+          <div>level and VU meters</div>
+        </div>
+        <h2 style="padding-top: 20px">SLIDERS AND TOGGLES</h2>
+        <div class="combos">
+          <pre class="combo-g">──────●──────   ├──●──────┤</pre>
+          <div>sliders</div>
+          <pre class="combo-g">(•) ( )   [x] [ ]   ◉ ○   ⊶ ⊷   ■ □</pre>
+          <div>radios, checks and switches</div>
+        </div>
+        <h2 style="padding-top: 20px">CHARTS AND PIXELS</h2>
+        <div class="combos">
+          <pre class="combo-g">▁▂▃▅▇█▅▃▂▁</pre>
+          <div>sparkline from block heights</div>
+          <pre class="combo-g combo-block">
+⠀⠀⣠⠴⠒⠋⠉⠉⠙⠒⠦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⠴⠒⠋⠉⠉⠙⠒⠦⣄⠀
+⠴⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠳⢤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡤⠞⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠓⠦⢤⣀⣀⣀⡤⠴⠚⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀</pre>
+          <div>
+            braille plot: 2×4 dots per character, four times the vertical
+            resolution
+          </div>
+          <pre class="combo-g combo-block">
+▞▀▀▀▀▚
+▌▛▀▀▜▐
+▌▌▀▀▐▐
+▌▀▀▀▀▐
+▝▀██▀▘
+ ▀▀▀▀ </pre>
+          <div>quadrant pixel art: 2×2 pixels per character</div>
+          <pre class="combo-g combo-block">
+▄▀▀▀▀▀▀▀▀▀▀▄
+█ █▀▀▀▀▀▀█ █
+█ █ ▀▀▀▀ █ █
+█ ▀▀▀▀▀▀▀▀ █
+ ▀▀▀████▀▀▀ 
+  ▀▀▀▀▀▀▀▀  </pre>
+          <div>half blocks: 1×2 pixels per character, close to square</div>
+        </div>
+        <h2 style="padding-top: 20px">FRAMES AND STRUCTURE</h2>
+        <div class="combos">
+          <pre class="combo-g combo-block">
+┌───┐ ┏━━━┓ ╔═══╗ ╭───╮ ┌┄┄┄┐ ╒═══╕
+│   │ ┃   ┃ ║   ║ │   │ ┆   ┆ │   │
+└───┘ ┗━━━┛ ╚═══╝ ╰───╯ └┄┄┄┘ ╘═══╛</pre>
+          <div>light, heavy, double, rounded, dashed, mixed</div>
+          <pre class="combo-g combo-block">
+╭──────╮╭─────────╮╭─────────╮
+│ LIVE ││ LOADING ││ CAPTURE │
+┘      └┴─────────┴┴─────────┴───</pre>
+          <div>tab strip, the open tab joined to its page</div>
+          <pre class="combo-g combo-block">
+jank.js
+├── core
+│   ├── diagnostics.ts
+│   └── recording.ts
+└── viewer
+    └── entry.ts</pre>
+          <div>tree</div>
+          <pre class="combo-g combo-block">
+┌─────────┬───────┐
+│ system  │    ms │
+├─────────┼───────┤
+│ physics │   1.5 │
+│ render  │   1.3 │
+└─────────┴───────┘</pre>
+          <div>table</div>
+          <pre class="combo-g combo-block">
+═══╡ CAPTURE ╞═══
+──── ✦ ────
+---[ INSTALL ]---</pre>
+          <div>section rules, NFO style</div>
+        </div>
+        <h2 style="padding-top: 20px">SHADING AND DEPTH</h2>
+        <div class="combos">
+          <pre class="combo-g combo-block">
+[ OK ]▄
+ ▀▀▀▀▀▀</pre>
+          <div>DOS button shadow</div>
+          <pre class="combo-g">█▓▒░   ░▒▓█▓▒░</pre>
+          <div>fade and pulse</div>
+          <pre class="combo-g">╱╱╱╱╱╱╱╱   ◢◤◢◤◢◤◢◤</pre>
+          <div>hazard and busy stripes</div>
+        </div>
+        <h2 style="padding-top: 20px">MOTION · cli-spinners frames</h2>
+        <div class="combos">
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;⠋&quot;, &quot;⠙&quot;, &quot;⠹&quot;, &quot;⠸&quot;, &quot;⠼&quot;, &quot;⠴&quot;, &quot;⠦&quot;, &quot;⠧&quot;, &quot;⠇&quot;, &quot;⠏&quot;]" data-interval="80" aria-hidden="true">⠋</span></pre>
+          <div>dots · 80 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;⣾&quot;, &quot;⣽&quot;, &quot;⣻&quot;, &quot;⢿&quot;, &quot;⡿&quot;, &quot;⣟&quot;, &quot;⣯&quot;, &quot;⣷&quot;]" data-interval="80" aria-hidden="true">⣾</span></pre>
+          <div>dots2 · 80 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;┤&quot;, &quot;┘&quot;, &quot;┴&quot;, &quot;└&quot;, &quot;├&quot;, &quot;┌&quot;, &quot;┬&quot;, &quot;┐&quot;]" data-interval="100" aria-hidden="true">┤</span></pre>
+          <div>pipe · 100 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;◜&quot;, &quot;◠&quot;, &quot;◝&quot;, &quot;◞&quot;, &quot;◡&quot;, &quot;◟&quot;]" data-interval="100" aria-hidden="true">◜</span></pre>
+          <div>arc · 100 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;◐&quot;, &quot;◓&quot;, &quot;◑&quot;, &quot;◒&quot;]" data-interval="50" aria-hidden="true">◐</span></pre>
+          <div>circleHalves · 50 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;◰&quot;, &quot;◳&quot;, &quot;◲&quot;, &quot;◱&quot;]" data-interval="180" aria-hidden="true">◰</span></pre>
+          <div>squareCorners · 180 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;▖&quot;, &quot;▘&quot;, &quot;▝&quot;, &quot;▗&quot;]" data-interval="120" aria-hidden="true">▖</span></pre>
+          <div>boxBounce · 120 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;◢&quot;, &quot;◣&quot;, &quot;◤&quot;, &quot;◥&quot;]" data-interval="50" aria-hidden="true">◢</span></pre>
+          <div>triangle · 50 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;▁&quot;, &quot;▃&quot;, &quot;▄&quot;, &quot;▅&quot;, &quot;▆&quot;, &quot;▇&quot;, &quot;▆&quot;, &quot;▅&quot;, &quot;▄&quot;, &quot;▃&quot;]" data-interval="120" aria-hidden="true">▁</span></pre>
+          <div>growVertical · 120 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;▓&quot;, &quot;▒&quot;, &quot;░&quot;]" data-interval="100" aria-hidden="true">▓</span></pre>
+          <div>noise · 100 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;▰▱▱▱▱▱▱&quot;, &quot;▰▰▱▱▱▱▱&quot;, &quot;▰▰▰▱▱▱▱&quot;, &quot;▰▰▰▰▱▱▱&quot;, &quot;▰▰▰▰▰▱▱&quot;, &quot;▰▰▰▰▰▰▱&quot;, &quot;▰▰▰▰▰▰▰&quot;, &quot;▰▱▱▱▱▱▱&quot;]" data-interval="80" aria-hidden="true">▰▱▱▱▱▱▱</span></pre>
+          <div>aesthetic · 80 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;( ●    )&quot;, &quot;(  ●   )&quot;, &quot;(   ●  )&quot;, &quot;(    ● )&quot;, &quot;(     ●)&quot;, &quot;(    ● )&quot;, &quot;(   ●  )&quot;, &quot;(  ●   )&quot;, &quot;( ●    )&quot;, &quot;(●     )&quot;]" data-interval="80" aria-hidden="true">( ●    )</span></pre>
+          <div>bouncingBall · 80 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;▐⠂       ▌&quot;, &quot;▐⠈       ▌&quot;, &quot;▐ ⠂      ▌&quot;, &quot;▐ ⠠      ▌&quot;, &quot;▐  ⡀     ▌&quot;, &quot;▐  ⠠     ▌&quot;, &quot;▐   ⠂    ▌&quot;, &quot;▐   ⠈    ▌&quot;, &quot;▐    ⠂   ▌&quot;, &quot;▐    ⠠   ▌&quot;, &quot;▐     ⡀  ▌&quot;, &quot;▐     ⠠  ▌&quot;, &quot;▐      ⠂ ▌&quot;, &quot;▐      ⠈ ▌&quot;, &quot;▐       ⠂▌&quot;, &quot;▐       ⠠▌&quot;, &quot;▐       ⡀▌&quot;, &quot;▐      ⠠ ▌&quot;, &quot;▐      ⠂ ▌&quot;, &quot;▐     ⠈  ▌&quot;, &quot;▐     ⠂  ▌&quot;, &quot;▐    ⠠   ▌&quot;, &quot;▐    ⡀   ▌&quot;, &quot;▐   ⠠    ▌&quot;, &quot;▐   ⠂    ▌&quot;, &quot;▐  ⠈     ▌&quot;, &quot;▐  ⠂     ▌&quot;, &quot;▐ ⠠      ▌&quot;, &quot;▐ ⡀      ▌&quot;, &quot;▐⠠       ▌&quot;]" data-interval="80" aria-hidden="true">▐⠂       ▌</span></pre>
+          <div>pong · 80 ms</div>
+          <pre
+            class="combo-g"
+          ><span data-frames="[&quot;▐|\\____________▌&quot;, &quot;▐_|\\___________▌&quot;, &quot;▐__|\\__________▌&quot;, &quot;▐___|\\_________▌&quot;, &quot;▐____|\\________▌&quot;, &quot;▐_____|\\_______▌&quot;, &quot;▐______|\\______▌&quot;, &quot;▐_______|\\_____▌&quot;, &quot;▐________|\\____▌&quot;, &quot;▐_________|\\___▌&quot;, &quot;▐__________|\\__▌&quot;, &quot;▐___________|\\_▌&quot;, &quot;▐____________|\\▌&quot;, &quot;▐____________/|▌&quot;, &quot;▐___________/|_▌&quot;, &quot;▐__________/|__▌&quot;, &quot;▐_________/|___▌&quot;, &quot;▐________/|____▌&quot;, &quot;▐_______/|_____▌&quot;, &quot;▐______/|______▌&quot;, &quot;▐_____/|_______▌&quot;, &quot;▐____/|________▌&quot;, &quot;▐___/|_________▌&quot;, &quot;▐__/|__________▌&quot;, &quot;▐_/|___________▌&quot;, &quot;▐/|____________▌&quot;]" data-interval="120" aria-hidden="true">▐|\____________▌</span></pre>
+          <div>shark · 120 ms</div>
+        </div>
+        <p class="note jl-dim">
+          Only glyphs the system monospace fonts draw: braille, blocks,
+          quadrants, box drawing and geometric shapes. Sextants, octants and
+          Powerline symbols need a bundled font, so they are left out.
+        </p>
+      </section>
+      <section aria-labelledby="prompts">
+        <h2><span id="prompts">P10K PROMPTS</span> · 01 HAIRLINE</h2>
+        <pre class="x-term">
+<span><span class="muted">~/Desktop/</span><span class="anchor">jank.js</span><span class="muted"> readme &gt;3 !11 ?1</span><span class="gap"></span><span class="dim">05:41:58 PM</span></span>
+<span>› git stash -u -q</span>
+<span> </span>
+<span><span class="muted">~/Desktop/</span><span class="anchor">jank.js</span><span class="clean"> readme</span><span class="muted"> &gt;3 *1</span><span class="gap"></span><span class="dim">05:42:06 PM</span></span>
+<span>› pnpm test:e2e</span>
+<span class="muted">  ✘  1 [chromium] › e2e/accuracy.spec.ts:89:1 › frame timings agree with Chrome's trace</span>
+<span class="muted">  1 failed</span>
+<span class="muted"> ELIFECYCLE  Command failed with exit code 1.</span>
+<span> </span>
+<span><span class="muted">~/Desktop/</span><span class="anchor">jank.js</span><span class="clean"> readme</span><span class="muted"> &gt;3 *1</span><span class="gap"></span><span class="miss">▲ 1  2m 27s  </span><span class="dim">05:44:33 PM</span></span>
+<span><span class="miss">›</span> ssh remote</span>
+<span> </span>
+<span><span class="fill away"> junklab@remote </span><span class="anchor"> ~</span><span class="gap"></span><span class="dim">05:44:41 PM</span></span>
+<span>› <span class="cursor"> </span></span>
+</pre>
+        <p class="note jl-dim">
+          Lean, two lines. A ─ hairline joins the path to the right prompt, the
+          last directory is the one bright word, and › turns orange after a
+          failure.
+        </p>
+        <h2 style="padding-top: 20px">02 METER</h2>
+        <pre class="x-term">
+<span><span class="muted">~/Desktop/</span><span class="anchor">jank.js</span><span class="muted"> readme &gt;3 !11 ?1</span><span class="leader"></span><span class="faint">▂▁▃▂▁▅▂▁▃</span><span class="newest">▂</span><span class="dim"> 0.2s</span></span>
+<span>› git stash -u -q</span>
+<span> </span>
+<span><span class="muted">~/Desktop/</span><span class="anchor">jank.js</span><span class="clean"> readme</span><span class="muted"> &gt;3 *1</span><span class="leader"></span><span class="faint">▁▃▂▁▅▂▁▃▂</span><span class="newest">▃</span><span class="dim"> 0.6s</span></span>
+<span>› pnpm test:e2e</span>
+<span class="muted">  ✘  1 [chromium] › e2e/accuracy.spec.ts:89:1 › frame timings agree with Chrome's trace</span>
+<span class="muted">  1 failed</span>
+<span class="muted"> ELIFECYCLE  Command failed with exit code 1.</span>
+<span> </span>
+<span><span class="muted">~/Desktop/</span><span class="anchor">jank.js</span><span class="clean"> readme</span><span class="muted"> &gt;3 *1</span><span class="leader"></span><span class="miss">▲ 1  </span><span class="faint">▃▂▁▅▂▁▃▂▃</span><span class="miss">█ 2m 27s</span></span>
+<span><span class="miss">›</span> ssh remote</span>
+<span> </span>
+<span><span class="fill away"> junklab@remote </span><span class="anchor"> ~</span></span>
+<span>› <span class="cursor"> </span></span>
+</pre>
+        <p class="note jl-dim">
+          Lean, two lines, dotted leaders. The right prompt graphs recent
+          command times like the panel's frame graph: newest bright, any over
+          the 3 s budget orange.
+        </p>
+        <h2 style="padding-top: 20px">03 CHIP</h2>
+        <pre class="x-term">
+<span><span class="fill"> ~/Desktop/<span class="anchor">jank.js</span> </span><span class="fill-dark"><span class="text"> readme</span> &gt;3 !11 ?1 </span> git stash -u -q<span class="push"></span><span class="fill-dark"> 05:41:58 PM </span></span>
+<span><span class="fill"> ~/Desktop/<span class="anchor">jank.js</span> </span><span class="fill clean"> readme &gt;3 *1 </span> pnpm test:e2e<span class="push"></span><span class="fill-dark"> 05:42:06 PM </span></span>
+<span class="muted">  ✘  1 [chromium] › e2e/accuracy.spec.ts:89:1 › frame timings agree with Chrome's trace</span>
+<span class="muted">  1 failed</span>
+<span class="muted"> ELIFECYCLE  Command failed with exit code 1.</span>
+<span><span class="fill"> ~/Desktop/<span class="anchor">jank.js</span> </span><span class="fill clean"> readme &gt;3 *1 </span> ssh remote<span class="push"></span><span class="fill miss"> ▲ 1 | 2m 27s </span><span class="fill-dark"> 05:44:33 PM </span></span>
+<span><span class="fill away"> junklab@remote </span><span class="fill"> <span class="anchor">~</span> </span><span> </span><span class="cursor"> </span><span class="push"></span><span class="fill-dark"> 05:44:41 PM </span></span>
+</pre>
+        <p class="note jl-dim">
+          Rainbow, one line, as configured now: segments as flat junkui chips,
+          the directory inverted, butted edge to edge with no arrows.
+        </p>
+        <h2 style="padding-top: 20px">04 SWEEP</h2>
+        <pre class="x-term">
+<span><span class="text">░▒▓</span><span class="fill"> ~/Desktop/<span class="anchor">jank.js</span> | readme &gt;3 !11 ?1 </span> git stash -u -q<span class="push"></span><span class="line">░▒▓</span><span class="fill-dark"> 05:41:58 PM </span></span>
+<span><span class="text">░▒▓</span><span class="fill"> ~/Desktop/<span class="anchor">jank.js</span> </span><span class="fill clean"> readme &gt;3 *1 </span> pnpm test:e2e<span class="push"></span><span class="line">░▒▓</span><span class="fill-dark"> 05:42:06 PM </span></span>
+<span class="muted">  ✘  1 [chromium] › e2e/accuracy.spec.ts:89:1 › frame timings agree with Chrome's trace</span>
+<span class="muted">  1 failed</span>
+<span class="muted"> ELIFECYCLE  Command failed with exit code 1.</span>
+<span><span class="text">░▒▓</span><span class="fill"> ~/Desktop/<span class="anchor">jank.js</span> </span><span class="fill clean"> readme &gt;3 *1 </span> ssh remote<span class="push"></span><span class="miss">░▒▓</span><span class="fill miss"> ▲ 1 | 2m 27s </span><span class="fill-dark"> 05:44:33 PM </span></span>
+<span><span class="away">░▒▓</span><span class="fill away"> junklab@remote </span><span class="fill"> <span class="anchor">~</span> </span><span> </span><span class="cursor"> </span><span class="push"></span><span class="line">░▒▓</span><span class="fill-dark"> 05:44:41 PM </span></span>
+</pre>
+        <p class="note jl-dim">
+          Rainbow, one line. Each prompt fades in ░▒▓ in its first segment's
+          colour and stops on a hard edge facing the cursor.
+        </p>
+        <p class="note jl-dim">
+          All four use only what an ascii-mode font has. Grey is structure;
+          green is a clean tree; orange is a miss, a failed command or one over
+          budget; purple is another machine.
+        </p>
+      </section>
+    </main>
+    <script>
+      // Demo only: step each spinner through its cli-spinners frames, unless motion is reduced.
+      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      for (const spinner of document.querySelectorAll("[data-frames]")) {
+        const frames = JSON.parse(spinner.dataset.frames);
+
+        let frame = 0;
+
+        if (!still)
+          setInterval(() => {
+            frame = (frame + 1) % frames.length;
+
+            spinner.textContent = frames[frame];
+          }, Number(spinner.dataset.interval));
+      }
+
+      // Demo only: show each slider's value beside it.
+      for (const slider of document.querySelectorAll(".x-slider")) {
+        const output = slider.closest(".x-hrange").querySelector("output");
+
+        slider.addEventListener("input", () => {
+          output.value = `${slider.value}${slider.dataset.unit}`;
+        });
+      }
+
+      // Demo only: flip aria-pressed so the glyph-swap toggles show both states.
+      document.addEventListener("click", (event) => {
+        const toggle = event.target.closest(".x-swap");
+
+        if (toggle) toggle.ariaPressed = String(toggle.ariaPressed !== "true");
+      });
+    </script>
+  </body>
+</html>
