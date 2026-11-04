@@ -56,3 +56,26 @@ Chrome on an Apple M3 Max with Metal at about 144 Hz, one run each: two pairs, 0
 CPU stress adds its 14 ms of work, and GPU stress adds GPU time without moving a frame that has headroom at this refresh rate. Verdicts need only a range that excludes zero, so very small shifts still earn a label: read the size beside it.
 
 The runner costs nothing measurable when idle (0.015 µs per call) and about 0.15 ms per frame while running, 0.9% of a 16.7 ms budget, from recorded collection time with a 0.1 ms clock. It applies to A and B alike, so B − A is unaffected, but absolute frame times read slightly above an uninstrumented run. GPU-heavy runs exported up to 180 KB per measured second at 144 Hz, so the longest plans can pass the 32 MiB file limit; the run then ends as Failed and earlier trials stay exportable.
+
+## WebGPU queue-counting overhead
+
+Measured on 5 November 2026 on the Apple M3 Max with installed Chrome 156.0.8078.80,
+using a cross-origin isolated page and a physical WebGPU device. Three off/on/on/off
+blocks per method compare the original queue method with the counting wrapper;
+GPU timestamp collection is disabled in both conditions. Each trial warms eight
+batches, then measures 24 batches of 4,096 calls. Counter totals and GPU buffer
+readback are checked. [Raw results and source hashes](verification/queue-counting.json).
+
+| Counted method | Paired added CPU time per call | Same-setting spread per call |
+| --- | --- | --- |
+| `queue.writeBuffer` | +0.012 to +0.016 µs | 0.001 to 0.004 µs |
+| `queue.submit` | −0.209 to +0.386 µs | 0.054 to 0.642 µs |
+
+The upload-counting difference exceeded the observed same-setting spread in all
+three blocks. Submission differences did not. These are synthetic 64-byte writes
+and empty submissions, not full-frame overhead, GPU execution time, or a guarantee
+for other hosts. Resource creation wrappers were not isolated. The earlier
+non-isolated, shorter batches could not resolve upload timings and are excluded.
+
+Reproduce on an idle desktop with `pnpm test:e2e:gpu e2e/three-device-overhead.spec.ts`.
+The normal headless suite skips this hardware-only measurement.
