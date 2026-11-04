@@ -14,6 +14,13 @@ merge order, once each. `.release-state.json` records the last processed source
 commit; `VERSION_HISTORY.md` records the version assigned to each PR. Keep both
 files. Direct commits receive no independent bump.
 
+The `v1` branch is explicitly versioned `1.0.0-rc.0`. Builds and packed consumers
+carry that candidate identity. When an `X.Y.Z-rc.N` candidate reaches main through
+a merged PR, its first version step promotes it to `X.Y.Z`, regardless of the PR's
+bump marker. Subsequent merged PRs receive the normal bumps. This prevents the v1
+breaking-change marker from skipping straight to 2.0.0. With no new merged PR,
+the candidate version stays unchanged.
+
 The version job checks the merged source, prepares package.json and the history,
 reruns project/package checks, then commits and atomically pushes main plus the
 final `vX.Y.Z` tag. It never force-pushes. If main advances, the newer workflow

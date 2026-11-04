@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-rc.0 — release candidate, not yet published
 
 ### Breaking: a new panel and viewer
 

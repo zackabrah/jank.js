@@ -27,6 +27,23 @@ await test("conventional messages choose the strongest bump, including pre-1.0 b
   assert.throws(() => bumpVersion("1.2.3-beta", "patch"));
 });
 
+await test("an RC merge promotes its target before subsequent PR bumps", () => {
+  for (const kind of ["major", "minor", "patch"]) {
+    assert.equal(bumpVersion("1.0.0-rc.0", kind), "1.0.0");
+    assert.equal(bumpVersion("2.4.1-rc.12", kind), "2.4.1");
+  }
+  for (const version of ["1.0.0-rc.01", "1.0.0-rc", "1.0.0-beta.0"]) {
+    assert.throws(() => bumpVersion(version, "patch"));
+  }
+  assert.throws(() => bumpVersion("1.0.0-rc.0", "unknown"));
+  assert.deepEqual(
+    planVersions("1.0.0-rc.0", [pr(1, "feat!: v1"), pr(2, "fix: follow-up")])
+      .entries.map((entry) => entry.version),
+    ["1.0.0", "1.0.1"],
+  );
+  assert.equal(planVersions("1.0.0-rc.0", []).version, "1.0.0-rc.0");
+});
+
 await test("catch-up bumps once for each merged main PR in order, ignoring duplicates and unmerged PRs", () => {
   const plan = planVersions("0.1.0", [
     pr(1, "feat: first"),

@@ -4,6 +4,11 @@ The package is `jank.js`, published publicly to `https://registry.npmjs.org/`
 with the `latest` dist-tag. Runtime dependencies remain zero. Publishing is
 manual; merging a PR or creating a version tag does not publish a package.
 
+The current `v1` branch is `1.0.0-rc.0` for local builds and packed consumer tests.
+The publication workflow still rejects prerelease versions. Merging the candidate
+promotes its version to `1.0.0`; publishing an RC would first require explicit
+prerelease support and a non-`latest` npm tag.
+
 ## Prepare without publishing
 
 Use Node 22.14+ and pnpm 11.24.0. The workflow pins npm 11.20.0, which supports
