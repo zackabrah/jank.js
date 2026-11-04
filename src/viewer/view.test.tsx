@@ -45,6 +45,11 @@ test("opens at the trigger, supports frame navigation and keeps a recording on i
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(
       "Couldn't open broken.json",
     );
+    expect(host.querySelector('[role="alert"]')?.textContent).toMatch(/\. The current recording/);
+    await file("wrong.json", async () => '{"format":"something else"}');
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+      "It isn't a valid jank.js recording: `format` is missing or wrong.",
+    );
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(
       "current recording is still open",
     );

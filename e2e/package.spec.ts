@@ -55,6 +55,26 @@ test("the built package mounts, records and opens its lazy viewer with no dev se
   await panel.getByRole("button", { name: "Stop and save", exact: true }).click();
   const saved = panel.getByRole("listitem", { name: "Capture C1", exact: true });
   await expect(saved).toBeVisible();
+  // The saved notice takes its room from the tab, so the panel and its footer stay on screen.
+  await expect(panel.getByRole("status", { name: "Capture C1 saved", exact: true })).toBeVisible();
+  const withNotice = await panel.boundingBox();
+  if (!withNotice || !viewport) throw new Error("Missing panel");
+  expect(withNotice.y + withNotice.height).toBeLessThanOrEqual(viewport.height);
+  await expect(
+    panel.getByRole("button", { name: "How measurements are calculated" }),
+  ).toBeInViewport();
+  // On a short window the panel shrinks, and its host gets no second scrollbar.
+  await page.setViewportSize({ width: viewport.width, height: 420 });
+  await expect
+    .poll(() =>
+      panel.evaluate((element) => {
+        const root = element.getRootNode() as ShadowRoot;
+        const host = root.host.parentElement;
+        return host ? host.scrollHeight - host.clientHeight : -1;
+      }),
+    )
+    .toBe(0);
+  await page.setViewportSize(viewport);
   await saved.getByRole("button", { name: "Open", exact: true }).click();
   const viewer = page.getByRole("dialog", { name: "Recording viewer · Capture C1" });
   await expect(viewer).toBeVisible();

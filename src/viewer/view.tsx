@@ -101,10 +101,15 @@ export function RecordingViewer({
           : fitSelection(0, 0),
       );
     } catch (cause) {
+      const reason =
+        cause instanceof Error
+          ? cause.message.replace(
+              /^Invalid (recording|comparison): (.+)$/,
+              "It isn't a valid jank.js $1: `$2` is missing or wrong.",
+            )
+          : "Could not read the recording.";
       if (id === request.current)
-        setError(
-          `Couldn't open ${file.name}. ${cause instanceof Error ? cause.message : "Could not read the recording."}`,
-        );
+        setError(`Couldn't open ${file.name}. ${reason.endsWith(".") ? reason : `${reason}.`}`);
     } finally {
       if (id === request.current) setLoading(false);
     }

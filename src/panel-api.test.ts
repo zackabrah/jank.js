@@ -31,6 +31,37 @@ async function instrumentationSwitch(
   );
 }
 
+// What: a host that never calls panel.refresh gets one console warning, and others get none.
+// Why: nothing renders before the first refresh, which otherwise looks like a broken install.
+test("warns once when panel.refresh is never called", () => {
+  vi.useFakeTimers();
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  try {
+    const silent = createPerformancePanel({ shell: document.body, monitor: createDiagnostics() });
+    vi.advanceTimersByTime(5000);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain("panel.refresh(at)");
+    vi.advanceTimersByTime(60_000);
+    expect(warn).toHaveBeenCalledTimes(1);
+    silent.destroy();
+    warn.mockClear();
+    const working = createPerformancePanel({ shell: document.body, monitor: createDiagnostics() });
+    working.refresh(0, true);
+    vi.advanceTimersByTime(5000);
+    const destroyed = createPerformancePanel({
+      shell: document.body,
+      monitor: createDiagnostics(),
+    });
+    destroyed.destroy();
+    vi.advanceTimersByTime(5000);
+    expect(warn).not.toHaveBeenCalled();
+    working.destroy();
+  } finally {
+    warn.mockRestore();
+    vi.useRealTimers();
+  }
+});
+
 test("collects CPU scopes only while mounted, so the Live tab's rows have data", () => {
   const monitor = createDiagnostics();
   expect(monitor.detailed).toBe(false);

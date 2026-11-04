@@ -127,6 +127,12 @@ export function createPerformancePanel(options: PerformancePanelOptions) {
       ? options.gpu
       : undefined;
   let closeViewer = () => {};
+  // Nothing renders before the first refresh, which would otherwise look like a broken install.
+  const refreshHint = setTimeout(() => {
+    console.warn(
+      "jank.js: the panel draws from panel.refresh(at), which hasn't been called. Call it once per frame, straight after monitor.beginFrame(at).",
+    );
+  }, 5000);
   let destroyed = false;
   const openViewer = async (saved: SavedCapture) => {
     const { openRecordingViewer } = await import("./viewer/mount.tsx");
@@ -154,12 +160,14 @@ export function createPerformancePanel(options: PerformancePanelOptions) {
     comparison,
     refresh(at: number = performance.now(), force = false) {
       // Measured, so the runner's own cost appears in the overhead footer and profiler lane.
+      clearTimeout(refreshHint);
       if (comparison) monitor.measureRefresh(() => comparison.advance(false));
       panel.refresh(at, force);
     },
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      clearTimeout(refreshHint);
       comparison?.destroy();
       capture.discard();
       closeViewer();

@@ -42,7 +42,7 @@ export function CaptureSummary({
         )}
       </span>
       <span
-        class="block truncate font-mono text-label-12 text-jank-text-secondary"
+        class={`block font-mono text-label-12 text-jank-text-secondary ${notice ? "truncate" : ""}`}
         title={metadata}
       >
         {notice

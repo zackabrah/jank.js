@@ -209,7 +209,7 @@ export function LivePanel({
       data-mode={mode}
       data-frame={view.frames.at(-1)?.id ?? "unknown"}
       data-frozen={frozen ? "" : undefined}
-      class={`material-menu overflow-hidden font-sans text-jank-text data-frozen:border-jank-frozen ${mode === "mini" ? "w-60" : "w-90"} ${mode === "line" ? "h-7" : ""}`}
+      class={`material-menu relative overflow-hidden font-sans text-jank-text data-frozen:border-jank-frozen ${mode === "mini" ? "w-60" : "w-90"} ${mode === "line" ? "h-7" : ""} ${mode === "full" ? "flex max-h-[calc(100vh-40px)] flex-col" : ""}`}
       aria-label="Live performance panel"
       onKeyDown={(event) => {
         const target = event.target as Element;
@@ -255,7 +255,7 @@ export function LivePanel({
           </IconButton>
         </header>
       </div>
-      <div hidden={mode === "line"}>
+      <div hidden={mode === "line"} class={mode === "full" ? "flex min-h-0 flex-1 flex-col" : ""}>
         <header
           data-mode-header={mode}
           class={`flex items-center gap-1 border-b border-jank-divider px-2 ${mode === "full" ? "h-10" : "h-8"}`}
@@ -301,7 +301,10 @@ export function LivePanel({
             onClose={() => setEditingRule(false)}
           />
         )}
-        <div hidden={editingRule}>
+        <div
+          hidden={editingRule}
+          class={mode === "full" && !editingRule ? "flex min-h-0 flex-1 flex-col" : ""}
+        >
           <div hidden={mode !== "full"}>
             <div
               data-panel-transport
@@ -524,10 +527,6 @@ export function LivePanel({
                 <DismissIcon />
               </IconButton>
             </div>
-          ) : message && !message.startsWith("Capture C") && message !== dismissedMessage ? (
-            <div data-panel-notice class="p-2">
-              <Notice onDismiss={() => setDismissedMessage(message)}>{message}</Notice>
-            </div>
           ) : frozen ? (
             <div
               data-panel-notice
@@ -543,6 +542,10 @@ export function LivePanel({
               </span>
               <Button onPress={resume}>Resume</Button>
             </div>
+          ) : message && !message.startsWith("Capture C") && message !== dismissedMessage ? (
+            <div data-panel-notice class="p-2">
+              <Notice onDismiss={() => setDismissedMessage(message)}>{message}</Notice>
+            </div>
           ) : null}
           <section
             hidden={mode !== "full" || tab !== "live"}
@@ -550,7 +553,7 @@ export function LivePanel({
             id={`${tabsId}-live`}
             role="tabpanel"
             aria-labelledby={`${tabsId}-live-tab`}
-            class="h-144"
+            class="h-144 min-h-0"
           >
             <div class="flex h-full flex-col">
               <FullMetrics view={view} />
@@ -567,7 +570,7 @@ export function LivePanel({
             id={`${tabsId}-loading`}
             role="tabpanel"
             aria-labelledby={`${tabsId}-loading-tab`}
-            class="h-144"
+            class="h-144 min-h-0"
           >
             <LoadingTab model={view.loading} frozen={!!frozen} />
           </div>
@@ -577,7 +580,7 @@ export function LivePanel({
               id={`${tabsId}-capture`}
               role="tabpanel"
               aria-labelledby={`${tabsId}-capture-tab`}
-              class="h-144"
+              class="h-144 min-h-0"
             >
               <CaptureView
                 connection={captureConnection}
@@ -597,7 +600,7 @@ export function LivePanel({
               id={`${tabsId}-compare`}
               role="tabpanel"
               aria-labelledby={`${tabsId}-compare-tab`}
-              class="h-144"
+              class="h-144 min-h-0"
             >
               <CompareTab
                 controller={comparison}

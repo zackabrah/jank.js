@@ -105,7 +105,7 @@ export function RuleEditor({
       ref={form}
       aria-label="Auto-capture rule"
       noValidate
-      class="flex h-172 flex-col text-copy-13"
+      class="flex h-172 min-h-0 flex-col text-copy-13"
       onKeyDown={(event) => {
         if (event.key !== "Escape" || event.isComposing) return;
         event.preventDefault();

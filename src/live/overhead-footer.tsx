@@ -57,6 +57,9 @@ export function OverheadFooter({ view }: { view: LiveView }) {
               ms/frame; UI <MeasurementValue measurement={view.overhead.refresh} precision={3} />{" "}
               ms/frame. Synchronous work only; deferred layout, paint and GPU work are excluded.
             </p>
+            <p class="mt-2">
+              With focus in the panel: R records, A arms auto-capture, F freezes, M changes view.
+            </p>
           </Notice>
         </div>
       )}

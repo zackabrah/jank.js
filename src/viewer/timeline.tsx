@@ -227,8 +227,8 @@ export function RecordingTimeline({
             <details class="group py-1 text-label-12 text-jank-text-secondary">
               <summary class="focus-ring flex cursor-pointer items-center gap-1.5">
                 <ChevronIcon class="group-open:rotate-90" />
-                {unmatched.length} {unmatched.length === 1 ? "event" : "events"} without a matching
-                frame
+                {unmatched.length} {unmatched.length === 1 ? "event" : "events"} outside the
+                recorded frames
               </summary>
               <ul class="max-h-40 overflow-y-auto pl-4">
                 {unmatched.map((event) => (

@@ -52,7 +52,7 @@ export function FullMetrics({ view }: { view: LiveView }) {
         detail={
           view.p95.status === "measured" && view.p95.value > view.overLimit
             ? `▲ over ${view.budget.toFixed(1)}`
-            : "frame interval"
+            : "interval"
         }
       />
       <Kpi
@@ -75,11 +75,7 @@ export function FullMetrics({ view }: { view: LiveView }) {
         suffix={`${NBSP}ms`}
         value={view.worst}
         over={view.worst.status === "measured" && view.worst.value > view.overLimit}
-        detail={
-          view.worstAge === null
-            ? "no samples"
-            : `${formatSeconds(view.worstAge)} ago · f${view.worstFrame}`
-        }
+        detail={view.worstAge === null ? "no samples" : `${formatSeconds(view.worstAge)} ago`}
       />
     </dl>
   );
