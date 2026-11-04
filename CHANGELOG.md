@@ -4,7 +4,7 @@
 
 ### Breaking: a new panel and viewer
 
-The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the rest of the core API and existing recordings keep working, with the two collector changes listed last here.
+The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the rest of the core API and existing recordings keep working, with the three collector changes listed last here.
 
 - Replace `createPerformanceTray` with `createPerformancePanel` from `jank.js/panel`. Call `panel.refresh(at)` straight after `monitor.beginFrame(at)`, and `panel.destroy()` instead of `tray.dispose()`.
 - Remove the tray options `mode`, `viewerUrl`, `capture`, `culling`, `temporal` and `preparation`. Capture rules are set in the panel, the panel opens its own viewer (or pass `onOpenCapture`), and host values appear under Counters through `monitor.register`. `createCullingBoundsOverlay` and `createPreparationProfiler` remain.
@@ -13,6 +13,7 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - The panel and viewer target desktop widths. The bundled UI runtime (Preact) grows the panel from ~23 KB to ~64 KB gzipped; the core stays ~4.6 KB and the viewer loads only when opened. There is still nothing extra to install.
 - The collector keeps a scope shorter than one clock tick, at 0 ms, instead of dropping it from a frame it called complete. New recordings can contain zero-length scopes.
 - `recordingSummary().overBudgetFrames` now allows two timer ticks, so it matches the panel and viewer.
+- Frame times stay ordered from zero. A `frame()` or `beginFrame()` timestamp from before the monitor started, or before the previous frame, moves up to that point, where it used to make `panel.refresh` throw into the host's loop. A `beginFrame()` too far from the last one to give a finite interval now throws the documented `RangeError` instead of recording `Infinity`.
 
 ### New
 

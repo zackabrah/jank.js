@@ -280,6 +280,7 @@ export function createDiagnostics(
     recording = false,
     disposed = false,
     origin = now(),
+    lastFrameAt = 0,
     lastSample = -Infinity;
 
   let nextFrame = 0,
@@ -418,6 +419,10 @@ export function createDiagnostics(
 
   /** Stores a finished frame, triggers auto capture on a spike and appends to a running recording. */
   function commit(frame: DiagnosticFrame) {
+    // A host timestamp can precede the origin (a first animation frame) or go
+    // backwards; readers rely on frame times being ordered from zero.
+    frame.at = lastFrameAt = Math.max(lastFrameAt, frame.at);
+
     history.push(frame);
 
     const absolute = frame.at + origin;
@@ -558,7 +563,12 @@ export function createDiagnostics(
     beginFrame(at) {
       if (disposed) return -1;
 
-      if (!Number.isFinite(at) || (pending && at < pending.start))
+      // The second check refuses a gap too wide to measure: its interval would be Infinity.
+      if (
+        !Number.isFinite(at) ||
+        (pending &&
+          (at < pending.start || !Number.isFinite(at - pending.start)))
+      )
         throw new RangeError(
           `Frame boundaries must increase on the diagnostics clock (${at} < ${pending?.start ?? "unset"})`,
         );
@@ -941,6 +951,8 @@ export function createDiagnostics(
       collectionMs = refreshMs = 0;
 
       origin = now();
+
+      lastFrameAt = 0;
 
       lastSample = -Infinity;
 

@@ -53,6 +53,34 @@ describe("exact frame capture", () => {
     expect(frame).toMatchObject({ update: 0, render: Number.MAX_VALUE });
   });
 
+  it("refuses a frame boundary too far away to give a finite interval", () => {
+    const monitor = createDiagnostics(() => 0);
+
+    monitor.beginFrame(-1e308);
+
+    expect(() => monitor.beginFrame(Number.MAX_VALUE)).toThrow(RangeError);
+    expect(monitor.snapshot().frames).toHaveLength(0);
+  });
+
+  it("keeps frame times ordered from the origin whatever the host's timestamps do", () => {
+    const monitor = createDiagnostics(() => 100);
+
+    // A first animation timestamp can precede the monitor's creation.
+    monitor.frame(90, 16, 1, 1);
+    monitor.frame(120, 16, 1, 1);
+    monitor.frame(110, 16, 1, 1);
+    monitor.frame(130, 16, 1, 1);
+
+    expect(monitor.snapshot().frames.map((frame) => frame.at)).toEqual([
+      0, 20, 20, 30,
+    ]);
+
+    monitor.clear();
+    monitor.frame(90, 16, 1, 1);
+
+    expect(monitor.snapshot().frames.map((frame) => frame.at)).toEqual([0]);
+  });
+
   it("keeps a scope shorter than one clock tick without repeating it", () => {
     let now = 0;
 

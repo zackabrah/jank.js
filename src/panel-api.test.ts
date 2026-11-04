@@ -38,6 +38,15 @@ test("collects CPU scopes only while mounted, so the Live tab's rows have data",
   expect(monitor.detailed).toBe(false);
 });
 
+test("a frame() timestamp from before the monitor existed does not throw into the host's loop", () => {
+  const monitor = createDiagnostics();
+  const panel = createPerformancePanel({ shell: document.body, monitor });
+  const at = performance.now();
+  monitor.frame(at - 5, 16, 1, 1);
+  expect(() => panel.refresh(at, true)).not.toThrow();
+  panel.destroy();
+});
+
 test("floats over the page by default and leaves nothing behind when destroyed", () => {
   const monitor = createDiagnostics();
   const panel = createPerformancePanel({ shell: document.body, monitor });
