@@ -75,6 +75,14 @@ describe("episodes", () => {
     });
   });
 
+  // What: with no frames, the over-budget share and overhead are unknown.
+  // Why: #19. Missing is not zero, and the viewer already says so for the same file.
+  test("a recording with no frames reports unknown, not zero", () => {
+    const { summary } = analyzeRecording(recordingOf([]));
+    expect(summary.overBudget.percent).toBeNull();
+    expect(summary.overheadMs).toBeNull();
+  });
+
   test("vsync jitter around the budget is not slow, and a real spike stays separate", () => {
     const jittery: number[] = Array.from({ length: 80 }, (_, index) => (index % 2 ? 16.2 : 17.4));
     jittery[40] = 85;

@@ -88,3 +88,13 @@ test("--help prints usage and succeeds", async () => {
   expect(code).toBe(0);
   expect(stdout).toContain("jank experiment");
 });
+
+// What: a file saved with a byte-order mark opens, as it does in the viewer.
+// Why: #20. Some Windows editors add one, and Node keeps it where the browser drops it.
+test("analyze reads a file that starts with a byte-order mark", async () => {
+  const file = join(dir, "bom.json");
+  await writeFile(file, `\uFEFF${serializeRecording(recordingFixture())}`);
+  const { code, stdout } = await run("analyze", file);
+  expect(code).toBe(0);
+  expect(JSON.parse(stdout).kind).toBe("recording");
+});

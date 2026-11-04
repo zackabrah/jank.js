@@ -241,6 +241,17 @@ describe("comparison results", () => {
       "overlapping",
     );
   });
+  // What: a problem inside one trial's recording says which trial.
+  // Why: #17. A missing recording surfaced as "Cannot read properties of undefined".
+  it("names the trial when its recording is missing or invalid", () => {
+    const missing = JSON.parse(serializeComparison(comparisonFixture()));
+    delete missing.trials[1].recording;
+    expect(() => parseComparison(JSON.stringify(missing))).toThrow("Trial 1B: missing recording.");
+    const invalid = JSON.parse(serializeComparison(comparisonFixture()));
+    invalid.trials[0].recording.frames[0].interval = "soon";
+    expect(() => parseComparison(JSON.stringify(invalid))).toThrow(/^Trial 1A: .*frame\.interval/);
+  });
+
   // What: work the host times and reports, but doesn't scope, still counts toward CPU results.
   // Why: with the README's old setup, removing 4 ms of drawing read "No observed difference".
   it("counts update and render time that no scope covers", () => {

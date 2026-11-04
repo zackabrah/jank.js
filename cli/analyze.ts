@@ -17,6 +17,7 @@ export async function runAnalyze(
   const limit = top === undefined ? undefined : Number(top);
   if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1))
     return failUsage("--top must be a whole number of at least 1.");
-  const document = parseViewerDocument(await readFile(file, "utf8"));
+  const text = await readFile(file, "utf8");
+  const document = parseViewerDocument(text.replace(/^\uFEFF/, ""));
   console.log(JSON.stringify(analyzeDocument(document, limit), null, 2));
 }

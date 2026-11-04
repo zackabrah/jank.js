@@ -173,7 +173,14 @@ export function parseComparison(json: string): ComparisonBundle {
       throw new Error("Trials must follow the planned ABBA order.");
     const measurementStartMs = number(trial["measurementStartMs"]);
     const measurementEndMs = number(trial["measurementEndMs"]);
-    const recording = parseRecording(JSON.stringify(trial["recording"]));
+    const name = `Trial ${expected.pair}${expected.variant}`;
+    if (trial["recording"] === undefined) throw new Error(`${name}: missing recording.`);
+    let recording: PerformanceRecording;
+    try {
+      recording = parseRecording(JSON.stringify(trial["recording"]));
+    } catch (cause) {
+      throw new Error(`${name}: ${cause instanceof Error ? cause.message : "invalid recording"}`);
+    }
     const first = recording.frames[0];
     const last = recording.frames.at(-1);
     if (
