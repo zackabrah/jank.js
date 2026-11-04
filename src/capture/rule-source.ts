@@ -1,4 +1,5 @@
 import type { DiagnosticsSnapshot } from "../live/model.ts";
+import { displayPace, frameCpuMs, medianOf } from "../recording/display-pace.ts";
 import { parseRecording } from "../recording/format.ts";
 import type { CaptureContext, CaptureRule, DiagnosticFrame } from "../recording/types.ts";
 import type { CaptureSource } from "./controller.ts";
@@ -24,8 +25,18 @@ function ownFrame(frame: DiagnosticsSnapshot["frames"][number]): DiagnosticFrame
   };
 }
 
-/** Adds frame-driven rules around a legacy recorder; no rendering, timers or host loop. */
-export function createRuleCaptureSource(source: CaptureSource): CaptureSource {
+/** The frames the display's pace is judged over: the panel's own statistics window. */
+const PACE_FRAMES = 180;
+
+/**
+ * Adds frame-driven rules around a legacy recorder; no rendering, timers or host loop.
+ * `readGpuMs` gives the latest complete GPU span, so sustained and episode rules can follow the
+ * display's pace; without one they use the budget, because no pace can be claimed.
+ */
+export function createRuleCaptureSource(
+  source: CaptureSource,
+  readGpuMs?: () => number | null,
+): CaptureSource {
   if (!source.armCapture)
     throw new Error("Rule capture requires a collector with automatic sampling support.");
   const initial = parseRecording(JSON.stringify(source.export()));
@@ -48,6 +59,22 @@ export function createRuleCaptureSource(source: CaptureSource): CaptureSource {
   let reason: CaptureContext["reason"] = "window";
   let context: CaptureContext | undefined;
   let cooldownUntil = 0;
+  let recent: { intervalMs: number; cpuMs: number }[] = [];
+  let slowMs = 0;
+  const remember = (frame: DiagnosticFrame) => {
+    recent.push({ intervalMs: frame.interval, cpuMs: frameCpuMs(frame) });
+    if (recent.length > PACE_FRAMES) recent.shift();
+  };
+  const slowLimit = (budgetMs: number) => {
+    const gpuMs = readGpuMs?.() ?? null;
+    if (gpuMs === null) return budgetMs;
+    const pace = displayPace(
+      budgetMs,
+      medianOf(recent.map((frame) => frame.intervalMs)),
+      Math.max(medianOf(recent.map((frame) => frame.cpuMs)), gpuMs),
+    );
+    return pace?.limitMs ?? budgetMs;
+  };
   const finish = (frame: DiagnosticFrame, why: CaptureContext["reason"]) => {
     if (!rule || !trigger || !onset) throw new Error("Missing automatic capture context.");
     source.stopRecording();
@@ -121,6 +148,9 @@ export function createRuleCaptureSource(source: CaptureSource): CaptureSource {
       trigger = onset = ended = null;
       context = undefined;
       streak = crossings = remaining = cooldownUntil = 0;
+      recent = [];
+      snapshot.frames.slice(-PACE_FRAMES).map(ownFrame).forEach(remember);
+      slowMs = compiled.budgetMs;
       lastId = snapshot.frames.at(-1)?.id ?? -1;
       lastAt = snapshot.frames.at(-1)?.at ?? 0;
     },
@@ -163,6 +193,7 @@ export function createRuleCaptureSource(source: CaptureSource): CaptureSource {
       lastAt = frame.at;
       history.push(frame);
       if (history.length > rule.beforeFrames + 1) history.shift();
+      remember(frame);
       if (state === "cooldown") {
         if (frame.at < cooldownUntil) return decorate(snapshot);
         state = "armed";
@@ -170,7 +201,10 @@ export function createRuleCaptureSource(source: CaptureSource): CaptureSource {
         streak = crossings = 0;
       }
       if (state === "armed") {
-        const slow = frame.interval > (rule.mode === "spike" ? rule.thresholdMs : rule.budgetMs);
+        // Held for the whole slow run, or a long slowdown would become its own excuse in the median.
+        if (!onset)
+          slowMs = frame.interval > rule.budgetMs ? slowLimit(rule.budgetMs) : rule.budgetMs;
+        const slow = frame.interval > (rule.mode === "spike" ? rule.thresholdMs : slowMs);
         if (!slow) {
           onset = null;
           streak = crossings = 0;
@@ -197,7 +231,7 @@ export function createRuleCaptureSource(source: CaptureSource): CaptureSource {
       } else if (state === "recording") {
         frames.push(frame);
         if (stage === "episode") {
-          if (frame.interval > rule.budgetMs) {
+          if (frame.interval > slowMs) {
             lastSlowAt = frame.at;
             crossings++;
           }

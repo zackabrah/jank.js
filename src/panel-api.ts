@@ -13,7 +13,7 @@ import {
   type DiagnosticsSource,
   mountDiagnosticsPanel,
 } from "./live/diagnostics-adapter.ts";
-import type { LiveGpu } from "./live/model.ts";
+import { completeGpuSpan, type LiveGpu } from "./live/model.ts";
 import type { LoadingSnapshot } from "./loading/model.ts";
 import type { GpuProfile } from "./types/gpu-profile-types.ts";
 
@@ -80,11 +80,16 @@ export function createPerformancePanel(options: PerformancePanelOptions) {
   }
   shell.append(container);
   const collector: CaptureSource & DiagnosticsSource = monitor;
-  const source = createRuleCaptureSource({
-    ...collector,
-    recentFrameCapacity,
-    ...options.capture,
-  });
+  // The panel's last reading, up to one refresh old, so rules add no GPU reads of their own.
+  let latestGpu: LiveGpu | null = null;
+  const source = createRuleCaptureSource(
+    {
+      ...collector,
+      recentFrameCapacity,
+      ...options.capture,
+    },
+    () => completeGpuSpan(latestGpu),
+  );
   const capture = createCaptureController(source);
   const comparison = comparisonHost
     ? createComparisonController({ capture, ...comparisonHost })
@@ -132,7 +137,11 @@ export function createPerformancePanel(options: PerformancePanelOptions) {
   const panel = mountDiagnosticsPanel(
     container,
     { ...source, measureRefresh: monitor.measureRefresh, setTargetFps: monitor.setTargetFps },
-    readGpu,
+    readGpu &&
+      (() => {
+        latestGpu = readGpu();
+        return latestGpu;
+      }),
     { controller: capture, onOpen: options.onOpenCapture ?? openViewer },
     () => ({ traceEvents, ...(gpuTiming ? { gpuTiming } : {}), ...options.instrumentation?.() }),
     options.loading,

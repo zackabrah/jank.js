@@ -104,7 +104,7 @@ Arm **Auto** before the problem happens and leave the application running. When 
 | Setting             | What it does                                                                                    |
 | ------------------- | ----------------------------------------------------------------------------------------------- |
 | Trigger: Spike      | Fires when one frame exceeds the **Frame threshold**, by default twice the budget.              |
-| Trigger: Sustained  | Fires when frames stay over budget for the set time, by default 250 ms.                         |
+| Trigger: Sustained  | Fires when frames stay over budget for the set time, by default 250 ms, or over the display's pace when GPU timing shows the display set it. |
 | Trigger: Episode    | Fires like Sustained and keeps the whole episode.                                               |
 | Keep: Fixed window  | Keeps the set time before and after the trigger.                                                |
 | Keep: Whole episode | Keeps frames until **Quiet recovery** has passed, up to the **Episode limit**, by default 30 s. |

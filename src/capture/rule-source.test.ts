@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { parseRecording } from "../recording/format.ts";
 import type { RuleSettings } from "../recording/types.ts";
 import { createCaptureController } from "./controller.ts";
@@ -6,9 +6,13 @@ import { captureFixture } from "./fixtures.ts";
 import { createRuleCaptureSource } from "./rule-source.ts";
 import { compileRule, ruleLimits } from "./rules.ts";
 
-function harness(settings: Partial<RuleSettings> = {}, capacity = 100) {
+function harness(
+  settings: Partial<RuleSettings> = {},
+  capacity = 100,
+  readGpuMs?: () => number | null,
+) {
   const fixture = captureFixture(capacity);
-  const source = createRuleCaptureSource(fixture.source);
+  const source = createRuleCaptureSource(fixture.source, readGpuMs);
   const controller = createCaptureController(source);
   controller.applyRule({
     ...controller.getRuleSettings(),
@@ -288,4 +292,93 @@ test("active sustained rules retain their budget until re-armed, including expor
   h.frame(30);
   expect(h.controller.getSnapshot().phase).toBe("idle");
   expect(h.controller.getSnapshot().saved).toHaveLength(1);
+});
+
+describe("on a display slower than the budget", () => {
+  const sustained = { mode: "sustained", sustainedMs: 80 } as const;
+  const run = (h: ReturnType<typeof harness>, count: number, interval: number) => {
+    for (let i = 0; i < count; i++) h.frame(interval);
+  };
+  const lastFrameId = (h: ReturnType<typeof harness>) =>
+    h.fixture.source.snapshot().frames.at(-1)?.id ?? 0;
+
+  // What: smooth 57 Hz frames with light work never trigger a sustained or episode rule.
+  // Why: every frame is over a 60 FPS budget there, so the rule fired after each cooldown and
+  // filled the capture list with recordings of nothing wrong (JANK-005).
+  test.each([17.5, 17.3])("%f ms frames with light work don't fire", (interval) => {
+    const h = harness(sustained, 100, () => 2);
+    run(h, 240, interval);
+    expect(h.controller.getSnapshot().phase).toBe("idle");
+    expect(h.controller.getSnapshot().saved).toHaveLength(0);
+    expect(h.controller.getSnapshot().automatic?.state).toBe("armed");
+  });
+
+  // What: a real slowdown still fires, and at the slowdown rather than before it.
+  // Why: the display's pace may excuse jitter around it, never a scene that got slower.
+  test("a real slowdown still fires, starting from the slow frames", () => {
+    const h = harness(sustained, 100, () => 2);
+    run(h, 60, 17.5);
+    const lastSmooth = lastFrameId(h);
+    run(h, 3, 40);
+    expect(h.controller.getSnapshot().phase).toBe("recording");
+    run(h, 3, 17.5);
+    expect(h.saved()?.capture.context?.onsetFrame).toBe(lastSmooth + 1);
+  });
+
+  // What: an episode ends when frames return to the display's pace, for both ways of starting one.
+  // Why: against the bare budget every paced frame looked slow, so no episode ever recovered and
+  // each ran to its time limit.
+  test.each([
+    ["sustained", { mode: "sustained", sustainedMs: 60 }],
+    ["spike", { mode: "spike", thresholdMs: 33 }],
+  ] as const)("an episode from a %s trigger recovers at the display's pace", (_name, trigger) => {
+    const h = harness({ ...trigger, keep: "episode", quietMs: 60 }, 100, () => 2);
+    run(h, 60, 17.5);
+    run(h, 3, 40);
+    expect(h.controller.getSnapshot().automatic?.stage).toBe("episode");
+    run(h, 8, 17.5);
+    expect(h.saved()?.capture.context?.reason).toBe("recovered");
+  });
+
+  // What: a slowdown long enough to become the typical frame time still fires.
+  // Why: judged against a median that includes it, a long slowdown would excuse itself, so the
+  // limit stays as it was when the slow run began.
+  test("a slowdown outlasting the median still fires", () => {
+    const h = harness({ mode: "sustained", sustainedMs: 5000 }, 100, () => 2);
+    run(h, 60, 17.5);
+    const lastSmooth = lastFrameId(h);
+    run(h, 125, 40);
+    expect(h.controller.getSnapshot().phase).toBe("recording");
+    run(h, 3, 17.5);
+    expect(h.saved()?.capture.context?.onsetFrame).toBe(lastSmooth + 1);
+  });
+
+  // What: heavy GPU work at the same frame time still counts as slow.
+  // Why: this is the GPU-limited scene the pace rule must not excuse.
+  test("GPU work filling the frame still fires", () => {
+    const h = harness(sustained, 100, () => 15);
+    run(h, 6, 17.5);
+    expect(h.controller.getSnapshot().phase).toBe("recording");
+  });
+
+  // What: without a GPU reading the rule keeps using the budget.
+  // Why: a GPU-limited scene looks the same as a paced one, so no view may claim the display.
+  test.each([
+    ["no reader", undefined],
+    ["no reading yet", () => null],
+  ])("%s keeps the budget", (_name, readGpuMs) => {
+    const h = harness(sustained, 100, readGpuMs);
+    run(h, 6, 17.5);
+    expect(h.controller.getSnapshot().phase).toBe("recording");
+  });
+
+  // What: a spike rule compares with its own threshold whatever the display does.
+  // Why: the person chose that number, so the display's pace must not move it.
+  test("a spike threshold is unaffected", () => {
+    const h = harness({ mode: "spike", thresholdMs: 17.4 }, 100, () => 2);
+    run(h, 60, 17.3);
+    expect(h.controller.getSnapshot().phase).toBe("idle");
+    h.frame(17.5);
+    expect(h.controller.getSnapshot().phase).toBe("recording");
+  });
 });

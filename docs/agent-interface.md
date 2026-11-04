@@ -110,7 +110,8 @@ differ from the viewer's over-budget count, which has a smaller tolerance.
 typical frame time and the budget, so the display is setting the pace, as on a 57 Hz or a 144 Hz
 screen. A frame then counts as slow against the larger of the typical frame time and the budget.
 The panel, viewer and comparison use the same rule. This needs GPU timing, because a GPU-limited
-scene looks the same without it. Automatic capture rules still use the budget alone.
+scene looks the same without it. Sustained and episode capture rules use it too; a spike rule keeps
+its own threshold.
 
 Each episode has frame IDs, so its details can be found in the viewer, and this evidence:
 

@@ -22,7 +22,7 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - A Loading tab with a real-offset waterfall and cold/repeat comparison.
 - `jank.js/gpu` and `jank.js/adapters/three-host` for frame-linked GPU evidence and Three.js hosts.
 - `instrumentThreeDevice` from `jank.js/adapters/three-host` takes an optional `describePass` to name passes, and its new `gpuCalls()` reports pipelines, shaders, textures, buffers and bind groups created, plus submits and writes per frame.
-- Over-budget readings follow the display: when CPU and GPU work leave plenty of the frame unused, the panel, viewer, comparison and analyzer count slow frames from the display's pace and say so, and comparison frame results read `Display-paced`. This needs GPU timing. Automatic capture rules still use the budget alone.
+- Over-budget readings follow the display: when CPU and GPU work leave plenty of the frame unused, the panel, viewer, comparison and analyzer count slow frames from the display's pace and say so, and comparison frame results read `Display-paced`. Sustained and episode capture rules follow it too, so they no longer fire repeatedly on a smooth run; a spike rule keeps its own threshold. This needs GPU timing that covers all of a frame's work, so the renderer adapters' sources, which can't assert that, keep the budget.
 - A prototype agent interface: `jank.js/agent` adds `window.jank` to a host, the package's `jank analyze` reads a saved recording or comparison, and this repository's unpublished `pnpm jank experiment` compares two builds. See [the guide](docs/agent-interface.md).
 
 ### Earlier, for the 0.3 panel

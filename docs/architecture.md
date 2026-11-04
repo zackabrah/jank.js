@@ -611,6 +611,13 @@ The adapter owns no timers.
 - Sustained / Episode: consecutive intervals above the arm-time budget accumulate
   to the configured duration; an on-budget frame resets qualification. Episode
   selects Whole episode by default; either trigger can use either retention mode.
+- Display pace: with the optional second argument, a reader of the latest complete
+  GPU span, the limit above and the episode's quiet check follow `displayPace` over
+  the last 180 frames. The limit is held for a whole slow run, so a long slowdown
+  cannot become its own typical frame time. `createPerformancePanel` passes its last
+  GPU reading, up to one refresh old. Spike thresholds do not move. Without a complete
+  reading, including the renderer adapters' sources, the rule uses the budget. A long
+  low-work slowdown can still raise the median for rules that arm after it.
 - Fixed window: retain the trigger plus the requested before/after frame counts.
 - Whole episode: later over-budget frames restart quiet recovery. Once quiet is
   reached, retain after-context; a crossing during after-context does not extend

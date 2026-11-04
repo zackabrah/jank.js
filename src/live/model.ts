@@ -64,6 +64,12 @@ export interface LiveSnapshot {
   loading?: LoadingSnapshot | null;
 }
 
+/** The GPU span, only when the reading covers all of the frame's GPU work. */
+export const completeGpuSpan = (gpu: LiveGpu | null) =>
+  gpu?.status === "ready" && gpu.completeness === "complete" && gpu.span.status === "measured"
+    ? gpu.span.value
+    : null;
+
 export const measured = (value: number): Measurement => ({ status: "measured", value });
 export const unknown = (reason: string): Measurement => ({ status: "unknown", reason });
 const valid = (value: number) => Number.isFinite(value) && value >= 0;
@@ -229,16 +235,14 @@ export function readLive({ diagnostics, gpu, loading }: LiveSnapshot) {
     if (row) row.duration = measured(duration);
   }
   // shortcut: the panel holds one recent GPU frame, not a median; fine away from the threshold.
+  const gpuSpanMs = completeGpuSpan(gpu ?? null);
   const workMs =
-    complete.length &&
-    gpu?.status === "ready" &&
-    gpu.completeness === "complete" &&
-    gpu.span.status === "measured"
+    complete.length && gpuSpanMs !== null
       ? Math.max(
           medianOf(
             complete.map((frame) => union(frame.scopes, frame.at - frame.interval, frame.at)),
           ),
-          gpu.span.value,
+          gpuSpanMs,
         )
       : null;
   let collection = 0;

@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { act } from "preact/test-utils";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { createDiagnostics } from "./core/diagnostics.ts";
+import { gpuFrameToLive } from "./gpu/model.ts";
+import type { LiveGpu } from "./live/model.ts";
 import { createPerformancePanel } from "./panel-api.ts";
 import type { GpuProfile } from "./types/gpu-profile-types.ts";
 
@@ -160,4 +162,72 @@ test("accepts the source the renderer adapters return, and records its readings"
   expect(setEnabled).toHaveBeenCalledWith(false);
   panel.destroy();
   monitor.dispose();
+});
+
+describe("automatic capture on a display slower than the budget", () => {
+  const gpuTaking = (milliseconds: number) =>
+    gpuFrameToLive(
+      {
+        frameId: 1,
+        source: "host",
+        clock: "gpu",
+        epoch: 0,
+        resolutionMs: null,
+        inventory: "complete",
+        omitted: 0,
+        invocations: [
+          {
+            id: "0",
+            label: "Scene",
+            kind: "render",
+            state: "timed",
+            milliseconds,
+            startMs: 0,
+            endMs: milliseconds,
+            reason: null,
+          },
+        ],
+      },
+      1,
+    );
+  const saved = (gpu?: () => LiveGpu | null) => {
+    const monitor = createDiagnostics();
+    const panel = createPerformancePanel({
+      shell: document.body,
+      monitor,
+      ...(gpu ? { gpu } : {}),
+    });
+    panel.capture.applyRule({
+      ...panel.capture.getRuleSettings(),
+      mode: "sustained",
+      sustainedMs: 80,
+      cooldownMs: 100,
+    });
+    panel.capture.toggleAuto();
+    let at = performance.now();
+    for (let i = 0; i < 240; i++) {
+      at += 17.5;
+      frame(monitor, at);
+      panel.refresh(at);
+    }
+    const count = panel.capture.getSnapshot().saved.length;
+    panel.destroy();
+    return count;
+  };
+
+  // What: the panel hands its GPU reading to the rule, so light work at 57 Hz doesn't fire.
+  // Why: the rule's own tests can't show the panel connected it, and a host only gets this fix
+  // through createPerformancePanel.
+  test("light GPU work doesn't fire", () => {
+    expect(saved(() => gpuTaking(2))).toBe(0);
+  });
+
+  // What: the panel's GPU reading can also keep the rule on the budget.
+  // Why: a GPU-limited scene and a host with no GPU source must both still capture.
+  test.each([
+    ["heavy GPU work", () => gpuTaking(15)],
+    ["no GPU source", undefined],
+  ])("%s still fires", (_name, gpu) => {
+    expect(saved(gpu)).toBeGreaterThan(0);
+  });
 });
