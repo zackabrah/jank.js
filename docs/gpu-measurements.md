@@ -220,11 +220,14 @@ Small workloads were much noisier relative to this grid, so the scaling fixture
 uses longer shaders and dispatches. Repeated opaque draws and empty compute passes
 were unsuitable calibration workloads; see the fixture notes in the report.
 
-**Reporting gap found:** the CLI currently suppresses WebGL GPU pass summaries
-when no start/end span exists. A hardware capture with 290/290 complete frames
-returns `spanMs: null` (correct) but also `passSumMs: null` and `passes: []`, despite
-valid elapsed timings. The panel and exported invocation records retain those
-durations. This validation change leaves that separate reporting issue open.
+**Reporting gap resolved in `26a1c79`:** the CLI and agent now report WebGL elapsed
+pass sums and rankings without requiring start/end timestamps. Reanalyzing retained
+Mac and Windows captures agrees with independently summed invocation durations;
+measured zeros remain valid. `spanMs` and `overlapRatio` stay null without timestamp
+evidence, and incomplete or unknown inventories remain excluded from these summaries.
+An overlap ratio is also unavailable when spans and sums cover different frame sets.
+Five regression cases cover these rules and preserve timestamped WebGPU reporting.
+This is an analysis-only correction; the hardware measurements above were not rerun.
 
 ## Reproducing hardware validation
 

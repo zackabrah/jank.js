@@ -585,7 +585,46 @@
       "component": "src/agent/analyze.ts describeGpu",
       "observation": "WebGL recordings with complete timed elapsed queries report spanMs:null, passSumMs:null and passes:[] in the CLI. The unavailable span is correct, but elapsed pass summaries are also omitted.",
       "reproduction": "Analyze an enabled WebGL trial with pnpm -s jank analyze. One Mac baseline trial reports 290/290 complete while passSumMs is null. The panel-derived median pass sum in that trial is retained below.",
-      "fixed": false
+      "fixed": true,
+      "fixCommit": "26a1c79fa27ee5a436b0f04d7da91eee3aafcbbf",
+      "resolution": "Elapsed pass sums and rankings no longer require GPU start/end timestamps. Missing spans and overlap remain null; incomplete or unknown inventories are excluded. Overlap is null when span and sum populations differ.",
+      "fixVerification": {
+        "regressionCases": 5,
+        "unitTests": 408,
+        "nodeScriptTests": 16,
+        "browserTestsPassed": 278,
+        "browserTestsSkipped": 16,
+        "packageVerification": "passed",
+        "hardwareRerun": false,
+        "retainedCaptureChecks": [
+          {
+            "machine": "mac",
+            "capture": "artifacts/hardware-gpu/mac-calibrated/hardware-gpu-webgl2-hardwa-7de81-head-and-recording-fidelity-chrome-gpu/trial-2.json",
+            "coverage": "290/290 complete",
+            "passSumMs": {
+              "median": 0.07,
+              "p95": 0.47
+            },
+            "spanMs": null,
+            "overlapRatio": null,
+            "matchesIndependentDurationSum": true,
+            "passRankingsPresent": true
+          },
+          {
+            "machine": "windows",
+            "capture": "artifacts/hardware-gpu/windows-calibrated/hardware-gpu-webgl2-hardwa-7de81-head-and-recording-fidelity-chrome-gpu/trial-2.json",
+            "coverage": "114/114 complete",
+            "passSumMs": {
+              "median": 0.02,
+              "p95": 0.03
+            },
+            "spanMs": null,
+            "overlapRatio": null,
+            "matchesIndependentDurationSum": true,
+            "passRankingsPresent": true
+          }
+        ]
+      }
     },
     {
       "severity": "measurement limitation",
