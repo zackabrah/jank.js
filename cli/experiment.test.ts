@@ -2,8 +2,8 @@ import { expect, test } from "vitest";
 import { hotspotsFrom, matchesGlob } from "./experiment.ts";
 
 test("matchesGlob follows CDP's URL patterns", () => {
-  expect(matchesGlob("http://localhost:1/glass.js", "**/glass.js")).toBe(true);
-  expect(matchesGlob("http://localhost:1/glass.js?x", "**/glass.js")).toBe(false);
+  expect(matchesGlob("http://localhost:1/asset.js", "**/asset.js")).toBe(true);
+  expect(matchesGlob("http://localhost:1/asset.js?x", "**/asset.js")).toBe(false);
   expect(matchesGlob("http://a/b.js", "http://?/b.js")).toBe(true);
   expect(matchesGlob("http://a/bxjs", "http://a/b.js")).toBe(false);
 });

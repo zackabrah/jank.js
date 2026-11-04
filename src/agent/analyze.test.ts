@@ -302,10 +302,10 @@ describe("evidence", () => {
     const report = analyzeRecording(
       recordingOf(frames, {
         events: [
-          event("Drop", "Torus", 100),
-          event("Drop", "Torus", 650),
-          event("Shatter", "Torus", 300),
-          event("Shatter", "Torus", 500),
+          event("Drop", "Mesh", 100),
+          event("Drop", "Mesh", 650),
+          event("Spawn", "Mesh", 300),
+          event("Spawn", "Mesh", 500),
           event("Land", "Cube", 200),
           event("Quiet", "", 680),
           event("Long frame", "not a host moment", 100),
@@ -315,7 +315,7 @@ describe("evidence", () => {
     const pattern = (label: string) =>
       report.eventCosts.find((cost) => cost.label === label)?.pattern;
     expect(pattern("Drop")).toBe("first-only");
-    expect(pattern("Shatter")).toBe("recurring");
+    expect(pattern("Spawn")).toBe("recurring");
     expect(pattern("Land")).toBe("once");
     expect(pattern("Quiet")).toBeUndefined();
     expect(pattern("Long frame")).toBeUndefined();

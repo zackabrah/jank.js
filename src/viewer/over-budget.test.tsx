@@ -2,8 +2,10 @@
 import { render } from "preact";
 import { expect, test } from "vitest";
 import { comparisonFixture } from "../compare/fixtures.ts";
+import { frameChartGeometry } from "../frame-chart-geometry.ts";
 import { MetricRow } from "../live/metric-row.tsx";
 import { recordingFixture } from "../recording/fixtures.ts";
+import { summarizeRecording } from "../recording/summary.ts";
 import { ComparisonFrame } from "./comparison-frame.tsx";
 import { comparisonFrames } from "./comparison-frames.ts";
 import { comparisonLanes } from "./comparison-lanes.ts";
@@ -58,6 +60,29 @@ test.each([
     target,
   );
   expect(target.querySelector(".bg-jank-over-band") !== null).toBe(over);
+});
+
+// What: the case #6 was filed on. Frames of 16.70 to 16.80 ms against 16.667 ms, with a 0.1 ms timer.
+// Why: the summary read 0 over while the bars were orange, so a smooth run looked janky.
+test("a steady 60 fps recording has no over-budget frames and no over-budget bars", () => {
+  const recording = recordingFixture(6);
+  recording.budget.frameMs = 16.667;
+  recording.metadata.environment.cpuTimer.estimatedResolutionMs = 0.1;
+  recording.frames.forEach((frame, index) => {
+    frame.interval = 16.7 + (index % 3) * 0.05;
+  });
+  const chart = () => {
+    const summary = summarizeRecording(recording);
+    const { frames, budget } = recording;
+    return { summary, over: frameChartGeometry(frames, budget.frameMs, summary.overLimit, 6).over };
+  };
+  expect(chart().summary.overCount).toBe(0);
+  expect(chart().over).toBe("");
+  const slow = recording.frames[2];
+  if (!slow) throw new Error("Missing frame");
+  slow.interval = 20;
+  expect(chart().summary.overCount).toBe(1);
+  expect(chart().over).not.toBe("");
 });
 
 test("the paired frame inspector marks frames against its limit, not the bare budget", () => {

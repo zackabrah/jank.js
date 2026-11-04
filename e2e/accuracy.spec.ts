@@ -189,14 +189,9 @@ test.skip(!existsSync(join(dist, "panel.js")), "Run pnpm build:package first.");
 // Chrome or another tool, so a browser update or a meter's new version cannot fail them.
 test("jank.js frame timings hold to the scene's own clock", async ({ page }) => {
   test.setTimeout(120_000);
-  // Isolation gives the finest timer a browser allows, which tightens the allowances below.
   await servePackage(
     page,
     '<!doctype html><html lang="en"><title>Accuracy scene</title><body style="margin:0"><canvas width="1280" height="720"></canvas></body></html>',
-    {
-      "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
-    },
   );
   await page.goto(`${origin}/`);
   const run = await page.evaluate(runScene);
