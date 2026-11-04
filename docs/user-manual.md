@@ -204,7 +204,7 @@ A comparison file opens with four tabs, under a graph of A and B aligned by time
 
 A profiler should show its own cost and say what it cannot see.
 
-**Overhead** in the footer is the average and peak time jank.js spent per frame. **ⓘ** splits collection from the panel's own drawing. Only synchronous work counts: deferred layout, paint and GPU work are excluded. The panel redraws four times a second. On a local fixture the whole cost came to about 0.12 ms per frame, or 0.26 ms with automatic capture armed, whichever view is showing. See [the measured figures](performance.md) and their limits.
+**Overhead** in the footer is the average and peak time jank.js spent per frame. **ⓘ** splits collection from the panel's own drawing. Only synchronous work counts: deferred layout, paint and GPU work are excluded. The panel redraws four times a second. On a local fixture the whole cost came to about 0.1 ms per frame, or 0.2 ms with automatic capture armed, whichever view is showing. See [the measured figures](performance.md) and their limits.
 
 Browsers coarsen timers. Cross-origin isolation allows finer ones but guarantees no particular resolution. Each recording stores the observed timer precision, and "unknown" where it could not be established.
 

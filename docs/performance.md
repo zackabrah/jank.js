@@ -1,23 +1,23 @@
 # Monitor overhead
 
-Measured on **4 November 2026** with the 1.0 panel, Apple M3 Max, macOS arm64, headless Chromium 156.0.8078.4, on a cross-origin isolated fixture. These are measurements of the built library on one local fixture, not a guarantee for other applications or hardware. Raw report: [overhead.json](verification/overhead.json). Run `pnpm bench` to reproduce it.
+Measured on **4 November 2026** at `9f6052e` with the 1.0 panel, Apple M3 Max, macOS arm64, headless Chromium 156.0.8078.4, on a cross-origin isolated fixture. These are measurements of the built library on one local fixture, not a guarantee for other applications or hardware. Raw report: [overhead.json](verification/overhead.json). Run `pnpm bench` to reproduce it.
 
 | State                              | Mean monitoring + timer cost per frame | Largest observed cost | 0.3 panel mean |
 | ---------------------------------- | -------------------------------------: | --------------------: | -------------: |
-| Baseline without monitor           |                              0.0009 ms |              0.010 ms |      0.0015 ms |
-| Line view                          |                              0.1341 ms |              2.045 ms |      0.0600 ms |
-| Mini view                          |                              0.1237 ms |              1.775 ms |             new |
-| Full panel, Live tab               |                              0.1153 ms |              1.750 ms |      0.1294 ms |
-| Recording, full panel              |                              0.1317 ms |              1.730 ms |      0.1285 ms |
-| Automatic capture armed, line view |                              0.2635 ms |              1.795 ms |      0.0708 ms |
+| Baseline without monitor           |                              0.0006 ms |              0.010 ms |      0.0015 ms |
+| Line view                          |                              0.0920 ms |              4.000 ms |      0.0600 ms |
+| Mini view                          |                              0.1149 ms |              3.925 ms |             new |
+| Full panel, Live tab               |                              0.1172 ms |              3.230 ms |      0.1294 ms |
+| Recording, full panel              |                              0.0828 ms |              2.185 ms |      0.1285 ms |
+| Automatic capture armed, line view |                              0.2077 ms |              2.220 ms |      0.0708 ms |
 
 The 0.3 column comes from [its own report](verification/overhead-0.3.json), measured on 27 October 2026 with the same method on Chromium 153.
 
-The full panel costs about what 0.3's expanded panel did. Most frames pay only for collection. A refresh, four times a second, costs about 1 to 1.5 ms at the 95th percentile and peaked at 2 to 4 ms across same-day runs. The means spread that over 15 frames at 60 Hz. Those refresh frames are larger than 0.3's, whose 95th percentile was 0.5 to 0.75 ms when expanded.
+The full panel costs about what 0.3's expanded panel did. Most frames pay only for collection. A refresh, four times a second, costs about 0.7 to 0.8 ms at the 95th percentile, close to 0.3's 0.5 to 0.75 ms, and peaked at about 2 to 4 ms in this run. The means spread that over 15 frames at 60 Hz.
 
-The three views cost about the same, because the hidden parts of the panel keep rendering. Line view therefore costs about twice what 0.3's collapsed state did. Per-run means overlap (Mini ran 0.084, 0.138 and 0.149 ms), so do not read an order into them.
+The three views cost about the same, because the hidden parts of the panel keep rendering, so line view costs about 1.5 times what 0.3's collapsed state did. Results vary between runs and machine load: Mini ran 0.210, 0.068 and 0.067 ms here, and a quieter run of an earlier commit measured 0.066 ms for the full panel. Treat these as rough sizes, and don't read an order into the views.
 
-Armed capture is the most expensive state, at about 1.6% of a 16.7 ms budget and nearly four times 0.3's figure, because the rule reads a collector snapshot every frame instead of at each refresh.
+Armed capture is the most expensive state, at about 1.2% of a 16.7 ms budget and about three times 0.3's figure, because the rule reads a collector snapshot every frame instead of at each refresh.
 
 The panel also measures itself. Its **Overhead** footer reports the average and peak per frame, and its **ⓘ** button separates collection from UI work.
 
