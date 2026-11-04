@@ -289,6 +289,35 @@ describe("evidence", () => {
     ]);
   });
 
+  // What: a host's event still appears when jank.js's own entries alone would fill the list.
+  // Why: an episode's events are the clue to what happened. On a slow machine, long-frame entries
+  // landed first and hid the host's event.
+  test("keeps a host's event in an episode ahead of jank.js's own", () => {
+    const frames = framesOf([16, 16, 80, 16, 16]);
+    const at = frames[1]?.at ?? 0;
+    const entry = (label: string, offset: number) => ({ at: at + offset, label, detail: "" });
+    const report = analyzeRecording(
+      recordingOf(frames, {
+        events: [
+          entry("Recording started", 0),
+          entry("Long frame", 1),
+          entry("Long frame", 2),
+          entry("Long frame", 3),
+          entry("Long frame", 4),
+          entry("Long frame", 5),
+          entry("Drop", 6),
+        ],
+      }),
+    );
+    expect(report.episodes[0]?.events.map((event) => event.label)).toEqual([
+      "Drop",
+      "Recording started",
+      "Long frame",
+      "Long frame",
+      "Long frame",
+    ]);
+  });
+
   test("tells a cost paid once from one paid every time", () => {
     // One frame every 10 ms, with a 60 ms frame at each planned moment.
     const slowAt = new Set([100, 300, 500, 200, 400, 600]);

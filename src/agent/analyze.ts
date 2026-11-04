@@ -201,6 +201,11 @@ function describeEpisodes(recording: PerformanceRecording, limitMs: number, top:
               (event) =>
                 event.at >= startAt - EVENT_WINDOW_MS && event.at <= lastFrame.at + EVENT_WINDOW_MS,
             )
+            // The host's own moments are the clue, so jank.js's entries can't crowd them out.
+            .toSorted(
+              (a, b) =>
+                Number(NOT_HOST_MOMENTS.has(a.label)) - Number(NOT_HOST_MOMENTS.has(b.label)),
+            )
             .slice(0, TOP_EVENTS)
             .map((event) => ({
               label: event.label,
