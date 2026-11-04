@@ -53,6 +53,11 @@ export function RecordingSummary({
           class="mt-1 font-mono text-label-20 data-over:text-jank-over"
         >
           {summary.p95 === null ? "Unknown" : formatMs(summary.p95)}
+          {summary.displayPacedMs !== null && (
+            <span class="block text-label-12 text-jank-text-secondary">
+              Display-paced at {formatMs(summary.displayPacedMs)}
+            </span>
+          )}
         </dd>
       </div>
       <div>

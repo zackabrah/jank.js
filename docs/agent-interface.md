@@ -70,8 +70,10 @@ browser already running, such as on another machine over an SSH tunnel.
 Each comparison result has `noise`, the widest gap between runs of one build, and
 `withinNoise`, which means two runs of the same build differed by at least as much as the
 builds did. Read a `withinNoise` result as no evidence either way, whatever its verdict.
-`displayLimited` marks frame verdicts that only measure jitter, and `machineBusy` means the
-browser reported CPU pressure. That reading is coarse, so `noise` is the better guard.
+`displayLimited` means the display set the frame time in every trial. Frame median and p95 then
+read `Display-paced` instead of a faster or slower verdict, unless a trial's p95 is past its
+slow-frame limit, so use the CPU and GPU results. `machineBusy` means the browser reported CPU
+pressure. That reading is coarse, so `noise` is the better guard.
 
 ## Host evidence
 
@@ -104,10 +106,11 @@ tolerance comparisons use: 5% or 1 ms, whichever is larger. Without it, vsync ji
 a smooth run look over budget when the display's frame time equals the budget. This can
 differ from the viewer's over-budget count, which has a smaller tolerance.
 
-`summary.displayLimited` means the typical frame time is over budget while the busier of
-median CPU and GPU work uses under 80% of it, so the display is setting the pace, as on a 57 Hz
-screen. A frame then counts as slow against the typical frame time instead. This needs GPU
-timing, because a GPU-limited scene looks the same without it.
+`summary.displayLimited` means the busier of median CPU and GPU work uses under 80% of both the
+typical frame time and the budget, so the display is setting the pace, as on a 57 Hz or a 144 Hz
+screen. A frame then counts as slow against the larger of the typical frame time and the budget.
+The panel, viewer and comparison use the same rule. This needs GPU timing, because a GPU-limited
+scene looks the same without it. Automatic capture rules still use the budget alone.
 
 Each episode has frame IDs, so its details can be found in the viewer, and this evidence:
 

@@ -115,6 +115,7 @@ export function LaneRow({
       ),
     [recording, lane, model, start, end, ceiling],
   );
+  const overLimit = useMemo(() => frameOverLimit(recording), [recording]);
   const cell = laneValue(lane, selected, recording, model.gpuFrames);
   const quiet = lane.group !== "gpu" && geometry.quiet && !expand;
   const value =
@@ -163,7 +164,7 @@ export function LaneRow({
       </FrameTrack>
       <span
         class="truncate text-right font-mono text-label-12 data-over:text-jank-over data-rejected:text-jank-error"
-        data-over={(cell.value !== null && cell.value > frameOverLimit(recording)) || undefined}
+        data-over={(cell.value !== null && cell.value > overLimit) || undefined}
         data-rejected={cell.status === "rejected" || undefined}
         title={`${value} · ${cell.reason}`}
         data-lane-value={cell.status}

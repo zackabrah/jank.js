@@ -2,6 +2,7 @@
 import { type GpuFrame, gpuFrameCoverage, validateGpuFrame } from "../gpu/model.ts";
 import { type LoadingSnapshot, readLoading } from "../loading/model.ts";
 import type { Measurement } from "../measurement.ts";
+import { displayPace, medianOf } from "../recording/display-pace.ts";
 import type { DiagnosticEvent } from "../recording/types.ts";
 import { formatCounter } from "./counters.ts";
 import { readEvents } from "./events.ts";
@@ -75,12 +76,17 @@ export function judgeBudget(
   frames: DiagnosticsSnapshot["frames"],
   budget: number,
   tolerance: number,
+  workMs: number | null = null,
 ) {
-  const overLimit = budget + tolerance;
+  const pace = frames.length
+    ? displayPace(budget, medianOf(frames.map((frame) => frame.interval)), workMs)
+    : null;
+  const overLimit = pace?.limitMs ?? budget + tolerance;
   const overCount = frames.filter((frame) => frame.interval > overLimit).length;
   return {
     budget,
     overLimit,
+    displayPacedMs: pace?.typicalMs ?? null,
     overCount,
     over: frames.length
       ? measured((overCount / frames.length) * 100)
@@ -222,6 +228,19 @@ export function readLive({ diagnostics, gpu, loading }: LiveSnapshot) {
     const row = cpu.get(id);
     if (row) row.duration = measured(duration);
   }
+  // shortcut: the panel holds one recent GPU frame, not a median; fine away from the threshold.
+  const workMs =
+    complete.length &&
+    gpu?.status === "ready" &&
+    gpu.completeness === "complete" &&
+    gpu.span.status === "measured"
+      ? Math.max(
+          medianOf(
+            complete.map((frame) => union(frame.scopes, frame.at - frame.interval, frame.at)),
+          ),
+          gpu.span.value,
+        )
+      : null;
   let collection = 0;
   let refresh = 0;
   let peak = 0;
@@ -235,8 +254,9 @@ export function readLive({ diagnostics, gpu, loading }: LiveSnapshot) {
     frames,
     loading: readLoading(loading),
     events: readEvents(diagnostics.events, frames),
-    ...judgeBudget(frames, budget, tolerance),
+    ...judgeBudget(frames, budget, tolerance, workMs),
     tolerance,
+    workMs,
     fps,
     average: frames.length ? measured(average) : unknown(noFrames),
     p95: p95 === undefined ? unknown(noFrames) : measured(p95),

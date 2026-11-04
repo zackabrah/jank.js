@@ -201,7 +201,8 @@ for (const theme of ["dark", "light"]) {
     await expect(cpu).toContainText("B slower");
     await expect(cpu).toContainText("+2.00 to +4.00 ms");
     await expect(gpu).toContainText("No observed difference");
-    await expect(frame).toContainText("Inconclusive");
+    await expect(frame).toContainText("Display-paced");
+    await expect(review).toContainText("The display set the frame time in every trial");
     const scroll = review.locator("[data-compare-scroll]");
     expect(await scroll.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await select.selectOption("faster");

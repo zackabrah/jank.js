@@ -156,3 +156,11 @@ test("mini shares scale steps without adding controls; rounded deltas preserve b
   await key("End");
   expect(readout()?.hasAttribute("data-over-budget")).toBe(true);
 });
+
+test("says when the display set the pace, and only then", async () => {
+  const light = view([17.5, 17.7, 17.5, 17.7, 17.6], 1000, 100, 1000 / 60);
+  await draw(light);
+  expect(container.textContent).not.toContain("Display-paced");
+  await draw({ ...light, displayPacedMs: 17.6 });
+  expect(container.textContent).toContain("Display-paced at 17.6 ms");
+});

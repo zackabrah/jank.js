@@ -119,7 +119,7 @@ for (const theme of ["dark", "light"]) {
   select.className =
     "focus-ring mb-3 h-8 rounded-md border border-jank-control bg-jank-surface px-2 text-label-13";
   for (const [value, title] of [
-    ["mixed", "Mixed: CPU slower, GPU unchanged, frame inconclusive"],
+    ["mixed", "Mixed: CPU slower, GPU unchanged, display-paced"],
     ["faster", "B faster"],
     ["same", "No observed difference"],
     ["inconclusive", "Inconclusive CPU and frame"],

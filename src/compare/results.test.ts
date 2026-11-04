@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { comparisonFixture } from "./fixtures.ts";
-import { parseComparison, serializeComparison } from "./model.ts";
+import { type ComparisonBundle, parseComparison, serializeComparison } from "./model.ts";
 import { comparisonResults } from "./results.ts";
 
 const metric = (model: ReturnType<typeof comparisonResults>, id: string) => {
@@ -9,9 +9,17 @@ const metric = (model: ReturnType<typeof comparisonResults>, id: string) => {
   return result;
 };
 
+/** The fixture's work is light for its 20 ms frames, so it reads as display-paced until this. */
+function heavyGpu(bundle: ComparisonBundle) {
+  for (const trial of bundle.trials)
+    for (const record of trial.recording.gpuTiming?.frames ?? [])
+      for (const pass of record.invocations) Object.assign(pass, { endMs: 18, milliseconds: 18 });
+  return bundle;
+}
+
 describe("comparison results", () => {
   it("derives all verdicts from signed, observed paired ranges", () => {
-    const mixed = comparisonResults(comparisonFixture());
+    const mixed = comparisonResults(heavyGpu(comparisonFixture()));
     expect(metric(mixed, "CPU-median")).toMatchObject({
       a: 5,
       b: 8,
@@ -250,8 +258,59 @@ describe("comparison results", () => {
     expect(result.verdict).toBe("B slower");
     expect(result.delta).toBeCloseTo(0.001);
   });
+  describe("when the display sets the pace", () => {
+    const setFrames = (bundle: ComparisonBundle, trialIndex: number, intervals: number[]) => {
+      const trial = bundle.trials[trialIndex];
+      if (!trial) throw new Error("Missing trial");
+      for (const [index, frame] of trial.recording.frames.entries()) {
+        const interval = intervals[index % intervals.length] ?? 0;
+        // Shorter than the fixture's slots, so frames stay ordered and inside the window.
+        frame.at += interval - frame.interval;
+        frame.interval = interval;
+      }
+    };
+    const smooth = (bundle: ComparisonBundle) => {
+      bundle.trials.forEach((_, index) => {
+        setFrames(bundle, index, index % 2 ? [17.3, 17.9] : [17.8, 17.4]);
+      });
+      return bundle;
+    };
+
+    it("gives no frame verdict from jitter, and points at the display", () => {
+      const model = comparisonResults(smooth(comparisonFixture("faster")));
+      expect(model.displayPaced).toBe(true);
+      expect(metric(model, "Frame-median").verdict).toBe("Display-paced");
+      expect(metric(model, "Frame-p95").verdict).toBe("Display-paced");
+      expect(metric(model, "Frame-over")).toMatchObject({ a: 0, b: 0 });
+      expect(metric(model, "CPU-median").verdict).toBe("B faster");
+    });
+
+    it("keeps a p95 verdict when a build really hitches", () => {
+      const bundle = smooth(comparisonFixture("same"));
+      const hitching = [18, 18, 18, 18, 18, 18, 18, 18, 18, 19.9];
+      setFrames(bundle, 1, hitching);
+      setFrames(bundle, 2, hitching);
+      const model = comparisonResults(bundle);
+      expect(model.displayPaced).toBe(true);
+      expect(metric(model, "Frame-p95").verdict).not.toBe("Display-paced");
+      expect(metric(model, "Frame-over").b).toBeGreaterThan(0);
+    });
+
+    it("makes no claim without GPU timing, or when one build does heavy work", () => {
+      const noGpu = smooth(comparisonFixture("same"));
+      for (const trial of noGpu.trials) delete trial.recording.gpuTiming;
+      expect(comparisonResults(noGpu).displayPaced).toBe(false);
+      const heavy = smooth(comparisonFixture("same"));
+      const passes = heavy.trials[1]?.recording.gpuTiming?.frames ?? [];
+      for (const record of passes)
+        for (const pass of record.invocations) Object.assign(pass, { endMs: 16, milliseconds: 16 });
+      const model = comparisonResults(heavy);
+      expect(model.displayPaced).toBe(false);
+      expect(metric(model, "Frame-median").verdict).not.toBe("Display-paced");
+    });
+  });
   it("uses nearest-rank p95 and an explicit tolerance for frame over-budget rates", () => {
-    const bundle = comparisonFixture("same");
+    const bundle = heavyGpu(comparisonFixture("same"));
     bundle.budgetMs = 18;
     for (const trial of bundle.trials) {
       trial.recording.budget = { targetFps: 1000 / 18, frameMs: 18 };

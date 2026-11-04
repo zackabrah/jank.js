@@ -161,3 +161,19 @@ export function gpuFrameToLive(frame: GpuFrame, currentFrame: number): LiveGpu {
     })),
   };
 }
+
+export const timedPasses = (frame: GpuFrame) =>
+  frame.invocations.flatMap((pass) =>
+    pass.state === "timed" && pass.startMs !== null && pass.endMs !== null
+      ? [{ startMs: pass.startMs, endMs: pass.endMs, milliseconds: pass.milliseconds ?? 0 }]
+      : [],
+  );
+
+/** First pass start to last pass end. Null with no timed pass. */
+export function gpuSpan(frame: GpuFrame) {
+  const passes = timedPasses(frame);
+  return passes.length
+    ? Math.max(...passes.map((pass) => pass.endMs)) -
+        Math.min(...passes.map((pass) => pass.startMs))
+    : null;
+}

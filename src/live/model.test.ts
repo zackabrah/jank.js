@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { gpuFixture } from "../gpu/fixtures.ts";
 import { gpuFrameToLive } from "../gpu/model.ts";
 import { liveFixture } from "./fixtures.ts";
-import { type DiagnosticsSnapshot, measured, readLive } from "./model.ts";
+import { type DiagnosticsSnapshot, judgeBudget, measured, readLive } from "./model.ts";
 
 const frame = (id: number, interval = 10): DiagnosticsSnapshot["frames"][number] => ({
   id,
@@ -126,4 +126,25 @@ test("uses combined per-frame overhead peaks and validates source data", () => {
       gpu: { ...gpu, completeness: "unknown", expected: null, timed: null },
     }).gpu?.completeness,
   ).toBe("unknown");
+});
+
+test("a light scene on a slow display isn't over budget, and a real hitch still is", () => {
+  const fixture = liveFixture();
+  let at = 0;
+  const frames = Array.from({ length: 100 }, (_, index) => {
+    const interval = index === 50 ? 40 : index % 2 ? 17.5 : 17.7;
+    at += interval;
+    return { ...frame(index + 1, interval), at };
+  });
+  const diagnostics = { ...fixture.diagnostics, frames, budget: { frameMs: 1000 / 60 } };
+  const gpu = gpuFrameToLive(gpuFixture(100), 102);
+  const paced = readLive({ diagnostics, gpu });
+  expect(paced.displayPacedMs).toBeCloseTo(17.6);
+  expect(paced.overCount).toBe(1);
+  expect(paced.overLimit).toBeCloseTo(18.6);
+  // Frozen frames are judged again, and must reach the same answer.
+  expect(judgeBudget(frames, 1000 / 60, paced.tolerance, paced.workMs).overCount).toBe(1);
+  const unknownGpu = readLive({ diagnostics, gpu: null });
+  expect(unknownGpu.displayPacedMs).toBeNull();
+  expect(unknownGpu.overCount).toBe(100);
 });

@@ -25,6 +25,9 @@ function measured(metric: MetricResult, number: number | null, signed = false) {
 }
 const percent = (share: number) => `${formatNumber(share * 100)}%`;
 
+const DISPLAY_PACED_NOTE =
+  "The display set the frame time in every trial, so frame times can't show this change. Read the CPU and GPU results.";
+
 function VerdictBadge({ verdict, unavailable }: { verdict: Verdict; unavailable: boolean }) {
   const directional = verdict === "B faster" || verdict === "B slower";
   return (
@@ -240,6 +243,7 @@ export function ComparisonVerdicts({
         <p class="text-label-12 text-jank-text-secondary">
           Times in ms. Over is the share of frames over budget; its differences are percentage
           points.
+          {model.displayPaced && ` ${DISPLAY_PACED_NOTE}`}
           {scale > 0 && ` Range marks share one scale: ±${withUnit(resultValue(scale), "ms")}.`}
         </p>
       )}
@@ -423,9 +427,10 @@ function ComparisonMethod({ model }: { model: ComparisonResults }) {
           <p>
             Median averages the middle two samples; p95 uses the nearest rank. Frame over-budget
             uses the larger of {withUnit(1, "ms")} or 5% tolerance (
-            {withUnit(resultValue(model.frameTolerance), "ms")} here). CPU over-budget uses the
-            budget directly. Warm-up is excluded. Missing data may bias observed results even when
-            coverage passes.
+            {withUnit(resultValue(model.frameTolerance), "ms")} here), measured from the display's
+            pace in a trial where the display set the frame time. CPU over-budget uses the budget
+            directly. Warm-up is excluded. Missing data may bias observed results even when coverage
+            passes.
           </p>
         </div>
       </DisclosureSection>
@@ -438,6 +443,9 @@ export function ComparisonMetrics({ model, onViewTrial }: ResultsProps) {
   return (
     <div class="space-y-3">
       <ComparisonMetricTable model={model} onViewTrial={onViewTrial} />
+      {model.displayPaced && (
+        <p class="text-label-12 text-jank-text-secondary">{DISPLAY_PACED_NOTE}</p>
+      )}
       <ComparisonScopes model={model} onViewTrial={onViewTrial} />
       <ComparisonMethod model={model} />
     </div>

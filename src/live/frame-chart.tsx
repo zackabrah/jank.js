@@ -199,6 +199,11 @@ export function FrameChart({
               ? `${active ? "" : "Worst "}f${readout.id} · ${formatMs(readout.interval)} · ${difference > 0 ? "+" : ""}${formatMs(difference)} vs budget`
               : "No frame samples"}
           </p>
+          {view.displayPacedMs !== null && (
+            <p class="font-mono text-label-12 text-jank-text-secondary tabular-nums">
+              Display-paced at {formatMs(view.displayPacedMs)}
+            </p>
+          )}
           <p id={hintId} class="sr-only">
             Arrow keys inspect frames. Home and End select the first and last frame. F toggles
             Freeze.

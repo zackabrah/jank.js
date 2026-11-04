@@ -1,8 +1,12 @@
 import { type ComparisonBundle, settingDifferences } from "../compare/model.ts";
-import { comparisonResults, frameToleranceMs } from "../compare/results.ts";
-import { type GpuFrame, gpuFrameCoverage } from "../gpu/model.ts";
+import { comparisonResults } from "../compare/results.ts";
+import { type GpuFrame, gpuFrameCoverage, gpuSpan, timedPasses } from "../gpu/model.ts";
+import {
+  frameCpuMs as cpuOf,
+  frameToleranceMs,
+  recordingDisplayPace,
+} from "../recording/display-pace.ts";
 import { summarizeRecording } from "../recording/summary.ts";
-import { unionDuration } from "../recording/timing.ts";
 import type { DiagnosticFrame, PerformanceRecording } from "../recording/types.ts";
 
 const DEFAULT_TOP = 10;
@@ -13,7 +17,6 @@ const GPU_LOOKBACK_FRAMES = 5;
 const EVENT_WINDOW_MS = 50;
 const STALL_CPU_SHARE = 0.5;
 // The CPU and GPU run in parallel, so whichever is busier sets how much of a frame is work.
-const DISPLAY_LIMITED_WORK_SHARE = 0.8;
 const COUNTER_STEPS = 10;
 const TOP_SCOPES = 3;
 const TOP_EVENTS = 5;
@@ -42,7 +45,7 @@ const NOTES = [
   "A trend can be warm-up rather than a leak. Check it over a longer run.",
   "machine.busy means the browser reported CPU pressure, so timings may reflect other work on the machine.",
   "gpu.passes are costs only when overlapRatio is at or below 1. Above that, passes run concurrently and their times overlap.",
-  "With displayLimited, frame time follows the display, so a frame counts as slow against typical frame time and frame statistics can't show improvements in work.",
+  "With displayLimited, frame time follows the display, so a frame counts as slow against the larger of typical frame time and the budget, and frame statistics can't show improvements in work.",
 ];
 
 type Statistic = "median" | "p95" | "over";
@@ -56,24 +59,6 @@ const percentile = (sorted: readonly number[], share: number) =>
 function spread(values: readonly number[]) {
   const sorted = values.toSorted((a, b) => a - b);
   return { median: percentile(sorted, 0.5), p95: percentile(sorted, 0.95) };
-}
-
-const cpuOf = (frame: DiagnosticFrame) =>
-  frame.scopes.length ? unionDuration(frame.scopes) : frame.update + frame.render;
-
-const timedPasses = (frame: GpuFrame) =>
-  frame.invocations.flatMap((pass) =>
-    pass.state === "timed" && pass.startMs !== null && pass.endMs !== null
-      ? [{ startMs: pass.startMs, endMs: pass.endMs, milliseconds: pass.milliseconds ?? 0 }]
-      : [],
-  );
-
-function gpuSpan(frame: GpuFrame) {
-  const passes = timedPasses(frame);
-  return passes.length
-    ? Math.max(...passes.map((pass) => pass.endMs)) -
-        Math.min(...passes.map((pass) => pass.startMs))
-    : null;
 }
 
 /** Index ranges of slow frames, merged across short gaps. */
@@ -421,19 +406,11 @@ export function analyzeRecording(recording: PerformanceRecording, top = DEFAULT_
   const summary = summarizeRecording(recording);
   const { frames, budget, metadata, overhead } = recording;
   const sorted = frames.map((frame) => frame.interval).sort((a, b) => a - b);
-  const typicalMs = percentile(sorted, 0.5);
   const cpuMs = frames.length ? spread(frames.map(cpuOf)) : null;
   const gpu = describeGpu(recording, summary.gpuLabel, top);
-  // A display slower than the budget makes every frame miss it, however little work it does.
-  // This needs GPU timing: without it, a GPU-limited scene would look just the same.
-  const displayLimited =
-    typicalMs > budget.frameMs &&
-    cpuMs !== null &&
-    gpu.spanMs !== null &&
-    Math.max(cpuMs.median, gpu.spanMs.median) < typicalMs * DISPLAY_LIMITED_WORK_SHARE;
-  const limitMs = displayLimited
-    ? typicalMs + frameToleranceMs(typicalMs)
-    : budget.frameMs + frameToleranceMs(budget.frameMs);
+  const pace = recordingDisplayPace(recording);
+  const displayLimited = pace !== null;
+  const limitMs = pace?.limitMs ?? budget.frameMs + frameToleranceMs(budget.frameMs);
   const slowFrames = frames.filter((frame) => frame.interval > limitMs).length;
   const { episodes, omitted } = describeEpisodes(recording, limitMs, top);
   return {
@@ -492,8 +469,6 @@ export function spreadWithinVariants(
 function analyzeComparison(bundle: ComparisonBundle) {
   const model = comparisonResults(bundle);
   const trialSummaries = bundle.trials.map((trial) => analyzeRecording(trial.recording, 1).summary);
-  const displayLimited =
-    trialSummaries.length > 0 && trialSummaries.every((summary) => summary.displayLimited);
   const round = (value: number | null) => (value === null ? null : rounded(value));
   return {
     format: "jank-analysis" as const,
@@ -504,7 +479,7 @@ function analyzeComparison(bundle: ComparisonBundle) {
     variants: { A: bundle.variants.A.label, B: bundle.variants.B.label },
     confounds: settingDifferences(bundle.variants, bundle.change),
     plan: bundle.plan,
-    displayLimited,
+    displayLimited: model.displayPaced,
     machineBusy: trialSummaries.some((summary) => summary.machine.busy),
     results: model.results.map((result) => {
       const [channel, statistic] = result.id.split("-") as ["CPU" | "GPU" | "Frame", Statistic];
@@ -527,8 +502,6 @@ function analyzeComparison(bundle: ComparisonBundle) {
         noise,
         // Two runs of one build differed by at least as much as the builds did.
         withinNoise: noise !== null && result.delta !== null && Math.abs(result.delta) <= noise,
-        // The display set the frame time, so these verdicts come from jitter, not work.
-        ...(displayLimited && result.id.startsWith("Frame-") ? { unreliable: true } : {}),
       };
     }),
     trials: bundle.trials.map((trial, index) => {

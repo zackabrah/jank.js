@@ -114,6 +114,15 @@ describe("episodes", () => {
       expect(report.episodes.map((episode) => episode.worstFrame)).toEqual([40]);
     });
 
+    test("recognises a pinned faster display without moving the budget's limit", () => {
+      const report = atDisplayRate(
+        2,
+        Array.from({ length: 80 }, () => 6.9),
+      );
+      expect(report.summary.displayLimited).toBe(true);
+      expect(report.summary.overBudget).toEqual({ limitMs: 17.67, frames: 0, percent: 0 });
+    });
+
     test("doesn't excuse heavy GPU work at the same frame time", () => {
       const report = atDisplayRate(15, smooth);
       expect(report.summary.displayLimited).toBe(false);

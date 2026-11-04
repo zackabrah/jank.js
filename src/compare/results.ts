@@ -1,4 +1,5 @@
 import { gpuFrameCoverage } from "../gpu/model.ts";
+import { frameToleranceMs, recordingDisplayPace } from "../recording/display-pace.ts";
 import { unionDuration } from "../recording/timing.ts";
 import { type ComparisonBundle, comparisonSchedule } from "./model.ts";
 
@@ -9,6 +10,7 @@ export type Verdict =
   | "B slower"
   | "No observed difference"
   | "Inconclusive"
+  | "Display-paced"
   | "Unknown";
 export interface Failure {
   trial: number;
@@ -37,9 +39,6 @@ export interface MetricResult {
   /** Why the metric has no data at all; a missing source, not a failed trial. */
   unavailable: string | null;
 }
-
-/** Keeps vsync jitter around a budget equal to the display's frame time from counting as slow. */
-export const frameToleranceMs = (budgetMs: number) => Math.max(1, budgetMs * 0.05);
 
 /** Nonnegative observations; absent scopes in complete frames contribute known zeros. */
 function summarize(values: number[], count = values.length, limit = Infinity) {
@@ -90,6 +89,8 @@ export function comparisonResults(bundle: ComparisonBundle) {
     const frames = trial?.recording.frames ?? [];
     const window = trial ? trial.measurementEndMs - trial.measurementStartMs : 0;
     const intervals = frames.map((frame) => ({ start: frame.at - frame.interval, end: frame.at }));
+    const pace = trial ? recordingDisplayPace(trial.recording, bundle.budgetMs) : null;
+    const frameLimit = pace?.limitMs ?? bundle.budgetMs + frameTolerance;
     const windowCoverage = window ? Math.min(1, unionDuration(intervals) / window) : 0;
     const invalidIntervals = intervals.some(
       (span, i) =>
@@ -173,11 +174,7 @@ export function comparisonResults(bundle: ComparisonBundle) {
         recorded: true,
         samples: values.length,
         coverage,
-        ...summarize(
-          values,
-          values.length,
-          bundle.budgetMs + (channel === "Frame" ? frameTolerance : 0),
-        ),
+        ...summarize(values, values.length, channel === "Frame" ? frameLimit : bundle.budgetMs),
         failure,
       };
     };
@@ -187,6 +184,8 @@ export function comparisonResults(bundle: ComparisonBundle) {
       index,
       recorded: !!trial,
       frames: frames.length,
+      displayPaced: pace !== null,
+      frameLimit,
       windowCoverage,
       scopes,
       metrics: {
@@ -199,6 +198,14 @@ export function comparisonResults(bundle: ComparisonBundle) {
       },
     };
   });
+  const displayPaced = trials.every((trial) => trial.displayPaced);
+  // A median at the display's pace says nothing about the work. A p95 past the slow-frame limit
+  // is a real hitch rate, so it keeps its verdict.
+  const setByDisplay = (id: string) =>
+    displayPaced &&
+    (id === "Frame-median" ||
+      (id === "Frame-p95" &&
+        trials.every((trial) => (trial.metrics.Frame.p95 ?? Infinity) <= trial.frameLimit)));
   const pairResult = (
     id: string,
     label: string,
@@ -231,7 +238,7 @@ export function comparisonResults(bundle: ComparisonBundle) {
       b: median(b),
       delta: median(differences),
       range,
-      verdict: verdict(range),
+      verdict: range && setByDisplay(id) ? "Display-paced" : verdict(range),
       failure,
       unavailable,
     };
@@ -289,6 +296,7 @@ export function comparisonResults(bundle: ComparisonBundle) {
     scopeFailure,
     opposingScopes,
     frameTolerance,
+    displayPaced,
     gpuRecorded,
     policy: bundle.policy,
   };
