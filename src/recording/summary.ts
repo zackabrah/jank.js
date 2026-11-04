@@ -1,3 +1,4 @@
+import { toolEvent } from "../core/recording.ts";
 import { gpuCoverage, gpuInventoryUnknown } from "../gpu/model.ts";
 import { frameToleranceMs, recordingDisplayPace } from "./display-pace.ts";
 import type { PerformanceRecording } from "./types.ts";
@@ -7,6 +8,9 @@ export const frameOverLimit = (
   recording: PerformanceRecording,
   pace = recordingDisplayPace(recording),
 ) => pace?.limitMs ?? recording.budget.frameMs + frameToleranceMs(recording.budget.frameMs);
+
+// jank.js's own, so they aren't host moments and don't need explaining in a recording's events.
+export const RECORDING_LIFECYCLE_EVENTS: ReadonlySet<string> = new Set(Object.values(toolEvent));
 
 export function summarizeRecording(recording: PerformanceRecording) {
   const { frames } = recording;

@@ -171,3 +171,28 @@ test("does not attribute GPU data using a renderer frame ID", () => {
     render(null, host);
   }
 });
+
+// What: jank.js's own recording events aren't reported as unmatched; a host's event still is.
+// Why: #18. Almost every recording said "1 event outside the recorded frames" for Recording stopped.
+test("only a host's events count as outside the recorded frames", () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const recording = recordingFixture();
+  const end = recording.frames.at(-1)?.at ?? 0;
+  recording.events = [
+    { at: -1, label: "Recording started", detail: "" },
+    ...["Recording stopped", "Recording complete", "Spike captured"].map((label) => ({
+      at: end + 1000,
+      label,
+      detail: "",
+    })),
+  ];
+  render(<RecordingViewer key="lifecycle" initial={recording} />, host);
+  expect(host.textContent).not.toContain("outside the recorded frames");
+  const withHostEvent = structuredClone(recording);
+  withHostEvent.events.push({ at: end + 2000, label: "Level loaded", detail: "" });
+  render(<RecordingViewer key="host" initial={withHostEvent} />, host);
+  expect(host.textContent).toContain("1 event outside the recorded frames");
+  render(null, host);
+  host.remove();
+});

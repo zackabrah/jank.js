@@ -2,6 +2,7 @@ import { useMemo, useState } from "preact/hooks";
 import { formatMs } from "../format.ts";
 import { frameChartGeometry } from "../frame-chart-geometry.ts";
 import { eventPosition } from "../live/events.ts";
+import { RECORDING_LIFECYCLE_EVENTS } from "../recording/summary.ts";
 import type { PerformanceRecording } from "../recording/types.ts";
 import { Button } from "../ui/button.tsx";
 import { ChevronIcon } from "../ui/icons.tsx";
@@ -68,7 +69,9 @@ export function RecordingTimeline({
   );
   const eventFrames = [...new Set(events.map((event) => event.frameIndex))];
   const selectedEvents = model.events.filter((event) => event.frameIndex === selected);
-  const unmatched = model.events.filter((event) => event.frameIndex < 0);
+  const unmatched = model.events.filter(
+    (event) => event.frameIndex < 0 && !RECORDING_LIFECYCLE_EVENTS.has(event.label),
+  );
   return (
     <section aria-label="Recording timeline" class="min-w-0 p-6">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2 text-label-12 text-jank-text-secondary">

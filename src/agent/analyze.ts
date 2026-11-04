@@ -2,7 +2,11 @@ import { type ComparisonBundle, settingDifferences } from "../compare/model.ts";
 import { comparisonResults } from "../compare/results.ts";
 import { type GpuFrame, gpuFrameCoverage, gpuSpan } from "../gpu/model.ts";
 import { frameCpuMs as cpuOf, recordingDisplayPace } from "../recording/display-pace.ts";
-import { frameOverLimit, summarizeRecording } from "../recording/summary.ts";
+import {
+  frameOverLimit,
+  RECORDING_LIFECYCLE_EVENTS,
+  summarizeRecording,
+} from "../recording/summary.ts";
 import type { DiagnosticFrame, PerformanceRecording } from "../recording/types.ts";
 
 const DEFAULT_TOP = 10;
@@ -26,12 +30,7 @@ const MAX_OCCURRENCES = 8;
 export const LONG_FRAME_EVENT = "Long frame";
 export const PRESSURE_EVENT = "CPU pressure";
 // Not moments in the host's work, so their timing says nothing about what it costs.
-const NOT_HOST_MOMENTS = new Set([
-  LONG_FRAME_EVENT,
-  PRESSURE_EVENT,
-  "Recording started",
-  "Recording stopped",
-]);
+const NOT_HOST_MOMENTS = new Set([LONG_FRAME_EVENT, PRESSURE_EVENT, ...RECORDING_LIFECYCLE_EVENTS]);
 const BUSY_PRESSURE = new Set(["serious", "critical"]);
 
 const NOTES = [
