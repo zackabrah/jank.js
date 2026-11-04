@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 
 import { execFileSync, spawnSync } from "node:child_process";
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 
 import { tmpdir } from "node:os";
 
@@ -17,7 +17,7 @@ for (const name of Object.keys(process.env))
 
 const script = resolve("scripts/release/verify-npm-release.mjs");
 
-function fixture(t) {
+function fixture(t, version = "0.1.0", tag = "latest") {
   const cwd = mkdtempSync(join(tmpdir(), "npm-release-"));
 
   t.after(() => rmSync(cwd, { recursive: true, force: true }));
@@ -35,12 +35,12 @@ function fixture(t) {
     join(cwd, "package.json"),
     JSON.stringify({
       name: "jank.js",
-      version: "0.1.0",
+      version,
       type: "module",
       publishConfig: {
         access: "public",
         registry: "https://registry.npmjs.org/",
-        tag: "latest",
+        tag,
       },
     }),
   );
@@ -51,11 +51,13 @@ function fixture(t) {
 
   git("commit", "-m", "release source");
 
-  git("tag", "-a", "v0.1.0", "-m", "release");
+  git("tag", "-a", `v${version}`, "-m", "release");
 
   const commit = git("rev-parse", "HEAD");
 
   git("update-ref", "refs/remotes/origin/main", commit);
+
+  git("update-ref", "refs/remotes/origin/v1", commit);
 
   const build = (buildInfo) => {
     mkdirSync(join(cwd, "dist-package"), { recursive: true });
@@ -66,20 +68,23 @@ function fixture(t) {
     );
   };
 
-  const verify = (ref = "refs/tags/v0.1.0", args = []) =>
+  const output = join(cwd, ".git", "release-output");
+
+  const verify = (ref = `refs/tags/v${version}`, args = []) =>
     spawnSync(process.execPath, [script, ...args], {
       cwd,
-      env: { ...process.env, GITHUB_REF: ref },
+      env: { ...process.env, GITHUB_REF: ref, GITHUB_OUTPUT: output },
       encoding: "utf8",
     });
 
-  return { cwd, git, commit, build, verify };
+  return { cwd, git, commit, build, verify, output };
 }
 
 await test("accepts a clean annotated release tag on main and matching built identity", (t) => {
-  const { commit, build, verify } = fixture(t);
+  const { commit, build, verify, output } = fixture(t);
 
   assert.equal(verify().status, 0);
+  assert.equal(readFileSync(output, "utf8"), "dist_tag=latest\n");
 
   build({ version: "0.1.0", commit, dirty: false });
 
@@ -97,7 +102,7 @@ await test("rejects branch dispatches and tags that do not match the package ver
     const result = verify(ref);
 
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Run this workflow from the vX.Y.Z tag/);
+    assert.match(result.stderr, /Run this workflow from the version tag/);
   }
 });
 
@@ -158,5 +163,38 @@ await test("rejects stale versions, stale commits and dirty build artifacts", (t
       result.stderr,
       /built package must identify the clean tagged source/,
     );
+  }
+});
+
+await test("accepts an RC tag from v1 outside main, with beta publication and matching identity", (t) => {
+  const version = "1.0.0-rc.0";
+  const { git, build, verify, output } = fixture(t, version, "beta");
+  git("checkout", "-b", "v1");
+  git("commit", "--allow-empty", "-m", "candidate changes");
+  git("tag", "-f", `v${version}`);
+  const commit = git("rev-parse", "HEAD");
+  git("update-ref", "refs/remotes/origin/v1", commit);
+  build({ version, commit, dirty: false });
+  assert.equal(verify(undefined, ["--built"]).status, 0);
+  assert.equal(readFileSync(output, "utf8"), "dist_tag=beta\n");
+});
+
+await test("rejects a candidate tag outside v1", (t) => {
+  const { git, verify } = fixture(t, "1.0.0-rc.0", "beta");
+  git("commit", "--allow-empty", "-m", "unreviewed source");
+  git("tag", "-f", "v1.0.0-rc.0");
+  assert.notEqual(verify().status, 0);
+});
+
+await test("rejects mismatched publication channels and unsupported prereleases", (t) => {
+  for (const [version, tag] of [
+    ["1.0.0-rc.0", "latest"],
+    ["1.0.0", "beta"],
+    ["1.0.0-rc.01", "beta"],
+    ["1.0.0-alpha.0", "beta"],
+  ]) {
+    const { verify, output } = fixture(t, version, tag);
+    assert.notEqual(verify().status, 0);
+    assert.throws(() => readFileSync(output));
   }
 });

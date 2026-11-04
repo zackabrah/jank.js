@@ -1,13 +1,29 @@
 # Publishing to npm
 
 The package is `jank.js`, published publicly to `https://registry.npmjs.org/`
-with the `latest` dist-tag. Runtime dependencies remain zero. Publishing is
+with `latest` for stable releases and `beta` for release candidates. Runtime
+dependencies remain zero. Publishing is
 manual; merging a PR or creating a version tag does not publish a package.
 
-The current `v1` branch is `1.0.0-rc.0` for local builds and packed consumer tests.
-The publication workflow still rejects prerelease versions. Merging the candidate
-promotes its version to `1.0.0`; publishing an RC would first require explicit
-prerelease support and a non-`latest` npm tag.
+The current `v1` branch is `1.0.0-rc.0`. Its package manifest and publication
+workflow both select npm's `beta` tag. This keeps the existing RC identity while
+providing an opt-in beta channel. Once published, consumers can use
+`npm install jank.js@beta` or pin `jank.js@1.0.0-rc.0`. Publishing the candidate
+does not change `latest`. Merging the candidate promotes its version to `1.0.0`
+and switches the manifest's publication tag to `latest`.
+
+## Prepare the beta tag
+
+After the candidate's checks pass and its clean commit is pushed to `v1`, create
+and push the matching immutable tag (for the first candidate, `v1.0.0-rc.0`).
+Do not move a release tag or reuse an npm version; use the next RC number for
+subsequent candidates. Keep the `rc0` branch as the first candidate reference.
+
+Dispatch **Publish npm package** from that tag with **dry_run** enabled. The
+workflow requires the tagged candidate to be reachable from `origin/v1`; stable
+release tags must be reachable from `origin/main`. It derives the npm tag from
+the validated version and requires `publishConfig.tag` to agree. Only stable
+`X.Y.Z` and candidate `X.Y.Z-rc.N` versions are supported.
 
 ## Prepare without publishing
 
@@ -59,10 +75,11 @@ through npm OIDC.
 
 Merge `.github/workflows/publish.yml` into main before using it. In GitHub Actions,
 open **Publish npm package**, choose **Run workflow**, and select the existing
-`vX.Y.Z` tag in **Use workflow from**. Keep **dry_run** enabled for the first run.
+`vX.Y.Z` or `vX.Y.Z-rc.N` tag in **Use workflow from**. Keep **dry_run** enabled for the first run.
 The tag must include this workflow and match `package.json`.
 
-The workflow rejects branch dispatches, mismatched tags, commits outside main,
+The workflow rejects branch dispatches, mismatched tags, commits outside the
+allowed source branch, incorrect npm channels,
 dirty source and stale build identities. It installs the pinned tools, runs the
 full release gate, packs the archive, previews publication and uploads the
 tarball as a workflow artifact. Selecting the tag as the workflow ref also keeps
@@ -72,7 +89,9 @@ Review the successful run and artifact. To publish, run the same workflow from
 the same tag with **dry_run** disabled. It repeats verification and publishes the
 tarball produced in that run. Concurrent publishing runs are serialized. npm
 rejects a version that already exists; rerunning a successful publication does
-not bump or overwrite it. Only stable `X.Y.Z` releases are supported here.
+not bump or overwrite it. The run summary records the selected npm channel.
+A dry run does not verify trusted-publisher permissions; the first real
+publication is still needed to confirm npm authorization.
 
 Version tags created by the version job do not trigger this workflow. See
 [versioning](versioning.md) for how merged PRs receive versions.

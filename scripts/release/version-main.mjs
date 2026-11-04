@@ -125,6 +125,8 @@ if (process.argv[2] === step.plan) {
 
   manifest.version = plan.version;
 
+  manifest.publishConfig.tag = "latest";
+
   writeFileSync("package.json", JSON.stringify(manifest, null, 2) + "\n");
 
   writeFileSync(

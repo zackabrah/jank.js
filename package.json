@@ -71,7 +71,7 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "tag": "latest"
+    "tag": "beta"
   },
   "author": "Isaac Johnson",
   "homepage": "https://github.com/zackabrah/jank.js#readme",

@@ -14,10 +14,11 @@ merge order, once each. `.release-state.json` records the last processed source
 commit; `VERSION_HISTORY.md` records the version assigned to each PR. Keep both
 files. Direct commits receive no independent bump.
 
-The `v1` branch is explicitly versioned `1.0.0-rc.0`. Builds and packed consumers
+The `v1` branch is explicitly versioned `1.0.0-rc.0`, with opt-in npm publication
+under the `beta` tag. Builds and packed consumers
 carry that candidate identity. When an `X.Y.Z-rc.N` candidate reaches main through
 a merged PR, its first version step promotes it to `X.Y.Z`, regardless of the PR's
-bump marker. Subsequent merged PRs receive the normal bumps. This prevents the v1
+bump marker, and switches `publishConfig.tag` from `beta` to `latest`. Subsequent merged PRs receive the normal bumps. This prevents the v1
 breaking-change marker from skipping straight to 2.0.0. With no new merged PR,
 the candidate version stays unchanged.
 
@@ -60,7 +61,7 @@ are embedded with Vite and do not add runtime dependencies or Git/network calls.
 Run `node --test scripts/release/*.test.mjs` for bump, duplicate and race checks.
 `pnpm check` includes these tests. The publication integration test uses a temporary
 local bare Git repository and a fake GitHub CLI; it does not contact a remote.
-It runs on macOS/Linux (the publishing job uses Ubuntu); Windows still runs the
+It runs on macOS/Linux (the version job uses Ubuntu); Windows still runs the
 pure semantic-version tests.
 
 References: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/),

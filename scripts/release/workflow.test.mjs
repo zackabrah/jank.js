@@ -58,7 +58,7 @@ await test(
 
       writeFileSync(
         join(repo, "package.json"),
-        JSON.stringify({ version: "0.1.0" }) + "\n",
+        JSON.stringify({ version: "0.2.0-rc.0", publishConfig: { tag: "beta" } }) + "\n",
       );
 
       writeFileSync(
@@ -124,6 +124,11 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
       assert.equal(
         JSON.parse(readFileSync(join(repo, "package.json"))).version,
         "0.2.0",
+      );
+
+      assert.equal(
+        JSON.parse(readFileSync(join(repo, "package.json"))).publishConfig.tag,
+        "latest",
       );
 
       // CI already ran its required gates. A developer hook must neither repeat them

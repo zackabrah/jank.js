@@ -25,7 +25,7 @@ pnpm pack --pack-destination artifacts
 
 Retain LICENSE, THIRD_PARTY_NOTICES.md and the licenses directory. The viewer embeds these notices. Review code provenance before publication. WebGPU timing support remains limited to the documented adapter contract; fallback tests do not validate hardware timing.
 
-Update CHANGELOG.md and commit verified changes. Merging a PR into main bumps the version and creates its tag, so don't do either by hand; see [versioning](versioning.md). Publish only when explicitly authorized, through [the manual workflow](publishing.md#run-the-manual-workflow). CI checks and uploads artifacts; it does not publish or deploy.
+Update CHANGELOG.md and commit verified changes. Merging a PR into main bumps the stable version and creates its tag, so don't do either by hand for stable releases; release-candidate tags follow the [beta procedure](publishing.md#prepare-the-beta-tag); see [versioning](versioning.md). Publish only when explicitly authorized, through [the manual workflow](publishing.md#run-the-manual-workflow). CI checks and uploads artifacts; it does not publish or deploy.
 
 ## Testing a build in another project
 
