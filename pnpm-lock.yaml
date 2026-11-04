@@ -50,6 +50,9 @@ importers:
       preact:
         specifier: 11.1.1
         version: 11.1.1
+      stats.js:
+        specifier: 0.17.0
+        version: 0.17.0
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
@@ -1669,6 +1672,9 @@ packages:
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
+
+  stats.js@0.17.0:
+    resolution: {integrity: sha512-hNKz8phvYLPEcRkeG1rsGmV5ChMjKDAWU7/OJJdDErPBNChQXxCo3WZurGpnWc6gZhAzEPFad1aVgyOANH1sMw==}
 
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
@@ -3301,6 +3307,8 @@ snapshots:
   smol-toml@1.9.1: {}
 
   source-map-js@1.2.2: {}
+
+  stats.js@0.17.0: {}
 
   std-env@4.3.0: {}
 
