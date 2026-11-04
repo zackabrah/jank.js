@@ -78,22 +78,20 @@ follow-up. Two earlier Firefox cases required retries, then passed focused rerun
 and subsequent full suites without retries.
 
 Still required for release: upload the custom social image (GitHub currently uses
-its generated card); deprecate `0.0.0-stage`; resolve the [design-token provenance](#design-token-licensing-review--5-november-2026);
-configure/verify npm trusted publishing when ready to publish; run CI on
+its generated card); deprecate `0.0.0-stage`; configure/verify npm trusted publishing
+when ready to publish; run CI on
 the final pushed commit; open and merge the release PR, then explicitly run the
 publication workflow. The local test gates and hardware measurements do not verify
 npm publishing permissions or license provenance.
 
 ## Design-token licensing review — 5 November 2026
 
-No licensing conflict was established from using the colour values themselves;
-the original source of the token definitions remains unverified. This finding
-does not close the release checklist's provenance item or establish legal clearance.
-
-[`src/theme.css`](../src/theme.css) identifies the source as a Geist-inspired jank
-design canvas. The file was introduced in `52bda12`, but the tracked repository
-and commit history do not include that canvas or an upstream licence establishing
-whether the definitions were independently authored or copied.
+Provenance confirmed by the author, Isaac Johnson, on 5 November 2026: the jank
+design canvas and theme definitions were written by him. The Geist-inspired
+[`src/theme.css`](../src/theme.css), introduced in `52bda12`, is original project
+code covered by the repository's [MIT licence](../LICENSE). This closes the
+design-token provenance and licensing item for release. The evidence is the
+author's direct confirmation; it is not a third-party source audit.
 
 [Vercel's colour documentation](https://vercel.com/geist/colors) offers raw values
 for copying. No explicit MIT or equivalent redistribution licence for the complete
@@ -105,10 +103,6 @@ The [US Copyright Office's guidance, §313.4(K)](https://www.copyright.gov/comp3
 distinguishes colours themselves from protectable original arrangements.
 [IP Australia](https://ipfirstresponse.ipaustralia.gov.au/options/infringement-101-copyright-infringement)
 likewise distinguishes ideas from protected expression, including software code.
-These sources support distinguishing an independently implemented palette from a
-copied stylesheet; they do not establish the provenance of this implementation.
-
-To close the item, document the canvas's original source and any applicable licence.
-If that history cannot be established, replace the uncertain definitions with a
-documented, permissively licensed palette. Attribution alone does not establish
-permission, and Geist must not be described as MIT-licensed without supporting evidence.
+These sources distinguish an independently implemented palette from a copied
+stylesheet. The project's MIT licence covers its own implementation; it does not
+assert that Vercel's Geist design system is MIT-licensed.
