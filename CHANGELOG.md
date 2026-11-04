@@ -25,7 +25,7 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - Over-budget readings follow the display: when CPU and GPU work leave plenty of the frame unused, the panel, viewer, comparison and analyzer count slow frames from the display's pace and say so, and comparison frame results read `Display-paced`. Sustained and episode capture rules follow it too, so they no longer fire repeatedly on a smooth run; a spike rule keeps its own threshold. This needs GPU timing that covers all of a frame's work, so the renderer adapters' sources, which can't assert that, keep the budget.
 - A prototype agent interface: `jank.js/agent` adds `window.jank` to a host, the package's `jank analyze` reads a saved recording or comparison, and this repository's unpublished `pnpm jank experiment` compares two builds. See [the guide](docs/agent-interface.md).
 
-### Earlier, for the 0.3 panel
+## 0.3.0 — 2026-11-01
 
 - Build the recording viewer on junkui too. Its root carries `jl`, and junkui now supplies its type, reset, focus, dim text, primary button and screen-reader text; the documented `--jank-*` overrides still apply. junkui keeps buttons' labels centred and `<summary>` disclosure markers, which its reset had removed.
 - Centre the viewer's button labels as the panel's are, and space its status bar again: the frame mark shows and "FRAME 61" no longer runs into the range beside it.
@@ -41,10 +41,19 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - Line up the CAPTURE tab's ON/OFF toggles and status chips: they share one box, so ON and OFF sit in a straight column.
 - Make the panel easier to read. The graph's text stays still: the worst frame's time sits in the top-left corner and the newest event's label, with its age, sits under the graph, while only the worst-frame marker and event ticks move with the bars. Over-budget ▲ markers are drawn as tall as the digits they mark and are named "over budget" for screen readers. The mini readout splits into three equal columns, so readings keep their place as digits change; an extreme value keeps its digits and its unit gives way.
 - Add `jank.js/adapters/webgl2`, which times named WebGL2 render passes with `EXT_disjoint_timer_query_webgl2` and links each sample to the frame that drew it. Where the browser doesn't expose the extension it reports `unsupported` rather than estimating GPU time from CPU timing.
+
+## 0.2.1 — 2026-10-27
+
+Tagged, not published to npm.
+
 - Use system monospace fonts in the panel and offline viewer, removing bundled font downloads. The `jank.js/font.css` export remains as an empty compatibility stylesheet.
 - Minify packaged panel CSS while retaining the `--jank-*` theming properties.
 
-## 0.1.0 — Unreleased
+## 0.2.0 — 2026-10-27
+
+- Fix the viewer's pointer release and hit testing (#1).
+
+## 0.1.0 — 2026-10-27
 
 Initial public release.
 

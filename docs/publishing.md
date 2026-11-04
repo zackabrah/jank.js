@@ -25,40 +25,15 @@ npm publish ./artifacts/npm/jank.js-X.Y.Z.tgz --dry-run --ignore-scripts
 ```
 
 The package allowlist includes the built library, optional adapters, TypeScript
-declarations, CSS, fonts, offline viewer, license notices and selected project
+declarations, empty compatibility stylesheets, offline viewer, license notices and selected project
 documents. Source checkouts, test fixtures, screenshots, CI scripts and private
 demo content are not shipped. A dry run checks packaging, not npm ownership or
 permission to publish.
 
-## First publication
+## Configure GitHub releases
 
-On 28 October 2026 the public registry returned 404 for `jank.js`. That does not
-reserve the name or guarantee npm will accept it; recheck before the first
-publish. Use the npm account intended to own this package, with 2FA enabled.
-
-The package must exist before its trusted publisher can be configured. The
-first publication therefore uses an interactive npm login. After the release
-source has merged to main, select its matching version tag and prepare the
-archive as above. If the initial version has no tag yet, create and push that
-tag separately only when the release is approved; do not move an existing tag.
-Use the version actually in `package.json`, since merging may bump it.
-
-The following commands publish publicly; they are not preparation commands:
-
-```sh
-npm login --registry=https://registry.npmjs.org/
-npm whoami --registry=https://registry.npmjs.org/
-npm publish ./artifacts/npm/jank.js-X.Y.Z.tgz --access public --ignore-scripts
-```
-
-Complete any npm/browser 2FA prompt yourself. Do not put credentials in this
-repository. Publishing the tarball uses the reviewed build without rebuilding
-it. A name/version pair cannot be reused after publication.
-
-## Configure subsequent GitHub releases
-
-After the first publication, configure a GitHub Actions trusted publisher in
-the package settings on npm:
+The package is on npm, with 0.3.0 as `latest`. Configure a GitHub Actions trusted
+publisher in its settings on npm:
 
 - Organization or user: `zackabrah`
 - Repository: `jank.js`
@@ -72,12 +47,8 @@ tags used for releases. No `NPM_TOKEN` secret is required. Configure trust when
 the next release is ready: a new npm trust configuration expires if it does not
 complete its first successful publication within two days.
 
-The repository was private when publishing was prepared. Trusted publishing
-works without provenance in that case. Public packages built in public
-repositories receive provenance automatically through npm OIDC. The workflow
-does not change repository visibility or force provenance on a private source.
-The README's GitHub-hosted images and documentation links also require a public
-repository to be accessible to npm users.
+Public packages built in public repositories receive provenance automatically
+through npm OIDC.
 
 ## Run the manual workflow
 
