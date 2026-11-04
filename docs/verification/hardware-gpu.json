@@ -1,0 +1,625 @@
+{
+  "measuredAt": "2026-11-04T20:40:24.629082+00:00",
+  "baseCommit": "1fa3b046a9b048f9bd5a1a6a3d0fb8d33ce382b5",
+  "sourceState": "Current working tree, including pre-existing measurement/reporting edits; those edits are not part of the hardware-test commit.",
+  "sourceSha256": {
+    "src/gpu/webgl2.ts": "e353e763ecd21d8247c8dceb5511dd2431501ce73e9e0a5f7287ad838c8432da",
+    "src/gpu/webgpu.ts": "4f5ee7199637180eb95d9c3eb7ae36f4b77a8ba29cf05863ed4a7ac7f8a0294c",
+    "src/gpu/model.ts": "6f03f8a8d8d281b100742360066ae06d113df3fc4c0972090726aa5387a1459f",
+    "src/gpu/history.ts": "a3907693241cf124c1302e5656c87ebd0ad93e4469b4dc222948c20f92aec1fd",
+    "src/adapters/three-device.ts": "cfecbc97060d74a5e9b27e9c1ea7f19883a9725560ecf0962f6fc75851b7d232",
+    "e2e/hardware-gpu-probe.ts": "112f64fd783b87bd78c5503d5b10eca27de0740debf999193305b31075f48ab9",
+    "e2e/hardware-gpu.spec.ts": "94921c6437d2e4227e435d6de3eca8c21cae2b5b0a526d0ddd88c04d64fa2ebd"
+  },
+  "method": {
+    "nativeAccuracy": "480 retained frames per backend and machine; 3 blocks of 1x/4x/4x/1x work, 16 warm-up and 40 retained samples per trial. Independent native result decoding, not an independent physical clock.",
+    "renderWork": "1024x1024, 256-iteration fragment shader, additive blending; 1 or 4 draws per pass.",
+    "computeWork": "WebGPU only: 262144 storage elements, 1024 dependent integer iterations, 1 or 4 dispatches per pass.",
+    "overhead": "Baseline and GPU stress playground presets; 3 blocks of probes off/on/on/off per workload; 1 second warm-up and 2 seconds recording per trial.",
+    "comparison": "Median trial values; noise is the larger full range within either probe setting. Descriptive, not a statistical significance test.",
+    "gpuPrecision": "Observed duration grid is the GCD of returned duration nanoseconds, not a guarantee of timer resolution or absolute accuracy."
+  },
+  "machines": [
+    {
+      "machine": "mac",
+      "os": "macOS 26.5.2",
+      "gpu": "Apple M3 Max (30 GPU cores)",
+      "backends": [
+        {
+          "backend": "webgl2",
+          "chrome": "156.0.8078.80",
+          "environment": {
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+            "isolated": false,
+            "resolution": [
+              1024,
+              1024
+            ],
+            "visibility": "visible",
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)"
+          },
+          "driverVersions": [
+            "26.5.2"
+          ],
+          "accuracy": {
+            "retainedFrames": 480,
+            "retainedPasses": 480,
+            "maxNativeDurationDifferenceMs": 0.0,
+            "observedDurationGridMs": 1e-06,
+            "scalingBlocks": [
+              {
+                "block": 0,
+                "lightMs": 0.970499,
+                "heavyMs": 3.762625,
+                "ratio": 3.877000388459957
+              },
+              {
+                "block": 1,
+                "lightMs": 0.959,
+                "heavyMs": 3.762,
+                "ratio": 3.9228362877997918
+              },
+              {
+                "block": 2,
+                "lightMs": 0.956958,
+                "heavyMs": 3.764166,
+                "ratio": 3.933470434439129
+              }
+            ],
+            "checks": [
+              "elapsed durations exactly match native nanosecond query results",
+              "complete-empty frame",
+              "32 timed passes / 8 capacity omissions",
+              "disable rejects pending work; disabled passes stay missing",
+              "probe re-enable recovers",
+              "native context loss and restored timing epoch"
+            ],
+            "rawArtifact": "artifacts/hardware-gpu/mac-calibrated/hardware-gpu-webgl2-hardwa-5a8aa-s-scaling-capacity-and-loss-chrome-gpu/accuracy.json"
+          },
+          "overhead": [
+            {
+              "workload": "Baseline",
+              "trials": 12,
+              "onFrames": 1741,
+              "completeOnFrames": 1741,
+              "allFrames": 3484,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 0.108562,
+              "gpuP95Ms": 0.49775,
+              "cpuMedianMs": {
+                "offMedian": 0.1,
+                "onMedian": 0.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.0,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.2,
+                "onMedian": 0.2,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 8.35,
+                "onMedian": 8.4,
+                "delta": 0.05,
+                "sameSettingRange": 0.2,
+                "deltaWithinObservedRange": true
+              }
+            },
+            {
+              "workload": "GPU stress",
+              "trials": 12,
+              "onFrames": 1744,
+              "completeOnFrames": 1744,
+              "allFrames": 3488,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 1.457602,
+              "gpuP95Ms": 4.132748,
+              "cpuMedianMs": {
+                "offMedian": 0.1,
+                "onMedian": 0.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.0,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.25,
+                "onMedian": 0.2,
+                "delta": -0.05,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 8.35,
+                "onMedian": 8.5,
+                "delta": 0.15,
+                "sameSettingRange": 0.3,
+                "deltaWithinObservedRange": true
+              }
+            }
+          ],
+          "validZeroDurationPassesInRecordings": 0,
+          "overheadArtifact": "artifacts/hardware-gpu/mac-calibrated/hardware-gpu-webgl2-hardwa-7de81-head-and-recording-fidelity-chrome-gpu/overhead.json",
+          "verificationRerun": {
+            "retainedFrames": 480,
+            "scalingBlocks": [
+              {
+                "block": 0,
+                "lightMs": 0.965791,
+                "heavyMs": 3.7615,
+                "ratio": 3.894734989247156
+              },
+              {
+                "block": 1,
+                "lightMs": 0.955624,
+                "heavyMs": 3.763291,
+                "ratio": 3.938045716725407
+              },
+              {
+                "block": 2,
+                "lightMs": 0.96325,
+                "heavyMs": 3.763208,
+                "ratio": 3.9067822475992733
+              }
+            ],
+            "rawArtifact": "artifacts/hardware-gpu/mac-final-verification/hardware-gpu-webgl2-hardwa-5a8aa-s-scaling-capacity-and-loss-chrome-gpu/accuracy.json"
+          }
+        },
+        {
+          "backend": "webgpu",
+          "chrome": "156.0.8078.80",
+          "environment": {
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+            "isolated": false,
+            "resolution": [
+              1024,
+              1024
+            ],
+            "visibility": "visible",
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "fallback": false
+            }
+          },
+          "driverVersions": [
+            "26.5.2"
+          ],
+          "accuracy": {
+            "retainedFrames": 480,
+            "retainedPasses": 960,
+            "maxNativeDurationDifferenceMs": 0.0,
+            "observedDurationGridMs": 0.065536,
+            "scalingBlocks": [
+              {
+                "block": 0,
+                "lightMs": 2.4248320000000003,
+                "heavyMs": 9.437184,
+                "ratio": 3.8918918918918917
+              },
+              {
+                "block": 1,
+                "lightMs": 2.359296,
+                "heavyMs": 9.50272,
+                "ratio": 4.027777777777778
+              },
+              {
+                "block": 2,
+                "lightMs": 2.4248320000000003,
+                "heavyMs": 9.895935999999999,
+                "ratio": 4.08108108108108
+              }
+            ],
+            "checks": [
+              "render/compute duration and relative endpoints exactly match independent raw readback",
+              "complete-empty frame",
+              "32 timed passes / 8 capacity omissions",
+              "eight-slot readback exhaustion and recovery",
+              "disable rejects pending work; disabled passes stay missing",
+              "probe re-enable recovers",
+              "native device destruction rejects outstanding queries"
+            ],
+            "rawArtifact": "artifacts/hardware-gpu/mac-calibrated/hardware-gpu-webgpu-hardwa-50b46-s-scaling-capacity-and-loss-chrome-gpu/accuracy.json"
+          },
+          "overhead": [
+            {
+              "workload": "Baseline",
+              "trials": 12,
+              "onFrames": 1741,
+              "completeOnFrames": 1741,
+              "allFrames": 3486,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 0.065536,
+              "gpuP95Ms": 0.294912,
+              "cpuMedianMs": {
+                "offMedian": 0.2,
+                "onMedian": 0.2,
+                "delta": 0.0,
+                "sameSettingRange": 0.0,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.35,
+                "onMedian": 0.3,
+                "delta": -0.05,
+                "sameSettingRange": 0.2,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 8.4,
+                "onMedian": 8.35,
+                "delta": -0.05,
+                "sameSettingRange": 0.4,
+                "deltaWithinObservedRange": true
+              }
+            },
+            {
+              "workload": "GPU stress",
+              "trials": 12,
+              "onFrames": 1744,
+              "completeOnFrames": 1744,
+              "allFrames": 3489,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 1.703936,
+              "gpuP95Ms": 5.89824,
+              "cpuMedianMs": {
+                "offMedian": 0.4,
+                "onMedian": 0.4,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.6,
+                "onMedian": 0.5,
+                "delta": -0.1,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 8.5,
+                "onMedian": 8.45,
+                "delta": -0.05,
+                "sameSettingRange": 0.3,
+                "deltaWithinObservedRange": true
+              }
+            }
+          ],
+          "validZeroDurationPassesInRecordings": 1378,
+          "overheadArtifact": "artifacts/hardware-gpu/mac-calibrated/hardware-gpu-webgpu-hardwa-99443-head-and-recording-fidelity-chrome-gpu/overhead.json",
+          "verificationRerun": {
+            "retainedFrames": 480,
+            "scalingBlocks": [
+              {
+                "block": 0,
+                "lightMs": 3.145728,
+                "heavyMs": 9.437184,
+                "ratio": 3
+              },
+              {
+                "block": 1,
+                "lightMs": 2.555904,
+                "heavyMs": 9.437184,
+                "ratio": 3.6923076923076925
+              },
+              {
+                "block": 2,
+                "lightMs": 2.359296,
+                "heavyMs": 9.437184,
+                "ratio": 4
+              }
+            ],
+            "rawArtifact": "artifacts/hardware-gpu/mac-final-verification/hardware-gpu-webgpu-hardwa-50b46-s-scaling-capacity-and-loss-chrome-gpu/accuracy.json"
+          }
+        }
+      ]
+    },
+    {
+      "machine": "windows",
+      "os": "Windows 11 Pro 10.0.26200",
+      "gpu": "AMD Radeon RX 7800 XT",
+      "backends": [
+        {
+          "backend": "webgl2",
+          "chrome": "156.0.8078.80",
+          "environment": {
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+            "isolated": false,
+            "resolution": [
+              1024,
+              1024
+            ],
+            "visibility": "visible",
+            "renderer": "ANGLE (AMD, AMD Radeon RX 7800 XT (0x0000747E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+          },
+          "driverVersions": [
+            "10.0.26100.9711",
+            "32.0.21042.62"
+          ],
+          "accuracy": {
+            "retainedFrames": 480,
+            "retainedPasses": 480,
+            "maxNativeDurationDifferenceMs": 0.0,
+            "observedDurationGridMs": 4e-05,
+            "scalingBlocks": [
+              {
+                "block": 0,
+                "lightMs": 0.17588,
+                "heavyMs": 0.68004,
+                "ratio": 3.8664998862861037
+              },
+              {
+                "block": 1,
+                "lightMs": 0.17576,
+                "heavyMs": 0.68016,
+                "ratio": 3.8698224852071004
+              },
+              {
+                "block": 2,
+                "lightMs": 0.17532,
+                "heavyMs": 0.68012,
+                "ratio": 3.879306411133926
+              }
+            ],
+            "checks": [
+              "elapsed durations exactly match native nanosecond query results",
+              "complete-empty frame",
+              "32 timed passes / 8 capacity omissions",
+              "disable rejects pending work; disabled passes stay missing",
+              "probe re-enable recovers",
+              "native context loss and restored timing epoch"
+            ],
+            "rawArtifact": "artifacts/hardware-gpu/windows-calibrated/hardware-gpu-webgl2-hardwa-5a8aa-s-scaling-capacity-and-loss-chrome-gpu/accuracy.json"
+          },
+          "overhead": [
+            {
+              "workload": "Baseline",
+              "trials": 12,
+              "onFrames": 689,
+              "completeOnFrames": 689,
+              "allFrames": 1379,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 0.0247,
+              "gpuP95Ms": 0.0258,
+              "cpuMedianMs": {
+                "offMedian": 0.1,
+                "onMedian": 0.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.15,
+                "onMedian": 0.2,
+                "delta": 0.05,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 18.1,
+                "onMedian": 18.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              }
+            },
+            {
+              "workload": "GPU stress",
+              "trials": 12,
+              "onFrames": 690,
+              "completeOnFrames": 690,
+              "allFrames": 1377,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 0.50796,
+              "gpuP95Ms": 3.256805,
+              "cpuMedianMs": {
+                "offMedian": 0.2,
+                "onMedian": 0.2,
+                "delta": 0.0,
+                "sameSettingRange": 0.0,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.3,
+                "onMedian": 0.3,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 18.1,
+                "onMedian": 18.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.3,
+                "deltaWithinObservedRange": true
+              }
+            }
+          ],
+          "validZeroDurationPassesInRecordings": 0,
+          "overheadArtifact": "artifacts/hardware-gpu/windows-calibrated/hardware-gpu-webgl2-hardwa-7de81-head-and-recording-fidelity-chrome-gpu/overhead.json"
+        },
+        {
+          "backend": "webgpu",
+          "chrome": "156.0.8078.80",
+          "environment": {
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+            "isolated": false,
+            "resolution": [
+              1024,
+              1024
+            ],
+            "visibility": "visible",
+            "adapter": {
+              "vendor": "amd",
+              "architecture": "rdna-3",
+              "device": "",
+              "description": "",
+              "fallback": false
+            }
+          },
+          "driverVersions": [
+            "10.0.26100.9711",
+            "32.0.21042.62"
+          ],
+          "accuracy": {
+            "retainedFrames": 480,
+            "retainedPasses": 960,
+            "maxNativeDurationDifferenceMs": 0.0,
+            "observedDurationGridMs": 0.065536,
+            "scalingBlocks": [
+              {
+                "block": 0,
+                "lightMs": 0.393216,
+                "heavyMs": 1.6383999999999999,
+                "ratio": 4.166666666666666
+              },
+              {
+                "block": 1,
+                "lightMs": 0.393216,
+                "heavyMs": 1.6384,
+                "ratio": 4.166666666666667
+              },
+              {
+                "block": 2,
+                "lightMs": 0.393216,
+                "heavyMs": 1.6383999999999999,
+                "ratio": 4.166666666666666
+              }
+            ],
+            "checks": [
+              "render/compute duration and relative endpoints exactly match independent raw readback",
+              "complete-empty frame",
+              "32 timed passes / 8 capacity omissions",
+              "eight-slot readback exhaustion and recovery",
+              "disable rejects pending work; disabled passes stay missing",
+              "probe re-enable recovers",
+              "native device destruction rejects outstanding queries"
+            ],
+            "rawArtifact": "artifacts/hardware-gpu/windows-calibrated/hardware-gpu-webgpu-hardwa-50b46-s-scaling-capacity-and-loss-chrome-gpu/accuracy.json"
+          },
+          "overhead": [
+            {
+              "workload": "Baseline",
+              "trials": 12,
+              "onFrames": 687,
+              "completeOnFrames": 687,
+              "allFrames": 1375,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 0.065536,
+              "gpuP95Ms": 0.131072,
+              "cpuMedianMs": {
+                "offMedian": 0.2,
+                "onMedian": 0.2,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.25,
+                "onMedian": 0.3,
+                "delta": 0.05,
+                "sameSettingRange": 0.2,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 18.1,
+                "onMedian": 18.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.2,
+                "deltaWithinObservedRange": true
+              }
+            },
+            {
+              "workload": "GPU stress",
+              "trials": 12,
+              "onFrames": 688,
+              "completeOnFrames": 688,
+              "allFrames": 1378,
+              "pending": 0,
+              "rejected": 0,
+              "gpuMedianMs": 0.458752,
+              "gpuP95Ms": 0.786432,
+              "cpuMedianMs": {
+                "offMedian": 0.5,
+                "onMedian": 0.5,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "cpuP95Ms": {
+                "offMedian": 0.7,
+                "onMedian": 0.7,
+                "delta": 0.0,
+                "sameSettingRange": 0.1,
+                "deltaWithinObservedRange": true
+              },
+              "frameP95Ms": {
+                "offMedian": 18.1,
+                "onMedian": 18.1,
+                "delta": 0.0,
+                "sameSettingRange": 0.2,
+                "deltaWithinObservedRange": true
+              }
+            }
+          ],
+          "validZeroDurationPassesInRecordings": 2702,
+          "overheadArtifact": "artifacts/hardware-gpu/windows-calibrated/hardware-gpu-webgpu-hardwa-99443-head-and-recording-fidelity-chrome-gpu/overhead.json"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "severity": "reporting gap",
+      "component": "src/agent/analyze.ts describeGpu",
+      "observation": "WebGL recordings with complete timed elapsed queries report spanMs:null, passSumMs:null and passes:[] in the CLI. The unavailable span is correct, but elapsed pass summaries are also omitted.",
+      "reproduction": "Analyze an enabled WebGL trial with pnpm -s jank analyze. One Mac baseline trial reports 290/290 complete while passSumMs is null. The panel-derived median pass sum in that trial is retained below.",
+      "fixed": false
+    },
+    {
+      "severity": "measurement limitation",
+      "observation": "Both Chrome 156 WebGPU implementations returned durations on a 0.065536 ms grid; do not interpret the nanosecond storage unit as precision."
+    },
+    {
+      "severity": "fixture lesson",
+      "observation": "Repeated opaque draws did not reliably scale on the Apple tile renderer. Additive blending makes each draw contribute. Empty timestamped compute passes returned unusable values on the Mac; capacity tests now submit real work. Native context restoration must wait until loss-event dispatch finishes."
+    }
+  ],
+  "verification": {
+    "integrationCasesPerMachine": 12,
+    "hardwareCasesPerMachine": 4,
+    "unitTests": 403,
+    "nodeScriptTests": 16,
+    "pnpmFix": "passed",
+    "pnpmCheck": "passed",
+    "pnpmTestPackage": "passed"
+  },
+  "limitations": [
+    "No independent Metal/Radeon GPU-profiler or external oscillator calibration; comparison uses browser-exposed GPU query results.",
+    "Only installed Chrome 156 on these two devices and drivers; no claim for other browsers or driver versions.",
+    "GPU spans and pass sums are not utilization, presentation latency, or whole-device work. WebGPU passes may overlap.",
+    "On/off recordings remain instrumented and largely display paced; no observable median CPU delta does not establish zero overhead.",
+    "No real driver reset, thermal sweep, long-duration soak, or naturally occurring WebGL disjoint event was forced. API-level loss and simulated error paths are tested.",
+    "Short or empty timestamped passes can be quantized or unusable; missing/rejected values must not be replaced with zero.",
+    "The Mac verification rerun overlapped repository CPU checks; its ratios are retained separately rather than substituted for the primary workload trials."
+  ],
+  "totals": {
+    "retainedAccuracyFrames": 1920,
+    "retainedNativePassComparisons": 2880,
+    "recordings": 96,
+    "recordedFrames": 19456,
+    "completeEnabledGpuFrames": 9724,
+    "timedZeroPasses": 4080
+  }
+}

@@ -149,8 +149,8 @@ with 32 timed passes. It records up to 256 invocation details, counting addition
 omissions. Query resources are adapter-owned; the device remains host-owned.
 Create a new history when replacing the device/collector or restarting frame IDs.
 
-Current WebGPU rules coarsen timestamps to 0.1 ms or more; nanosecond units do not
-imply nanosecond accuracy. Actual adapter resolution stays unknown unless the host
+WebGPU reduces timestamp precision; nanosecond units do not imply nanosecond
+accuracy. Actual adapter resolution stays unknown unless the host
 has evidence. Cross-origin isolation does not improve GPU timestamp precision.
 Negative deltas are rejected; large origins are subtracted as bigint first.
 Sources: [WebGPU timestamps](https://gpuweb.github.io/gpuweb/#timestamp-query),
@@ -180,9 +180,100 @@ resource bounds, device loss, precision, codec validation and capture lifecycle.
 Playwright checks capture/viewer coverage, export/import and cancellation.
 The default headless Chromium checks expose neither a WebGPU adapter nor WebGL
 timer queries. `pnpm test:e2e:gpu` additionally exercises both native sources in
-installed Chrome; this verifies operation, not timing accuracy. Before
-trusting optimization claims, validate on physical GPUs: repeat warmed scenes,
-compare instrumentation on/off, retain spikes and missing rates, and compare
-GPU distributions with frame pacing/throughput. See the
+installed Chrome. Its integration cases verify operation; `e2e/hardware-gpu.spec.ts`
+also verifies native-query conversion, workload scaling, capacity and loss handling,
+and probe on/off recordings. Before trusting optimization claims, repeat warmed
+scenes, retain spikes and missing rates, and compare GPU distributions with frame
+pacing/throughput. See the
 [WebGPU timing experiment](https://webgpufundamentals.org/webgpu/lessons/webgpu-timing.html)
 for why timestamps alone do not establish application performance.
+
+## Measured hardware results — 5 November 2026
+
+Chrome 156 on macOS 26.5.2 (Apple M3 Max, 30 GPU cores) and Windows 11
+(AMD Radeon RX 7800 XT, driver 32.0.21042.62) passed all 12 integration cases and
+all four hardware cases per machine. The [measured report](verification/hardware-gpu.json)
+retains source hashes, environment, scaling blocks, overhead comparisons and artifact paths.
+
+| Device | API | Retained frames | Maximum native-duration difference | 4× work / 1× work, primary blocks |
+| --- | --- | ---: | ---: | ---: |
+| Apple M3 Max | WebGL2 / Metal | 480 | 0 ms | 3.88–3.93× |
+| Apple M3 Max | WebGPU / Metal | 480 | 0 ms | 3.89–4.08× |
+| Radeon RX 7800 XT | WebGL2 / D3D11 | 480 | 0 ms | 3.87–3.88× |
+| Radeon RX 7800 XT | WebGPU | 480 | 0 ms | 4.17× |
+
+Across 96 on/off recordings, 19,456 CPU frames retained exact GPU frame links.
+All 9,724 frames captured with probes enabled had complete timing coverage after
+finalization. Disabled work stayed omitted, and 4,080 valid zero-duration pass
+measurements remained measured zero. Exports preserved the GPU evidence exactly.
+
+No median instrumented CPU difference was resolved in these recordings.
+Frame p95 differences ranged from −0.05 to +0.15 ms and stayed within observed
+same-setting variation. These largely display-paced runs do not prove zero probe
+cost or GPU-bound throughput neutrality. The Mac verification rerun, overlapping
+repository CPU checks, retained exact native agreement but showed WebGPU scaling
+of 3.0–4.0×; it is preserved separately in the report.
+
+Both WebGPU backends returned durations on an observed 0.065536 ms grid. That is
+an observed representation pattern, not a resolution guarantee or calibration.
+Small workloads were much noisier relative to this grid, so the scaling fixture
+uses longer shaders and dispatches. Repeated opaque draws and empty compute passes
+were unsuitable calibration workloads; see the fixture notes in the report.
+
+**Reporting gap found:** the CLI currently suppresses WebGL GPU pass summaries
+when no start/end span exists. A hardware capture with 290/290 complete frames
+returns `spanMs: null` (correct) but also `passSumMs: null` and `passes: []`, despite
+valid elapsed timings. The panel and exported invocation records retain those
+durations. This validation change leaves that separate reporting issue open.
+
+## Reproducing hardware validation
+
+Run `pnpm test:e2e:gpu` on an idle interactive desktop with installed Chrome. It
+uses one worker and no unsafe GPU flags. Unsupported timers and software adapters
+fail the accuracy cases rather than counting as passes. The normal headless suite
+skips these hardware-only cases.
+
+The accuracy fixture renders at 1024 × 1024, with additive blending so repeated
+draws cannot be removed as hidden opaque work. WebGPU also dispatches a storage-buffer
+compute workload. Three A–B–B–A blocks compare one versus four repetitions, with
+16 warm-up and 40 retained samples per trial. Every WebGL duration is checked
+against the native elapsed-query value. WebGPU query sets are independently
+resolved into separate buffers and checked against Jank's durations and relative
+endpoints. Raw nanoseconds are retained as strings. CPU submission-to-readback
+completion is only an upper bound on an individual GPU pass, not an equal clock.
+
+The lifecycle cases exercise the 32-pass limit, the WebGPU eight-slot readback
+pool, timing toggles, native WebGL loss/restoration and WebGPU device destruction.
+Real disjoint events and driver resets are not forced; their failure paths also
+have unit tests. Empty frame inventories are separate from timestamped passes
+that contain no commands: a backend may return unusable timestamps for the latter.
+
+Separate playground trials compare probes off/on/on/off in three blocks for each
+of Baseline and GPU stress: one second warm-up and two seconds recording per trial.
+They check exact CPU/GPU frame matching, missing versus measured values, drained
+pending queries and export/import fidelity. The agent report is read first; raw
+recordings and `overhead.json` retain the evidence. Read changes beside the
+variation between same-setting trials, especially when frame pacing is display-limited.
+Disabling probes removes native queries/readbacks but leaves recording and metadata;
+this is not the cost of removing all instrumentation.
+
+`accuracy.json`, `overhead.json` and recording files are saved in each Playwright
+test's output directory. These tests establish correct use of browser-exposed
+timers and sensitivity to workload, not independent calibration of GPU clock
+frequency or whole-device utilization. Native timestamps still inherit browser
+precision, driver behavior, scheduling and power-state effects.
+
+For another machine, start `chromium.launchServer({ channel: "chrome", headless:
+false, host: "127.0.0.1", port: 9232 })` from the **interactive desktop** using the
+same Playwright version as this checkout. Print its `wsEndpoint()`. Forward that
+loopback port locally and reverse-forward the development server:
+
+```sh
+ssh -N -L 9232:127.0.0.1:9232 -R 4178:127.0.0.1:4178 <windows-host>
+JANK_GPU_WS=ws://127.0.0.1:9232/<returned-path> pnpm test:e2e:gpu
+```
+
+Use the Playwright server protocol here, not a CDP URL: downloads must be
+transferred between machines. The tests use `saveAs` so local and remote downloads
+follow the same assertions. Keep the endpoint private and close the test browser
+and forwarding sessions afterward.

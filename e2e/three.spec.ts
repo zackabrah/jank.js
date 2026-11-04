@@ -204,8 +204,8 @@ for (const backend of ["webgl2", "webgpu"] as const) {
       .getByRole("listitem", { name: "Capture C1", exact: true })
       .getByRole("button", { name: "Export capture C1", exact: true })
       .click();
-    const path = await (await downloading).path();
-    if (!path) throw new Error("Missing scene recording export");
+    const path = info.outputPath("scene-recording.json");
+    await (await downloading).saveAs(path);
     const recording = parseRecording(await readFile(path, "utf8"));
     expect(recording.systems.find((system) => system.id === "submission")?.values).toMatchObject({
       backend,
@@ -357,8 +357,8 @@ for (const [backend, kind, label, chromiumDetail, webkitDetail] of [
     await expect(saved).toBeVisible();
     const downloading = page.waitForEvent("download");
     await saved.getByRole("button", { name: "Export capture C2", exact: true }).click();
-    const path = await (await downloading).path();
-    if (!path) throw new Error("Missing fault recording");
+    const path = info.outputPath("fault-recording.json");
+    await (await downloading).saveAs(path);
     const recording = parseRecording(await readFile(path, "utf8"));
     const event = recording.events.find((item) => item.label === label);
     expect(event?.detail).toMatch(new RegExp(detail, "i"));
@@ -531,8 +531,9 @@ async function comparisonPanel(
 async function exported(page: Page, button: Locator) {
   const download = page.waitForEvent("download");
   await button.click();
-  const path = await (await download).path();
-  if (!path) throw new Error("Missing comparison download");
+  const result = await download;
+  const path = test.info().outputPath(result.suggestedFilename());
+  await result.saveAs(path);
   return path;
 }
 
