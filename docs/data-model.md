@@ -17,7 +17,7 @@ The [user manual](user-manual.md) describes the live panel and recording viewer.
 | One-file offline viewer         | `OPEN RECORDING VIEWER.html` imports a local JSON without network requests.                                                                                               |
 | Timer and environment context   | Every v2 recording stores CPU timer observations, isolation status, browser/platform, concurrency, viewport and application/version metadata. Unknown values remain null. |
 
-Also implemented: manual recording, a bounded rolling history, automatic spike windows with cooldown, configurable FPS budgets, frame/range inspection, v1 migration, strict import validation and lifecycle cleanup. Existing optional renderer counters, loading, visibility and temporal sources remain available through the tray's host interfaces.
+Also implemented: manual recording, a bounded rolling history, automatic spike windows with cooldown, configurable FPS budgets, frame/range inspection, v1 migration, strict import validation and lifecycle cleanup. Loading comes through the panel's `loading` option, and renderer counters and other host values appear under Counters.
 
 ## Building a live panel
 

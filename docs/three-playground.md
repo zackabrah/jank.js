@@ -54,7 +54,7 @@ The event graph locates receipt time, not the operation that caused the error.
 A failure after the last sealed frame remains unmatched; no frame is fabricated.
 Reports arriving after a capture stops remain in LIVE history, not that saved file.
 
-`devtools/three-errors.ts` chains existing renderer callbacks, including Three's
+`src/adapters/three-errors.ts` chains existing renderer callbacks, including Three's
 device-loss state update. WebGL shader checking stays host-controlled; without a
 custom callback, bounded logs also reach the console. The WebGPU observer wraps
 only the owned device's public `popErrorScope` and async pipeline methods, returning
@@ -116,12 +116,12 @@ and shared-request outcomes remain unknown. WebGPU's supported `compileAsync`
 progress reports work items; WebGL supplies the operation duration without that
 progress. Compilation wall time is not GPU execution time.
 
-`devtools/three-loading.ts` owns eight sealed sessions and current observations,
+`src/adapters/three-loading.ts` owns eight sealed sessions and current observations,
 chains the original manager methods and preserves its callbacks. Same-URL overlap
 has no unique completion identity, so its offsets are omitted rather than guessed.
 The host must drain old manager items before starting another session. Separate
 run handles prevent stale compilation/byte/progress updates reaching a replacement
-session. `three-loading-demo.ts` owns assets, aborts and publication; the shared
+session. `devtools/three-loading-demo.ts` owns assets, aborts and publication; the shared
 panel reads snapshots at its existing measured refresh cadence. Freeze and
 recording remain independent of loading.
 
@@ -189,7 +189,7 @@ and active counts. Changing the count while paused updates the request; the acti
 count changes on resume. A paused canvas can still display its previous image, so
 zero submissions must not be interpreted as zero visible pixels.
 
-`devtools/three-instances.ts` observes this owned opaque batch's before/after-render
+`src/adapters/three-instances.ts` observes this owned opaque batch's before/after-render
 callbacks and renderer draw-count deltas. It excludes the grid and WebGPU output
 conversion, chains existing callbacks and restores only owned hooks. It neither
 traverses instances nor adds GPU queries. Unique counts refer to the batch's contiguous
@@ -234,7 +234,7 @@ GPU timing changes do not invent history resets. The fields are latched with the
 other completed-frame counters and retained by captures.
 
 Hosts with temporal pipelines supply their own values using the
-[temporal counter convention](../CONTRIBUTING.md#temporal-history-supplied-by-the-host).
+[temporal counter convention](architecture.md#temporal-history-supplied-by-the-host).
 The LIVE review page provides labelled synthetic valid/reset states; those values
 are never substituted into this real scene.
 

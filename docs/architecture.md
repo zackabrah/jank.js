@@ -82,26 +82,26 @@ full Tailwind. Preserve the shared `focus-ring` treatment on every control.
 `src/measurement.ts` defines measured values versus explicit missing-data reasons.
 `MeasurementValue` displays numbers or reason tokens, with a screen-reader reason.
 Never replace unavailable measurements with zero or derive GPU completeness from
-counts. The current `HudSnapshot` API remains unchanged; unavailable FPS and empty
-frame statistics map to `unknown`. Future adapters supply more precise reasons.
+counts. In a `LiveSnapshot`, unavailable FPS and empty frame statistics map to
+`unknown`; adapters supply more precise reasons.
 
-`src/panel-view.tsx` owns the HUD markup. Shared components live in `src/ui`:
+`src/live/view.tsx` owns the panel markup. Shared components live in `src/ui`:
 `DisclosureSection` owns open/closed state, a full-width header and a collapsed
 summary. `Button` / `IconButton` use native keyboard activation and `type="button"`;
 unavailable actions require a visible reason ID and an explanation handler, and
 never invoke `onPress`. `StateBadge` is non-interactive status; changing counters
 are excluded from announcements. `Notice` pushes content and uses polite status
 announcements except for errors, which use alerts. Its dismiss button has a label.
-`src/hud-model.ts`
-validates snapshots and calculates statistics. `src/panel.ts` retains the
-synchronous `mountPanel`/`update`/`destroy` API and Shadow DOM lifecycle.
-`src/panel.css` scans the TSX component and provides Shadow DOM styles;
+`src/live/model.ts`
+validates snapshots and calculates statistics. `src/live/panel.tsx` holds the
+synchronous `mountLivePanel`/`update`/`destroy` API and Shadow DOM lifecycle.
+`src/live/panel.css` scans the panel's components and provides Shadow DOM styles;
 `src/style.css` scans the page shell in `index.html` and the preview in `src/app.tsx`.
 `src/main.tsx` mounts the app and handles hot-reload teardown. `src/app.tsx` owns
-preview markup, scenario state and the HUD lifecycle; use Preact events instead
+preview markup, scenario state and the panel lifecycle; use Preact events instead
 of manual DOM listeners for app controls.
 Add new component sources to the appropriate stylesheet when needed.
-Budget warnings use `data-over-budget:text-jank-over`.
+Budget warnings use `data-over:text-jank-over`.
 
 Run `pnpm dev` and open `/checks/theme.html` for the desktop review/check page:
 dark/light HUDs, unknown versus zero, computed contrast, focus, collapse, local
@@ -117,7 +117,7 @@ blocked actions, disclosures, badges and notices without controlling a collector
 During `pnpm dev`, the main preview, `/checks/components.html` and `/checks/live.html` include an
 **Annotate** button in the top right. Select it, click an element, write a note,
 then save. Picking suppresses the target's click action, including inside the
-HUD's open Shadow DOM. Keyboard users can Tab to a control and press Enter;
+panel's open Shadow DOM. Keyboard users can Tab to a control and press Enter;
 Escape cancels picking. Notes can be edited or deleted in the sidebar or opened
 from their numbered pins.
 
@@ -161,8 +161,8 @@ this setup prompts for conventional messages but does not enforce them with hook
 `src/live/model.ts` derives the four KPIs, CPU scope unions and overhead from a
 structural subset of `jank.js` snapshots. `view.tsx`, `frame-chart.tsx` and
 `metric-row.tsx` render the full panel. `mountLivePanel(container)` accepts
-`update({ diagnostics, gpu, loading? })`; the older compact `mountPanel` API stays intact.
-Both share the isolated base styles and teardown in `src/shadow.css` /
+`update({ diagnostics, gpu, loading? })`.
+The panel and viewer share the isolated base styles and teardown in `src/shadow.css` /
 `src/shadow-view.ts`.
 
 For a running collector, use `mountDiagnosticsPanel`:
@@ -274,7 +274,7 @@ refreshes and failure preservation; it never owns or cancels the source.
 mountDiagnosticsPanel(container, monitor, readGpu, capture, readInstrumentation, loading.read);
 ```
 
-The optional Three.js integration in `devtools/three-loading.ts` observes an
+The optional Three.js integration in `src/adapters/three-loading.ts` observes an
 explicitly supplied, idle `LoadingManager`. Attach it before starting requests.
 `start({ label, kind, comparisonKey? })` returns a run with `measure(stage, work)`,
 `bytes(stage, count)`, `compileProgress(completed, total)` and `finish(status, reason?)`.
@@ -695,7 +695,7 @@ dispose the interval and panel. Recording remains in the real collector examples
 
 ### Three.js CPU/GPU playground
 
-Renderer fault hooks live in `devtools/three-errors.ts`. Preserve existing callbacks,
+Renderer fault hooks live in `src/adapters/three-errors.ts`. Preserve existing callbacks,
 WebGPU promise identities and host-owned error scopes; restore only hooks still
 owned by the observer. Asynchronous error receipt does not identify the originating
 GPU frame. Use the playground's shader/validation fault buttons and native GPU
@@ -890,7 +890,7 @@ spans all pairs, so zooming cannot change a value. Changing pair or replacing th
 file resets the range; a rejected import preserves it.
 
 The inspector's **Frame** tab reads the frames under the shared cursor, previews
-included. `comparison-frame.ts` pairs them by elapsed time, never by ID or ordinal:
+included. `comparison-frame-pair.ts` pairs them by elapsed time, never by ID or ordinal:
 they overlap in time in separate runs, so they are not matched work and their
 differences describe these two frames only. CPU, GPU, context and numeric counter
 rows show A, B and B − A, largest difference first. Only two measured values produce
