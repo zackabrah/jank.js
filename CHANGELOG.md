@@ -28,6 +28,7 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 
 ### Fixed
 
+- Release panel-owned automatic capture on destruction, disconnect agent observers on removal, and stop comparison-owned trial recording when only the frame budget changes.
 - Bound analysis of sparse frame IDs by recorded GPU entries, union overlapping matching CPU scopes, and include long frames overlapping event-cost windows.
 - Use the same over-budget tolerance in the live panel, viewer, public summary and analyzer; imported timer resolution cannot suppress warnings (#6, #14, #16).
 - Name the affected comparison trial for missing or malformed recordings, accept UTF-8 BOM-prefixed CLI inputs, and preserve unknown statistics for empty captures (#17, #19, #20).

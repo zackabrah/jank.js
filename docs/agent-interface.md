@@ -44,6 +44,11 @@ This is the same capture a person drives with Rec, so the two share one recorder
 `start` throws if a comparison or another recording holds it. `stop` waits for GPU
 results and rejects if they fail, so an agent can't mistake a failure for a clean report.
 
+The cleanup returned by `installAgentApi` disconnects its machine observers even
+if another API has replaced `window.jank`. It preserves the shared recording and
+the newer API. A retained API reference can still read/export saved captures, but
+cannot start another recording after disposal.
+
 ## Compare two builds
 
 From this repository:

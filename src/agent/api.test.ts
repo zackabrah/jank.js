@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { createCaptureController } from "../capture/controller.ts";
 import { captureFixture } from "../capture/fixtures.ts";
 import { parseRecording } from "../recording/format.ts";
@@ -13,6 +13,7 @@ function setup() {
 
 afterEach(() => {
   delete window.jank;
+  vi.unstubAllGlobals();
 });
 
 test("a long frame names its slowest scripts, or says it ran none", () => {
@@ -118,4 +119,70 @@ test("installs on the window and only removes itself", () => {
   expect(window.jank).toBe(secondApi);
   removeSecond();
   expect(window.jank).toBeUndefined();
+});
+
+test("removing an API disconnects its observers even after replacement and ignores queued callbacks", () => {
+  const longFrames: { emit(): void; disconnect: ReturnType<typeof vi.fn> }[] = [];
+  const pressure: { emit(): void; disconnect: ReturnType<typeof vi.fn> }[] = [];
+  vi.stubGlobal(
+    "PerformanceObserver",
+    class {
+      static supportedEntryTypes = ["long-animation-frame"];
+      disconnect = vi.fn();
+      observe() {}
+      constructor(callback: PerformanceObserverCallback) {
+        longFrames.push({
+          disconnect: this.disconnect,
+          emit: () =>
+            callback(
+              {
+                getEntries: () => [{ duration: 120, startTime: 1000 }],
+              } as PerformanceObserverEntryList,
+              this as unknown as PerformanceObserver,
+            ),
+        });
+      }
+    },
+  );
+  vi.stubGlobal(
+    "PressureObserver",
+    class {
+      disconnect = vi.fn();
+      observe() {
+        return Promise.resolve();
+      }
+      constructor(callback: (records: { state: string }[]) => void) {
+        pressure.push({
+          disconnect: this.disconnect,
+          emit: () => callback([{ state: "critical" }]),
+        });
+      }
+    },
+  );
+  const first = setup();
+  const firstEvent = vi.fn();
+  const removeFirst = installAgentApi(window, first.controller, { event: firstEvent });
+  const firstApi = window.jank;
+  firstApi?.start();
+  const secondEvent = vi.fn();
+  const removeSecond = installAgentApi(window, setup().controller, { event: secondEvent });
+  const secondApi = window.jank;
+  secondApi?.start();
+  removeFirst();
+  removeFirst();
+  expect(window.jank).toBe(secondApi);
+  expect(first.source.snapshot().recording).toBe(true);
+  expect(() => firstApi?.start()).toThrow("disposed");
+  for (const observers of [longFrames, pressure]) {
+    expect(observers[0]?.disconnect).toHaveBeenCalledOnce();
+    expect(observers[1]?.disconnect).not.toHaveBeenCalled();
+    observers[0]?.emit();
+    observers[1]?.emit();
+  }
+  expect(firstEvent).not.toHaveBeenCalled();
+  expect(secondEvent).toHaveBeenCalledTimes(2);
+  removeSecond();
+  expect(window.jank).toBeUndefined();
+  for (const observers of [longFrames, pressure])
+    expect(observers[1]?.disconnect).toHaveBeenCalledOnce();
 });

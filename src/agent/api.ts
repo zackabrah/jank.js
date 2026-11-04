@@ -21,6 +21,7 @@ export function createAgentApi(
   options: { event?: (label: string, detail?: string) => void } = {},
 ) {
   let stopObserving = () => {};
+  let disposed = false;
   // The controller lists captures newest first.
   const latest = () => controller.getSnapshot().saved[0];
   const saved = (id?: number) => {
@@ -65,6 +66,7 @@ export function createAgentApi(
       };
     },
     start() {
+      if (disposed) throw new Error("The agent API has been disposed.");
       // Asking the controller would also put this error on the person's panel.
       const current = controller.getSnapshot();
       if (current.phase === "recording" && current.kind === "manual")
@@ -96,6 +98,12 @@ export function createAgentApi(
     /** The capture's recording as JSON, for jank's viewer or `jank analyze`. */
     export(id?: number) {
       return serializeRecording(saved(id).recording);
+    },
+    /** Disconnect observers without stopping or discarding the shared capture. */
+    dispose() {
+      disposed = true;
+      stopObserving();
+      stopObserving = () => {};
     },
   };
 }
@@ -140,9 +148,11 @@ declare const PressureObserver: {
 /** Notes long frames and CPU pressure as events, where they reach recordings and the viewer. */
 function observeMachine(event: (label: string, detail?: string) => void) {
   const stops: (() => void)[] = [];
+  let active = true;
   if (PerformanceObserver.supportedEntryTypes?.includes("long-animation-frame")) {
     let lastAt = -Infinity;
     const frames = new PerformanceObserver((list) => {
+      if (!active) return;
       for (const entry of list.getEntries()) {
         // A scene that is always slow must not push every other event out of the log.
         if (entry.startTime - lastAt < LONG_FRAME_MIN_GAP_MS) continue;
@@ -156,6 +166,7 @@ function observeMachine(event: (label: string, detail?: string) => void) {
   if (typeof PressureObserver === "function") {
     let last = "";
     const pressure = new PressureObserver((records) => {
+      if (!active) return;
       const state = records.at(-1)?.state;
       if (!state || state === last) return;
       last = state;
@@ -165,6 +176,7 @@ function observeMachine(event: (label: string, detail?: string) => void) {
     stops.push(() => pressure.disconnect());
   }
   return () => {
+    active = false;
     for (const stop of stops) stop();
   };
 }
@@ -178,6 +190,7 @@ export function installAgentApi(
   const api = createAgentApi(controller, options);
   target.jank = api;
   return () => {
+    api.dispose();
     if (target.jank === api) delete target.jank;
   };
 }

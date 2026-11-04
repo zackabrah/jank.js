@@ -71,6 +71,30 @@ test("collects CPU scopes only while mounted, so the Live tab's rows have data",
   expect(monitor.detailed).toBe(false);
 });
 
+test("destroy disarms panel-owned Auto and allows a clean remount", () => {
+  const monitor = createDiagnostics();
+  const panel = createPerformancePanel({ shell: document.body, monitor });
+  panel.capture.toggleAuto();
+  expect(monitor.snapshot().capture.state).toBe("armed");
+  panel.destroy();
+  expect(monitor.snapshot().capture.state).toBe("idle");
+  expect(monitor.detailed).toBe(false);
+  const next = createPerformancePanel({ shell: document.body, monitor });
+  expect(next.capture.comparisonUnavailable()).toBe("");
+  next.destroy();
+  monitor.dispose();
+});
+
+test("destroy preserves automatic capture armed by the host", () => {
+  const monitor = createDiagnostics();
+  const panel = createPerformancePanel({ shell: document.body, monitor });
+  monitor.armCapture({ thresholdMs: 100 });
+  panel.destroy();
+  expect(monitor.snapshot().capture.state).toBe("armed");
+  expect(monitor.detailed).toBe(true);
+  monitor.dispose();
+});
+
 test("a frame() timestamp from before the monitor existed does not throw into the host's loop", () => {
   const monitor = createDiagnostics();
   const panel = createPerformancePanel({ shell: document.body, monitor });

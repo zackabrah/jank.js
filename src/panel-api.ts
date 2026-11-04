@@ -169,6 +169,8 @@ export function createPerformancePanel(options: PerformancePanelOptions) {
       destroyed = true;
       clearTimeout(refreshHint);
       comparison?.destroy();
+      const automatic = capture.getSnapshot().automatic;
+      if (automatic && automatic.state !== "off") source.disarmCapture();
       capture.discard();
       closeViewer();
       panel.destroy();

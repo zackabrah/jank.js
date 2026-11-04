@@ -66,7 +66,11 @@ export function createComparisonController(host: ComparisonHost) {
   };
   const message = (error: unknown) =>
     error instanceof Error ? error.message : "Comparison failed.";
-  const finish = (status: ComparisonBundle["status"], reason = "") => {
+  const finish = (
+    status: ComparisonBundle["status"],
+    reason = "",
+    stopTrial = status !== "interrupted",
+  ) => {
     const owned = lease;
     if (!owned) return;
     lease = null;
@@ -75,7 +79,7 @@ export function createComparisonController(host: ComparisonHost) {
     clearTimeout(timeout);
     try {
       // An interruption may belong to an external recorder; do not stop that work.
-      if (status !== "interrupted" && state.phase === "measure") owned.source.stopRecording();
+      if (stopTrial && state.phase === "measure") owned.source.stopRecording();
     } catch (error) {
       status = "failed";
       reason = message(error);
@@ -231,22 +235,22 @@ export function createComparisonController(host: ComparisonHost) {
         const expectedRecording = state.phase === "measure";
         const capacityStop =
           expectedRecording && snapshot.recordedFrames === host.capture.getSnapshot().capacity;
-        if (
+        const captureChanged =
           !Number.isSafeInteger(snapshot.recordedFrames) ||
           snapshot.recordedFrames < 0 ||
           snapshot.recordedFrames > host.capture.getSnapshot().capacity ||
           !Number.isFinite(at) ||
           at < lastAt ||
-          snapshot.budget.frameMs !== state.bundle.budgetMs ||
           (snapshot.recording !== expectedRecording && !capacityStop) ||
           (expectedRecording &&
             (snapshot.capture.mode !== "manual" || snapshot.recordedFrames < state.frames)) ||
           (!expectedRecording && snapshot.capture.state !== "idle") ||
-          (state.phase === "drain" && snapshot.recordedFrames !== state.frames)
-        ) {
+          (state.phase === "drain" && snapshot.recordedFrames !== state.frames);
+        if (captureChanged || snapshot.budget.frameMs !== state.bundle.budgetMs) {
           finish(
             "interrupted",
             "Comparison cancelled: capture state or budget changed outside the panel.",
+            !captureChanged,
           );
           return;
         }

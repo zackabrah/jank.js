@@ -134,6 +134,29 @@ describe("comparison runner", () => {
     expect(f.source.snapshot().recording).toBe(true);
     expect(f.restore).toHaveBeenCalledTimes(1);
   });
+  it("stops its trial on a budget-only interruption but preserves a replacement recorder", async () => {
+    for (const replaceRecorder of [false, true]) {
+      const f = setup();
+      f.comparison.start(plan);
+      await f.advance(4);
+      expect(f.comparison.getSnapshot().phase).toBe("measure");
+      expect(f.comparison.getSnapshot().frames).toBe(2);
+      if (replaceRecorder) f.source.startRecording();
+      f.source.snapshot().budget.frameMs = 1000 / 30;
+      f.comparison.advance();
+      expect(f.comparison.getSnapshot().bundle.status).toBe("interrupted");
+      expect(f.source.snapshot().recording).toBe(replaceRecorder);
+      expect(f.restore).toHaveBeenCalledOnce();
+      if (!replaceRecorder) {
+        expect(f.capture.recordingUnavailable()).toBe("");
+        expect(f.comparison.unavailable()).toBe("");
+        f.capture.start();
+        expect(f.capture.getSnapshot().phase).toBe("recording");
+        f.capture.discard();
+      }
+    }
+  });
+
   it("bounds a stalled GPU finalizer and a too-small recorder", async () => {
     vi.useFakeTimers();
     const f = setup();
