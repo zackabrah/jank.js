@@ -181,7 +181,7 @@ The adapter renders at most every 250 ms and measures snapshot/model/render work
 with `monitor.measureRefresh`. It does not start a loop, enable scopes or dispose the collector.
 Budget changes occur only through an explicit user action when the host supplies
 `setTargetFps`. The host enables detailed collection
-when wanted (`monitor.setExpanded(true)`). Direct `update` calls are synchronous
+when wanted (`monitor.setExpanded(true)`); `createPerformancePanel` does so while mounted. Direct `update` calls are synchronous
 and unthrottled. Failed snapshots leave the previous view intact.
 
 Supply an optional third-argument GPU reader returning `LiveGpu`, or use

@@ -33,7 +33,7 @@ A performance monitor that runs inside your browser game. It shows frame pacing,
 Nothing to install beyond the package: its small UI runtime is bundled. ~4.6 KB core, ~64 KB with the panel, gzipped; the viewer loads only when you open it. Nothing is uploaded, estimated or smoothed. Missing data stays missing.
 
 <p align="center">
-  <img alt="The full panel on its LIVE tab, measuring a real Three.js scene on WebGPU. The frame graph scrolls as frames arrive, an 80 ms spike enters in orange and becomes the worst frame, and the CPU and GPU sections below report the time spent." src="docs/readme/panel-running.gif" width="360">
+  <img alt="The full panel on its Live tab, measuring a real Three.js scene on WebGPU. The frame graph scrolls as frames arrive, an 80 ms spike enters in orange and becomes the worst frame, and the CPU and GPU sections below report the time spent." src="docs/readme/panel-running.gif" width="360">
 </p>
 
 ## Install
@@ -127,7 +127,7 @@ Optional, and none bundles a renderer. `jank.js/adapters/three` reads `renderer.
 
 ## Upgrading from 0.3
 
-`createDiagnostics` and the rest of the core API, the recording format and existing recordings are unchanged. The panel and viewer are new:
+`createDiagnostics` and the rest of the core API, the recording format and existing recordings keep working. The panel and viewer are new:
 
 ```diff
 -import { createDiagnostics, createPerformanceTray } from "jank.js";
@@ -156,6 +156,7 @@ pnpm test:package   # the packed tarball in a clean consumer
 pnpm test:e2e       # the panel, viewer and built package in Chromium, Firefox and WebKit
 pnpm test:e2e:gpu   # real GPU timing in Chrome on your hardware
 pnpm docs:captures  # retake the README images from a real run (needs Chrome and ffmpeg)
+pnpm bench          # per-frame overhead of the built panel in headless Chromium
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

@@ -46,7 +46,7 @@ Use these actions for labelled buttons, fields and selectors:
 | Export                  | `serializeRecording(monitor.export())`; show validation/size errors |
 | Remove                  | `dispose()`; also dispose the view and registered channels          |
 
-A new view should refresh its DOM at a controlled rate (the jank.js panel uses 100 ms, 250 ms on one line or when its own refresh averages over 0.25 ms), while the host continues recording every frame. Measure the synchronous rendering callback with `monitor.measureRefresh(() => renderPanel())`. It subtracts collection already measured inside that callback. Do not nest this measurement or wrap the existing tray's measured refresh. `recordOverhead("refresh", ms)` is available when the view already measures its own exclusive cost.
+A new view should refresh its DOM at a controlled rate (the jank.js panel uses 250 ms), while the host continues recording every frame. Measure the synchronous rendering callback with `monitor.measureRefresh(() => renderPanel())`. It subtracts collection already measured inside that callback. Do not nest this measurement or wrap the panel's measured refresh. `recordOverhead("refresh", ms)` is available when the view already measures its own exclusive cost.
 
 Freeze is a presentation choice: retain a detached snapshot and continue collecting. A stopped recording remains available until clear, a new manual recording, or the next eligible automatic trigger. The next trigger replaces the last automatic window, so disarm to preserve it indefinitely. Hidden-tab intervals are retained as wall-clock intervals; the host can choose a different visibility policy.
 

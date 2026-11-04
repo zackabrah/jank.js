@@ -1,20 +1,25 @@
 # Monitor overhead
 
-> The table below measures the 0.3 panel. The collector is unchanged, but the panel it measures has been replaced, so these figures need re-measuring before 1.0.0.
+Measured on **4 November 2026** with the 1.0 panel, Apple M3 Max, macOS arm64, headless Chromium 156.0.8078.4, on a cross-origin isolated fixture. These are measurements of the built library on one local fixture, not a guarantee for other applications or hardware. Raw report: [overhead.json](verification/overhead.json). Run `pnpm bench` to reproduce it.
 
-Measured on **27 October 2026** with the jank.js panel, Apple M3 Max, macOS arm64, headless Chromium 153.0.8010.12, on a cross-origin isolated fixture. These are measurements of the built library on one local fixture, not a guarantee for other applications or hardware. Raw report: [overhead.json](verification/overhead.json).
+| State                              | Mean monitoring + timer cost per frame | Largest observed cost | 0.3 panel mean |
+| ---------------------------------- | -------------------------------------: | --------------------: | -------------: |
+| Baseline without monitor           |                              0.0009 ms |              0.010 ms |      0.0015 ms |
+| Line view                          |                              0.1341 ms |              2.045 ms |      0.0600 ms |
+| Mini view                          |                              0.1237 ms |              1.775 ms |             new |
+| Full panel, Live tab               |                              0.1153 ms |              1.750 ms |      0.1294 ms |
+| Recording, full panel              |                              0.1317 ms |              1.730 ms |      0.1285 ms |
+| Automatic capture armed, line view |                              0.2635 ms |              1.795 ms |      0.0708 ms |
 
-| State                           | Mean monitoring + timer cost per frame | Largest observed cost |
-| ------------------------------- | -------------------------------------: | --------------------: |
-| Baseline without monitor        |                              0.0015 ms |              0.055 ms |
-| Collapsed (one line)            |                              0.0600 ms |              1.305 ms |
-| Expanded (full panel, LIVE tab) |                              0.1294 ms |              1.155 ms |
-| Recording, expanded             |                              0.1285 ms |              0.960 ms |
-| Spike capture armed, collapsed  |                              0.0708 ms |              0.695 ms |
+The 0.3 column comes from [its own report](verification/overhead-0.3.json), measured on 27 October 2026 with the same method on Chromium 153.
 
-The full panel redraws ten times a second where the earlier tray redrew four times, and it draws more (tiles, a canvas graph, per-frame CPU scope averages, counters). Expanded costs about 0.03 ms per frame more than the earlier tray's measurement below. One-line and armed states are within run-to-run variation of it; a repeat run on the same machine measured 0.049, 0.116, 0.107 and 0.058 ms for the four monitored states.
+The full panel costs about what 0.3's expanded panel did. Most frames pay only for collection. A refresh, four times a second, costs about 1 to 1.5 ms at the 95th percentile and peaked at 2 to 4 ms across same-day runs. The means spread that over 15 frames at 60 Hz. Those refresh frames are larger than 0.3's, whose 95th percentile was 0.5 to 0.75 ms when expanded.
 
-The panel also measures itself. Its OVERHEAD block reports refresh separately from collection. On the e2e fixture game (four timed systems, a scripted GPU source, a loading source), with a 0.1 ms timer and eight seconds per size after clearing: one line averaged 0.003 to 0.006 ms of refresh per frame with a 0.2 ms worst refresh; mini 0.02 ms with 0.3 to 0.4 ms worst; the full panel's LIVE tab 0.03 to 0.04 ms, 0.3 ms at the 95th percentile and 0.4 ms worst, with a single 2.1 ms refresh in one of two runs. Averages are within the panel's targets (0.1 ms full, 0.02 ms one line); the full panel's worst refresh is not reliably within 0.3 ms at this timer resolution. Completing an automatic capture serialises it once, which shows as a larger single refresh.
+The three views cost about the same, because the hidden parts of the panel keep rendering. Line view therefore costs about twice what 0.3's collapsed state did. Per-run means overlap (Mini ran 0.084, 0.138 and 0.149 ms), so do not read an order into them.
+
+Armed capture is the most expensive state, at about 1.6% of a 16.7 ms budget and nearly four times 0.3's figure, because the rule reads a collector snapshot every frame instead of at each refresh.
+
+The panel also measures itself. Its **Overhead** footer reports the average and peak per frame, and its **ⓘ** button separates collection from UI work.
 
 Earlier tray, measured on 26 October 2026 with the same method ([raw report](verification/overhead-v1.json)):
 
@@ -28,11 +33,11 @@ Earlier tray, measured on 26 October 2026 with the same method ([raw report](ver
 
 Each state ran three times, sequentially. Each run seeded 600 history entries, warmed up for 30 animation frames, then measured 120 explicit `beginFrame`/`endFrame` intervals. The fixture used a 1200 × 800 viewport, one Canvas 2D channel, a system font and no GPU provider. Detailed scope history gradually replaces the seed entries; this is not a worst-case densely instrumented capture.
 
-The timing includes channel scopes, frame collection and synchronous tray refresh plus timer/loop overhead. It excludes scene drawing, deferred browser style/layout/paint, GPU execution, font loading and JSON download/import cost. The full and mini panels refresh at most ten times per second and the one-line panel four, so refresh frames cost more than the per-frame mean. Values are not baseline-subtracted. Do not infer significant differences between modes from this short run alone; the expanded and recording ordering is not a universal result.
+The timing includes channel scopes, frame collection and synchronous panel refresh plus timer/loop overhead. It excludes scene drawing, deferred browser style/layout/paint, GPU execution, font loading and JSON download/import cost. The panel refreshes at most four times per second, so refresh frames cost more than the per-frame mean. Values are not baseline-subtracted. Do not infer significant differences between modes from this short run alone; their ordering is not a universal result.
 
-The live panel reports collection and exclusive refresh mean/peak over recent frames. Collection performed during a refresh is charged once. These internal measurements and the external benchmark have different boundaries, so they need not match exactly. Timer granularity can produce zero on individual measurements; recording metadata preserves the observed resolution estimate.
+The panel reports collection and exclusive refresh mean/peak over recent frames. Collection performed during a refresh is charged once. These internal measurements and the external benchmark have different boundaries, so they need not match exactly. Timer granularity can produce zero on individual measurements; recording metadata preserves the observed resolution estimate.
 
-The first v1 measurement identified live snapshot copying as a cost worth reducing. Explicit copies of the bounded frame schema lowered the collapsed mean from about 0.155 ms to 0.0385 ms in the immediate comparison while retaining detached snapshots. The table above is the final remeasurement, after browser-boundary fixes; run-to-run variation remains visible. The new API and extra scope capture still do more work than the earlier extraction benchmark; the original [pre-v1 report](verification/overhead-pre-v1.json) is retained separately.
+The first v1 measurement identified live snapshot copying as a cost worth reducing. Explicit copies of the bounded frame schema lowered the collapsed mean from about 0.155 ms to 0.0385 ms in the immediate comparison while retaining detached snapshots. The new API and extra scope capture still do more work than the earlier extraction benchmark; the original [pre-v1 report](verification/overhead-pre-v1.json) is retained separately.
 
 
 The library ships minified ESM with internal identifier mangling and source maps for downstream bundling and debugging. Packaged panel CSS is minified. The panel and offline viewer use system monospace fonts; no font files are bundled. The core has zero runtime dependencies; application and renderer bundle sizes are outside these measurements.

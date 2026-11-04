@@ -29,9 +29,9 @@ const recording = monitor.export();
 physics.dispose();
 ```
 
-IDs must be unique within a monitor. Timed systems appear as CPU rows in registration order; every system's values appear under COUNTERS. A system that only supplies values and is never timed has no CPU row. Readers return number, string, boolean or null values. Providers should be cheap and supply only data the host intends to display/export. Detailed channel timing activates while expanded, recording, armed for spike capture, or emitting DevTools tracks. Disabled `begin()` returns a sentinel which `end()` safely ignores.
+IDs must be unique within a monitor. Timed systems appear as CPU rows in registration order; every system's values appear under **Counters**. A system that only supplies values and is never timed has no CPU row. Readers return number, string, boolean or null values. Providers should be cheap and supply only data the host intends to display/export. `createPerformancePanel` keeps detailed channel timing on while it is mounted. Without it, timing activates after `monitor.setExpanded(true)`, while recording, while armed for capture, or while emitting DevTools tracks. Disabled `begin()` returns a sentinel which `end()` safely ignores.
 
-Recordings can contain application-provided labels and values. There is no network transport; EXPORT JSON downloads locally and OPEN IN VIEWER only posts to a window the panel opened. FREEZE freezes displayed measurements, not collection or the application. The export contains the collected/live data rather than a screenshot of the frozen view.
+Recordings can contain application-provided labels and values. There is no network transport: exports download locally and the viewer reads files in the browser. **Freeze** holds displayed measurements, not collection or the application. The export contains the collected/live data rather than a screenshot of the frozen view.
 
 ## Panel options
 
@@ -111,7 +111,7 @@ renderer.render(scene, camera);
 rendering.end(start);
 ```
 
-This measures CPU submission and exposes calls, triangles, points, lines, geometry count and texture count. It does not measure GPU time or memory bytes. For multiple render calls per application frame, set `renderer.info.autoReset = false` and reset the counters once at the start of your frame; call `tray.refresh` after all submissions. The host owns that policy.
+This measures CPU submission and exposes calls, triangles, points, lines, geometry count and texture count. It does not measure GPU time or memory bytes. For multiple render calls per application frame, set `renderer.info.autoReset = false` and call `panel.refresh` first and reset the counters straight after it, so the panel reads the finished frame. The host owns that policy.
 
 ## Recording and custom views
 
