@@ -551,3 +551,20 @@ describe("GPU elapsed summaries", () => {
     });
   });
 });
+
+test("episodes and GPU lookback do not cross missing frame intervals", () => {
+  const frames = framesOf([100, 100]);
+  const resumed = frames[1];
+  if (!resumed) throw new Error("Missing frame");
+  resumed.at += 7200;
+  const report = analyzeRecording(
+    recordingOf(frames, { gpuTiming: { version: 1, frames: [gpuFrame(0, 90)] } }),
+  );
+  expect(report.episodes.map((episode) => [episode.firstFrame, episode.lastFrame])).toEqual([
+    [0, 0],
+    [1, 1],
+  ]);
+  expect(report.episodes[0]?.gpu?.frame).toBe(0);
+  expect(report.episodes[1]?.gpu).toBeNull();
+  expect(report.summary).toMatchObject({ durationMs: 7400, fps: 10 });
+});

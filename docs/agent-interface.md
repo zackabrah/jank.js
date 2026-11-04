@@ -105,6 +105,8 @@ A frame counts as slow above `summary.overBudget.limitMs`, the budget plus 5% or
 whichever is larger. This is the panel's and viewer's rule too. Without it, vsync jitter makes
 a smooth run look over budget when the display's frame time equals the budget.
 
+`summary.fps` uses measured frame intervals; `summary.durationMs` retains wall-clock gaps. A host can use `monitor.resetFrame()` around known pauses so they do not become stall findings. Unmarked pauses remain indistinguishable from real stalls.
+
 `summary.displayLimited` means the busier of median CPU and GPU work uses under 80% of both the
 typical frame time and the budget, so the display is setting the pace, as on a 57 Hz or a 144 Hz
 screen. A frame then counts as slow against the larger of the typical frame time and the budget.

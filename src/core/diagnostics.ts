@@ -72,6 +72,9 @@ export interface Diagnostics {
   /** Attach CPU durations to the current explicit frame. Closing is deferred to the next boundary. */
   endFrame(updateMs: number, renderMs: number): void;
 
+  /** Discard the unfinished interval and its scopes before a known pause; keep captured frames. */
+  resetFrame(): void;
+
   /** Compatibility sampler. Scope attribution is unavailable; prefer beginFrame/endFrame. */
   frame(at: number, interval: number, update: number, render: number): void;
 
@@ -620,6 +623,21 @@ export function createDiagnostics(
         pending.update += update;
         pending.render += render;
       }
+
+      collectCost(cost);
+    },
+    resetFrame() {
+      if (disposed) return;
+
+      const cost = costClock();
+
+      pending = undefined;
+      ended = [];
+      open.clear();
+      droppedScopes = 0;
+      collectionMs = refreshMs = 0;
+
+      for (const channel of channels.values()) channel.current = 0;
 
       collectCost(cost);
     },

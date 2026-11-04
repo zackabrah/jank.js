@@ -75,6 +75,8 @@ function frame(at) {
 requestAnimationFrame(frame);
 ```
 
+For a known pause, call `monitor.resetFrame()` to discard the unfinished interval without clearing the recording; see [visibility handling](docs/data-model.md#building-a-live-panel).
+
 Mark moments with `monitor.event("Scene changed")`. Only what your app supplies is shown; sections without a source stay hidden or read as unavailable, never as zero.
 
 ## The panel

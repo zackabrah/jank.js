@@ -48,7 +48,20 @@ Use these actions for labelled buttons, fields and selectors:
 
 A new view should refresh its DOM at a controlled rate (the jank.js panel uses 250 ms), while the host continues recording every frame. Measure the synchronous rendering callback with `monitor.measureRefresh(() => renderPanel())`. It subtracts collection already measured inside that callback. Do not nest this measurement or wrap the panel's measured refresh. `recordOverhead("refresh", ms)` is available when the view already measures its own exclusive cost.
 
-Freeze is a presentation choice: retain a detached snapshot and continue collecting. A stopped recording remains available until clear, a new manual recording, or the next eligible automatic trigger. The next trigger replaces the last automatic window, so disarm to preserve it indefinitely. Hidden-tab intervals are retained as wall-clock intervals; the host can choose a different visibility policy.
+Freeze is a presentation choice: retain a detached snapshot and continue collecting. A stopped recording remains available until clear, a new manual recording, or the next eligible automatic trigger. The next trigger replaces the last automatic window, so disarm to preserve it indefinitely. The host controls pause policy. By default, hidden-tab intervals remain wall-clock frame intervals. Call `monitor.resetFrame()` at a known discontinuity to discard the unfinished frame, ended scopes awaiting attribution, and open scope tokens. Completed frames, IDs, timestamps, recording state and automatic capture progress are preserved; the next `beginFrame(at)` starts a fresh interval. Do not use this to hide ordinary slow frames.
+
+For a host that pauses rendering in hidden tabs:
+
+```js
+const resetFrame = () => monitor.resetFrame();
+document.addEventListener("visibilitychange", resetFrame);
+// During host teardown:
+document.removeEventListener("visibilitychange", resetFrame);
+```
+
+Listening on both transitions also discards any partial interval from throttled background callbacks. The collector installs no document listeners and still works outside a browser. With the compatibility `frame(at, interval, ...)` API, the host must also reset its own interval clock.
+
+Recording duration retains wall-clock gaps; `recordingSummary` and `jank analyze` calculate FPS from measured frame intervals. Analysis does not merge episodes or look back for GPU evidence across a gap. Historical recordings without an explicit gap cannot distinguish a hidden tab from a real stall.
 
 ## Building a recording viewer
 

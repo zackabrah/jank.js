@@ -17,6 +17,8 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 
 ### New
 
+- Add `monitor.resetFrame()` for host-declared pauses: keep completed frames and recording state, discard unfinished work, and resume at the next frame boundary. Analysis uses measured intervals for FPS and keeps episodes and GPU lookback within contiguous frame segments (#15).
+
 - A/B comparison: alternating pairs with warm-up, per-metric verdicts, per-scope changes, confound warnings, and a viewer with aligned graphs, signed differences, zoom and paired frame inspection. Stopped and failed runs keep their finished trials.
 - Automatic capture by spike, sustained slowdown or whole episode, with frame-linked GPU evidence and coverage explanations.
 - A Loading tab with a real-offset waterfall and cold/repeat comparison.

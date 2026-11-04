@@ -24,9 +24,12 @@ export async function startLivePreview(
   }));
   let request = 0;
   let stopped = false;
+  const resetFrame = () => monitor.resetFrame();
+  document.addEventListener("visibilitychange", resetFrame);
   const destroy = () => {
     stopped = true;
     cancelAnimationFrame(request);
+    document.removeEventListener("visibilitychange", resetFrame);
     panel.destroy();
     monitor.dispose();
   };

@@ -35,6 +35,7 @@ const BUSY_PRESSURE = new Set(["serious", "critical"]);
 
 const NOTES = [
   "Findings are observations, not causes. Confirm a cost with a controlled before/after run.",
+  "FPS uses measured frame intervals; durationMs retains wall-clock gaps between them.",
   "A spike's slow frames are mostly CPU scopes. A stall's slow frames are mostly outside instrumented CPU work.",
   "GPU passes can overlap, so pass times and pass sums are not per-pass costs.",
   "A trend can be warm-up rather than a leak. Check it over a longer run.",
@@ -58,12 +59,16 @@ function spread(values: readonly number[]) {
 
 /** Index ranges of slow frames, merged across short gaps. */
 function findEpisodes(frames: readonly DiagnosticFrame[], limitMs: number) {
-  const episodes: { first: number; last: number }[] = [];
+  const episodes: { first: number; last: number; segmentStart: number }[] = [];
+  let segmentStart = 0;
   frames.forEach((frame, index) => {
+    const previous = frames[index - 1];
+    if (previous && frame.at - frame.interval > previous.at + 1e-6) segmentStart = index;
     if (frame.interval <= limitMs) return;
     const current = episodes.at(-1);
-    if (current && index - current.last <= EPISODE_GAP_FRAMES) current.last = index;
-    else episodes.push({ first: index, last: index });
+    if (current && current.last >= segmentStart && index - current.last <= EPISODE_GAP_FRAMES)
+      current.last = index;
+    else episodes.push({ first: index, last: index, segmentStart });
   });
   return episodes;
 }
@@ -134,7 +139,7 @@ function counterSteps(recording: PerformanceRecording, startAt: number, endAt: n
 
 function gpuEvidence(gpuFrames: ReadonlyMap<number, GpuFrame>, firstId: number, lastId: number) {
   let worst: { frame: GpuFrame; span: number } | null = null;
-  for (let id = firstId - GPU_LOOKBACK_FRAMES; id <= lastId; id++) {
+  for (let id = firstId; id <= lastId; id++) {
     const frame = gpuFrames.get(id);
     const span = frame ? gpuSpan(frame) : null;
     if (frame && span !== null && (!worst || span > worst.span)) worst = { frame, span };
@@ -155,20 +160,21 @@ function describeEpisodes(recording: PerformanceRecording, limitMs: number, top:
   const { frames, budget, events } = recording;
   const origin = (frames[0]?.at ?? 0) - (frames[0]?.interval ?? 0);
   const gpuFrames = new Map(recording.gpuTiming?.frames.map((frame) => [frame.frameId, frame]));
-  const all = findEpisodes(frames, limitMs).map(({ first, last }) => {
+  const all = findEpisodes(frames, limitMs).map(({ first, last, segmentStart }) => {
     const span = frames.slice(first, last + 1);
     // Faster frames inside a merged episode would otherwise hide what its slow frames spent.
     const slow = span.filter((frame) => frame.interval > limitMs);
     const overBudgetMs = slow.reduce((sum, frame) => sum + frame.interval - budget.frameMs, 0);
     const slowMs = slow.reduce((sum, frame) => sum + frame.interval, 0);
     const slowCpuMs = slow.reduce((sum, frame) => sum + cpuOf(frame), 0);
-    return { span, overBudgetMs, explained: slowCpuMs >= slowMs * STALL_CPU_SHARE };
+    const gpuFrom = frames[Math.max(segmentStart, first - GPU_LOOKBACK_FRAMES)]?.id ?? 0;
+    return { span, overBudgetMs, explained: slowCpuMs >= slowMs * STALL_CPU_SHARE, gpuFrom };
   });
   const ranked = all.toSorted((a, b) => b.overBudgetMs - a.overBudgetMs);
   const shown = ranked.slice(0, top);
   const hidden = ranked.slice(top);
   return {
-    episodes: shown.flatMap(({ span, overBudgetMs, explained }, index) => {
+    episodes: shown.flatMap(({ span, overBudgetMs, explained, gpuFrom }, index) => {
       const firstFrame = span[0];
       const lastFrame = span.at(-1);
       if (!firstFrame || !lastFrame) return [];
@@ -207,7 +213,7 @@ function describeEpisodes(recording: PerformanceRecording, limitMs: number, top:
               detail: event.detail,
               offsetMs: rounded(event.at - startAt),
             })),
-          gpu: gpuEvidence(gpuFrames, firstFrame.id, lastFrame.id),
+          gpu: gpuEvidence(gpuFrames, gpuFrom, lastFrame.id),
           counterSteps: counterSteps(recording, startAt, lastFrame.at),
         },
       ];
@@ -411,6 +417,7 @@ export function analyzeRecording(recording: PerformanceRecording, top = DEFAULT_
   const summary = summarizeRecording(recording);
   const { frames, budget, metadata, overhead } = recording;
   const sorted = frames.map((frame) => frame.interval).sort((a, b) => a - b);
+  const measuredMs = frames.reduce((sum, frame) => sum + frame.interval, 0);
   const cpuMs = frames.length ? spread(frames.map(cpuOf)) : null;
   const gpu = describeGpu(recording, summary.gpuLabel, top);
   const pace = recordingDisplayPace(recording);
@@ -427,7 +434,7 @@ export function analyzeRecording(recording: PerformanceRecording, top = DEFAULT_
       createdAt: metadata.createdAt,
       frames: frames.length,
       durationMs: rounded(summary.durationMs),
-      fps: summary.durationMs ? rounded((frames.length * 1000) / summary.durationMs) : null,
+      fps: measuredMs ? rounded((frames.length * 1000) / measuredMs) : null,
       budgetMs: rounded(budget.frameMs),
       frameMs: frames.length
         ? {

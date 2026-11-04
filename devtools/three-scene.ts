@@ -240,12 +240,15 @@ export async function startThreeScene(
     );
   };
   canvas.addEventListener("webglcontextlost", contextLost);
+  const resetFrame = () => monitor.resetFrame();
+  document.addEventListener("visibilitychange", resetFrame);
   stop = () => {
     if (stopped) return;
     stopped = true;
     cancelAnimationFrame(request);
     observer.disconnect();
     canvas.removeEventListener("webglcontextlost", contextLost);
+    document.removeEventListener("visibilitychange", resetFrame);
     signal.removeEventListener("abort", stop);
     removeAgentApi();
     panel.destroy();
