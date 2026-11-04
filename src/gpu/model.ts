@@ -166,7 +166,7 @@ export function gpuFrameToLive(frame: GpuFrame, currentFrame: number): LiveGpu {
   };
 }
 
-export const timedPasses = (frame: GpuFrame) =>
+const timedPasses = (frame: GpuFrame) =>
   frame.invocations.flatMap((pass) =>
     pass.state === "timed" && pass.startMs !== null && pass.endMs !== null
       ? [{ startMs: pass.startMs, endMs: pass.endMs, milliseconds: pass.milliseconds ?? 0 }]

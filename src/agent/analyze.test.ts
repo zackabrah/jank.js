@@ -471,3 +471,75 @@ describe("documents", () => {
     expect(report.trials[0]?.worstMs).toBeGreaterThan(0);
   });
 });
+
+describe("GPU elapsed summaries", () => {
+  const elapsedFrame = (frameId: number, milliseconds: number): GpuFrame => ({
+    ...gpuFrame(frameId, milliseconds),
+    source: "webgl2",
+    invocations: gpuFrame(frameId, milliseconds).invocations.map((pass) => ({
+      ...pass,
+      startMs: null,
+      endMs: null,
+    })),
+  });
+  const summaryOf = (frames: GpuFrame[]) =>
+    analyzeRecording(
+      recordingOf(framesOf(frames.map(() => 10)), { gpuTiming: { version: 1, frames } }),
+    ).summary.gpu;
+
+  test.each([0, 2])("reports elapsed durations of %s ms without inventing a span", (ms) => {
+    const frame = elapsedFrame(0, ms);
+    frame.invocations.push(
+      ...frame.invocations.map((pass) => ({ ...pass, id: "1", label: "Scene 2" })),
+    );
+    expect(summaryOf([frame])).toEqual({
+      coverage: "1/1 complete",
+      spanMs: null,
+      passSumMs: { median: 2 * ms, p95: 2 * ms },
+      overlapRatio: null,
+      passes: [{ label: "Scene", medianMs: 2 * ms, p95Ms: 2 * ms, share: ms ? 1 : 0 }],
+    });
+  });
+
+  test("excludes incomplete and unknown inventories from elapsed summaries", () => {
+    const partial = { ...elapsedFrame(1, 100), omitted: 1 };
+    const unknown = { ...elapsedFrame(2, 200), inventory: "unknown" as const };
+    expect(summaryOf([elapsedFrame(0, 2), partial, unknown]).passSumMs).toEqual({
+      median: 2,
+      p95: 2,
+    });
+    expect(summaryOf([partial, unknown])).toMatchObject({
+      spanMs: null,
+      passSumMs: null,
+      overlapRatio: null,
+      passes: [],
+    });
+  });
+
+  test("keeps timestamped WebGPU spans and overlapping pass sums", () => {
+    const frame = gpuFrame(0, 2);
+    frame.invocations.push(...frame.invocations.map((pass) => ({ ...pass, id: "1" })));
+    expect(summaryOf([frame])).toMatchObject({
+      spanMs: { median: 2, p95: 2 },
+      passSumMs: { median: 4, p95: 4 },
+      overlapRatio: 2,
+    });
+  });
+
+  test("does not compare sums with a different population of spans", () => {
+    expect(summaryOf([gpuFrame(0, 2), elapsedFrame(1, 10)])).toMatchObject({
+      spanMs: { median: 2, p95: 2 },
+      passSumMs: { median: 2, p95: 10 },
+      overlapRatio: null,
+    });
+    const mixed = gpuFrame(0, 2);
+    mixed.invocations.push(
+      ...elapsedFrame(0, 10).invocations.map((pass) => ({ ...pass, id: "1" })),
+    );
+    expect(summaryOf([mixed])).toMatchObject({
+      spanMs: null,
+      passSumMs: { median: 12, p95: 12 },
+      overlapRatio: null,
+    });
+  });
+});

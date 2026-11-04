@@ -1,6 +1,6 @@
 import { type ComparisonBundle, settingDifferences } from "../compare/model.ts";
 import { comparisonResults } from "../compare/results.ts";
-import { type GpuFrame, gpuFrameCoverage, gpuSpan, timedPasses } from "../gpu/model.ts";
+import { type GpuFrame, gpuFrameCoverage, gpuSpan } from "../gpu/model.ts";
 import {
   frameCpuMs as cpuOf,
   frameToleranceMs,
@@ -390,19 +390,24 @@ function describeGpu(recording: PerformanceRecording, label: string, top: number
   const complete = (recording.gpuTiming?.frames ?? []).filter(
     (frame) => gpuFrameCoverage(frame).completeness === "complete",
   );
-  const spans = complete.flatMap((frame) => gpuSpan(frame) ?? []);
-  const sums = complete.map((frame) =>
-    timedPasses(frame).reduce((sum, pass) => sum + pass.milliseconds, 0),
+  const spans = complete.flatMap((frame) =>
+    frame.invocations.every((pass) => pass.startMs !== null && pass.endMs !== null)
+      ? (gpuSpan(frame) ?? [])
+      : [],
   );
-  if (!spans.length)
-    return { coverage: label, spanMs: null, passSumMs: null, overlapRatio: null, passes: [] };
-  const spanMs = spread(spans);
-  const passSumMs = spread(sums);
+  const sums = complete.map((frame) =>
+    frame.invocations.reduce((sum, pass) => sum + (pass.milliseconds ?? 0), 0),
+  );
+  const spanMs = spans.length ? spread(spans) : null;
+  const passSumMs = sums.length ? spread(sums) : null;
   return {
     coverage: label,
     spanMs,
     passSumMs,
-    overlapRatio: spanMs.median ? rounded(passSumMs.median / spanMs.median) : null,
+    overlapRatio:
+      spans.length === sums.length && spanMs?.median && passSumMs
+        ? rounded(passSumMs.median / spanMs.median)
+        : null,
     passes: describePasses(complete, top),
   };
 }
