@@ -8,8 +8,10 @@ export default defineConfig({
   workers: 2,
   forbidOnly: !!CI,
   retries: CI ? 1 : 0,
-  timeout: 30_000,
-  globalTimeout: 900_000,
+  // Hosted macOS runners have 3 cores and render in software, so everything can run far slower.
+  timeout: CI ? 120_000 : 30_000,
+  expect: { timeout: CI ? 20_000 : 5_000 },
+  globalTimeout: (CI ? 40 : 15) * 60_000,
   reporter: [
     ["list"],
     ["html", { open: "never" }],

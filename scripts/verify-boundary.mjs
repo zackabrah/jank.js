@@ -64,7 +64,7 @@ await Promise.all(
 
     for (const [, specifier] of imports) {
       // Preact is bundled into the panel and viewer; the core and adapters must stay free of it.
-      const bundled = /^preact(\/|$)/.test(specifier) && !/^(core|adapters|types)\//.test(file);
+      const bundled = /^preact(\/|$)/.test(specifier) && !/^(core|adapters|types)[\\/]/.test(file);
       assert.ok(
         specifier.startsWith(".") || bundled,
         `Runtime dependency in ${file}: ${specifier}`,

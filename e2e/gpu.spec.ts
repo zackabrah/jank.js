@@ -109,6 +109,8 @@ for (const theme of ["dark", "light"]) {
 test("timeout remains partial and a discarded finalization never saves", async ({ page }) => {
   await page.clock.install();
   await page.goto("/checks/gpu.html");
+  // Finalization has a 500 ms deadline, and a slower engine can overrun it between steps.
+  await page.clock.pauseAt(Date.now() + 1000);
   const section = page
     .locator("section")
     .filter({ has: page.getByRole("heading", { name: "GPU capture · dark", exact: true }) });

@@ -59,10 +59,7 @@ judgment or manual screen-reader testing. See the official
 
 ## Component styling
 
-Prefer licensed [Tailwind Plus HTML blocks](https://tailwindcss.com/plus/ui-blocks/application-ui)
-as the starting point for new UI. Adapt them to desktop-only layouts and the
-Geist-inspired theme: system sans-serif for words, system monospace for measurements. The HUD statistics adapt the
-[Simple Stats block](https://tailwindcss.com/plus/ui-blocks/application-ui/data-display/stats#component-0784024584e9897ccb13d2932456484b).
+Use desktop-only layouts and the Geist-inspired theme: system sans-serif for words, system monospace for measurements.
 
 Preact is the only third-party JavaScript runtime, and it is bundled. The library build guard rejects other bundled packages and external runtime imports. Do not add React compatibility or CDN scripts.
 

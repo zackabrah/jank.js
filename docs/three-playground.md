@@ -254,10 +254,6 @@ enable network services or unsafe browser flags.
 
 ## Checks and bundle
 
-Remaining inspector hooks and
-the optional timestamp-source evaluation are tracked in the
-[Three.js adapter backlog](build-plan.md#threejs-adapter-backlog).
-
 - `pnpm test:e2e`: stress, pause/resume, CPU scopes, spike capture, GPU frame-ID
   exports and explicit unsupported states. Headless Chromium here lacks a
   WebGPU adapter and WebGL timer extension.

@@ -1,6 +1,6 @@
 #!/bin/sh
 # The release gate before every commit: boundary, format, lint, types, unit tests with the
-# coverage floors in vitest.config.ts, build, the packed-package consumer check and the
+# coverage floors in vite.config.ts, build, the packed-package consumer check and the
 # browser suite, then the README's chips from those runs. Coverage below any floor fails the
 # commit. It checks the working tree, not only what is staged. Skip once with
 # `git commit --no-verify`.

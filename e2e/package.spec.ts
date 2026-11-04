@@ -58,13 +58,17 @@ test("the built package mounts, records and opens its lazy viewer with no dev se
   expect(viewport.width - (box.x + box.width)).toBeCloseTo(20, 0);
   expect(box.y).toBeCloseTo(20, 0);
   await panel.getByRole("button", { name: "Rec", exact: true }).click();
-  await panel
-    .getByRole("button", { name: "Stop recording" })
-    .or(panel.getByRole("button", { name: "Rec" }))
-    .first()
-    .waitFor();
-  await page.waitForTimeout(400);
   await panel.getByRole("tab", { name: /^Capture/ }).click();
+  // Wait for frames, not time: a slow machine may seal none in a fixed wait, leaving nothing to save.
+  await expect
+    .poll(async () =>
+      Number(
+        await panel
+          .getByRole("progressbar", { name: "Recording capacity", exact: true })
+          .getAttribute("aria-valuenow"),
+      ),
+    )
+    .toBeGreaterThan(3);
   await panel.getByRole("button", { name: "Stop and save", exact: true }).click();
   const saved = panel.getByRole("listitem", { name: "Capture C1", exact: true });
   await expect(saved).toBeVisible();
