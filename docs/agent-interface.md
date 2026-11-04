@@ -2,8 +2,8 @@
 
 Prototype. Lets an agent or script record a host and read a short report, instead of
 clicking the panel and parsing a recording that can run to tens of megabytes. The report
-schema may still change. It lives in this repository and is not part of the published
-package.
+schema may still change. `window.jank` ships in the package as `jank.js/agent`. The `jank`
+commands below are not published yet, so run them from this repository.
 
 ## Analyze a file
 
@@ -21,9 +21,9 @@ Node 22.18 or later.
 A host opts in by passing its capture controller:
 
 ```ts
-import { installAgentApi } from "./src/agent/api.ts";
+import { installAgentApi } from "jank.js/agent";
 
-const remove = installAgentApi(window, controller);
+const remove = installAgentApi(window, panel.capture, { event: monitor.event });
 // At host teardown:
 remove();
 ```

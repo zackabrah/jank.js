@@ -116,6 +116,10 @@
       "types": "./dist-package/types/gpu-api.d.ts",
       "import": "./dist-package/gpu.js"
     },
+    "./agent": {
+      "types": "./dist-package/types/agent-api.d.ts",
+      "import": "./dist-package/agent.js"
+    },
     "./viewer": {
       "types": "./dist-package/types/viewer/mount.d.ts",
       "import": "./dist-package/viewer.js"

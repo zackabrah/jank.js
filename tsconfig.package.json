@@ -12,6 +12,7 @@
     "src/index.ts",
     "src/panel-api.ts",
     "src/gpu-api.ts",
+    "src/agent-api.ts",
     "src/viewer/mount.tsx",
     "src/adapters/*.ts"
   ],

@@ -10,7 +10,7 @@ export type Verdict =
   | "No observed difference"
   | "Inconclusive"
   | "Unknown";
-interface Failure {
+export interface Failure {
   trial: number;
   reason: string;
 }

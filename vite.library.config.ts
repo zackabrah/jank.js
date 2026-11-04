@@ -16,6 +16,7 @@ export default defineConfig({
         index: "src/index.ts",
         panel: "src/panel-api.ts",
         gpu: "src/gpu-api.ts",
+        agent: "src/agent-api.ts",
         viewer: "src/viewer/mount.tsx",
         "adapters/three": "src/adapters/three.ts",
         "adapters/three-host": "src/adapters/three-host.ts",

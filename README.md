@@ -123,7 +123,7 @@ Open a saved capture from the panel, or use `jank.js/viewer.html`: one self-cont
 
 ## Adapters
 
-Optional, and none bundles a renderer. `jank.js/adapters/three` reads `renderer.info` counters. `jank.js/adapters/three-webgpu` and `jank.js/adapters/webgl2` time GPU passes: pass the source they return as `gpu`. `jank.js/adapters/three-host` adds renderer errors, instance and loading observers for Three.js hosts. `jank.js/gpu` gives frame-linked GPU evidence for recordings.
+Optional, and none bundles a renderer. `jank.js/adapters/three` reads `renderer.info` counters. `jank.js/adapters/three-webgpu` and `jank.js/adapters/webgl2` time GPU passes: pass the source they return as `gpu`. `jank.js/adapters/three-host` adds renderer errors, instance and loading observers for Three.js hosts. `jank.js/gpu` gives frame-linked GPU evidence for recordings. `jank.js/agent` adds `window.jank`, so scripts and agents can record and read a short report ([guide](docs/agent-interface.md)).
 
 ## Upgrading from 0.3
 

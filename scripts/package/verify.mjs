@@ -119,6 +119,7 @@ try {
     `import { buildInfo, createDiagnostics, createPreparationProfiler, parseRecording, serializeRecording } from 'jank.js';
 import { createPerformancePanel } from 'jank.js/panel';
 import { createGpuHistory, gpuFrameToLive } from 'jank.js/gpu';
+import { installAgentApi } from 'jank.js/agent';
 import { openRecordingViewer } from 'jank.js/viewer';
 import { createThreeWebGpuSource } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer } from 'jank.js/adapters/three';
@@ -126,7 +127,7 @@ import { readThreeCounters } from 'jank.js/adapters/three-host';
 import { createWebGl2GpuSource } from 'jank.js/adapters/webgl2';
 import assert from 'node:assert/strict';
 // Importing every entry above in Node proves none of them touches the DOM at import time.
-for (const fn of [createPerformancePanel, createGpuHistory, gpuFrameToLive, openRecordingViewer, readThreeCounters]) assert.equal(typeof fn, 'function');
+for (const fn of [installAgentApi, createPerformancePanel, createGpuHistory, gpuFrameToLive, openRecordingViewer, readThreeCounters]) assert.equal(typeof fn, 'function');
 assert.equal(buildInfo.version, ${JSON.stringify(manifest.version)});
 assert.match(buildInfo.commit, /^[a-f0-9]{40}$/);
 const monitor = createDiagnostics(); monitor.frame(performance.now(), 16, 1, 2);
@@ -151,13 +152,17 @@ channel.dispose(); monitor.dispose();`,
     `import { createDiagnostics, parseRecording, inspectFrame, type PerformanceRecording, type GpuProfile } from 'jank.js';
 import { createPerformancePanel, type PerformancePanelOptions, type SavedCapture } from 'jank.js/panel';
 import { createGpuHistory, type GpuFrame } from 'jank.js/gpu';
+import { installAgentApi } from 'jank.js/agent';
 import { openRecordingViewer } from 'jank.js/viewer';
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer, type ThreeRendererInfo } from 'jank.js/adapters/three';
 import { createWebGl2GpuSource } from 'jank.js/adapters/webgl2';
 const monitor = createDiagnostics();
 const options: PerformancePanelOptions = { shell: document.body, monitor };
-const panel = createPerformancePanel(options); panel.refresh(); panel.destroy();
+const panel = createPerformancePanel(options); panel.refresh();
+const removeAgent = installAgentApi(window, panel.capture, { event: monitor.event });
+export const agentVersion: number | undefined = window.jank?.version;
+removeAgent(); panel.destroy();
 export type Profile = GpuProfile;
 export type Frame = GpuFrame;
 export function open(capture: SavedCapture) { return openRecordingViewer(document, capture); }
