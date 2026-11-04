@@ -66,7 +66,10 @@ For [the release checklist, #3](https://github.com/zackabrah/jank.js/issues/3):
   assets. [Evidence and limits](verification/consumer-smoke.json). Private host source,
   assets, server configuration and raw captures remain outside this repository.
 - `docs/readme/social-preview.png` is prepared without the obsolete size claims.
-  The canonical SVG remains its source. Existing panel/viewer captures retain the
+  `pnpm docs:assets` regenerates it from the canonical SVG with the current version,
+  alongside the README chips. CI uploads these assets for review and regenerates
+  them before the automatic version commit; the GitHub Social preview upload remains
+  manual. Existing panel/viewer captures retain the
   applicable layouts; retake them if the final release changes those layouts or the
   measurements displayed in them.
 

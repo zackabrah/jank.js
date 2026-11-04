@@ -22,6 +22,7 @@
     "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
     "release:prepare": "pnpm check:full && pnpm pack --pack-destination artifacts/npm",
     "docs:chips": "node scripts/readme/update.mjs",
+    "docs:assets": "node scripts/readme/assets.mjs",
     "docs:captures": "playwright test -c playwright.captures.config.ts",
     "bench": "pnpm build:package && node scripts/benchmark.mjs",
     "jank": "node cli/jank.ts",

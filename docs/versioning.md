@@ -22,11 +22,24 @@ breaking-change marker from skipping straight to 2.0.0. With no new merged PR,
 the candidate version stays unchanged.
 
 The version job checks the merged source, prepares package.json and the history,
-reruns project/package checks, then commits and atomically pushes main plus the
+reruns project/package checks, regenerates the README assets, then commits and atomically pushes main plus the
 final `vX.Y.Z` tag. It never force-pushes. If main advances, the newer workflow
 catches up the pending PRs. Build artifacts are produced again from the tagged
 commit so their displayed commit is accurate. This does not publish to npm or
 create a GitHub release.
+
+The **Generate README assets** CI job uses unit/coverage reports from the Linux
+check job and browser results from the same workflow run. It validates the report
+completeness, generates chips and a versioned 1280 × 640 social card, and uploads
+them as `readme-assets` for review on PRs. The version job reuses that run's browser
+report and its own fresh unit/coverage results, then runs `pnpm docs:assets` again
+after setting the release version. It commits `badge-*.svg`, `social-preview.svg`
+and `social-preview.png` with the version and history, before creating the tag.
+
+`social-preview.svg` remains the authored artwork; its `release-version` text is
+generated, and Chromium renders the PNG. Size chips remain editorial estimates,
+not measurements from this generation step. Screenshots still use `pnpm docs:captures`.
+Generating the PNG does not upload it to GitHub's repository Social preview setting.
 
 npm publication is a separate, manually dispatched workflow. See [npm publishing](publishing.md) for the initial account setup, dry runs and publishing an existing version tag. Versioning does not trigger it automatically.
 

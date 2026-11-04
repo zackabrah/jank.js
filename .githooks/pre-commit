@@ -16,7 +16,7 @@ if echo "$staged" | grep -qE '^src/(live|capture|compare|loading|ui|viewer)/[^.]
   ! echo "$staged" | grep -qE '^docs/readme/.*\.(png|gif)$'; then
   echo "The panel or viewer changed. If it looks different, run pnpm docs:captures."
 fi
-# Every suite passed: redraw the README's version, test and coverage chips from these runs and
+# Every suite passed: redraw the README chips and versioned social card from these runs and
 # commit them too.
-chips=$(node scripts/readme/update.mjs)
-git add -- $chips
+assets=$(node scripts/readme/assets.mjs)
+git add -- $assets

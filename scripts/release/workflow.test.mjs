@@ -66,6 +66,12 @@ await test(
         "# Versions\n\n<!-- versions -->\n",
       );
 
+      mkdirSync(join(repo, "docs/readme"), { recursive: true });
+      const assets = ["badge-version.svg", "badge-unit.svg", "social-preview.svg", "social-preview.png"];
+      for (const name of assets)
+        writeFileSync(join(repo, "docs/readme", name), "old asset");
+      writeFileSync(join(repo, "docs/readme/panel.png"), "original screenshot");
+
       git("add", ".");
 
       git("commit", "-m", "baseline");
@@ -128,7 +134,17 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
         mode: 0o755,
       });
 
+      // Stand in for CI's regenerated assets; unrelated screenshots must stay out of the tag.
+      for (const name of assets)
+        writeFileSync(join(repo, "docs/readme", name), `generated ${name} for 0.2.0`);
+      writeFileSync(join(repo, "docs/readme/panel.png"), "unrelated change");
+
       run(process.execPath, [script, "publish"], repo, env);
+
+      for (const name of assets)
+        assert.equal(git("show", `v0.2.0:docs/readme/${name}`), `generated ${name} for 0.2.0`);
+      assert.equal(git("show", "v0.2.0:docs/readme/panel.png"), "original screenshot");
+      git("restore", "docs/readme/panel.png");
 
       // Only the automated version commit bypasses the hook; local commits retain it.
       assert.throws(

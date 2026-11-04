@@ -41,6 +41,14 @@ jobs:
           path: |
             artifacts/*.tgz
             dist-package
+      - uses: actions/upload-artifact@v6
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: readme-unit-results
+          if-no-files-found: error
+          path: |
+            artifacts/unit/results.json
+            coverage/coverage-summary.json
 
   browser:
     runs-on: macos-latest
@@ -60,15 +68,53 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/ci/summary.mjs browser
       - uses: actions/upload-artifact@v6
+        with:
+          name: readme-browser-results
+          if-no-files-found: error
+          path: artifacts/e2e/results.json
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: browser-failure-traces
           path: test-results
           retention-days: 7
 
+  readme:
+    name: Generate README assets
+    needs: [check, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - uses: actions/download-artifact@v6
+        with:
+          name: readme-unit-results
+          path: .
+      - uses: actions/download-artifact@v6
+        with:
+          name: readme-browser-results
+          path: artifacts/e2e
+      - name: Generate chips and social card from this run's results
+        run: pnpm docs:assets
+      - uses: actions/upload-artifact@v6
+        with:
+          name: readme-assets
+          if-no-files-found: error
+          path: |
+            docs/readme/badge-*.svg
+            docs/readme/social-preview.svg
+            docs/readme/social-preview.png
+
   version:
     name: Version merged PRs
-    needs: [check, browser]
+    needs: [check, browser, readme]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -97,6 +143,16 @@ jobs:
         run: pnpm install --frozen-lockfile
       - if: steps.plan.outputs.changed == 'true'
         run: pnpm check && pnpm test:package
+      - if: steps.plan.outputs.changed == 'true'
+        uses: actions/download-artifact@v6
+        with:
+          name: readme-browser-results
+          path: artifacts/e2e
+      - if: steps.plan.outputs.changed == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Regenerate chips and social card for the release version
+        if: steps.plan.outputs.changed == 'true'
+        run: pnpm docs:assets
       - name: Commit and tag the verified version
         if: steps.plan.outputs.changed == 'true'
         id: release
