@@ -1,15 +1,11 @@
-import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { analyzeDocument } from "../src/agent/analyze.ts";
-import { parseViewerDocument } from "../src/viewer/document.ts";
+import { ANALYZE_HELP, runAnalyze } from "./analyze.ts";
 
 const USAGE = `Usage:
   jank analyze <recording-or-comparison.json> [--top <n>]
   jank experiment --a <url> --b <url> --out <dir> [options]
 
-analyze prints a short ranked JSON report: slow-frame episodes, event costs, GPU
-passes and growing counters for a recording, or verdicts for a comparison. --top
-limits each list (default 10).
+${ANALYZE_HELP}
 
 experiment records fresh page loads in A-B-B-A order through each page's
 window.jank, then saves the trials and a comparison and prints the results.
@@ -86,10 +82,7 @@ try {
   if (values.help) {
     console.log(USAGE);
   } else if (command === "analyze") {
-    if (!file || extra.length) failUsage("Expected analyze <file>.");
-    const top = values.top === undefined ? undefined : whole("top", values.top, 10, 1);
-    const document = parseViewerDocument(await readFile(file ?? "", "utf8"));
-    console.log(JSON.stringify(analyzeDocument(document, top), null, 2));
+    await runAnalyze([file, ...extra], values.top, failUsage);
   } else if (command === "experiment") {
     if (file) failUsage("experiment takes options only.");
     const { a, b, out } = values;

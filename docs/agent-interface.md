@@ -2,19 +2,20 @@
 
 Prototype. Lets an agent or script record a host and read a short report, instead of
 clicking the panel and parsing a recording that can run to tens of megabytes. The report
-schema may still change. `window.jank` ships in the package as `jank.js/agent`. The `jank`
-commands below are not published yet, so run them from this repository.
+schema may still change. `window.jank` ships in the package as `jank.js/agent`, and
+`jank analyze` as the package's `jank` command. `jank experiment` drives a browser with
+Playwright, so it only runs from this repository.
 
 ## Analyze a file
 
 ```sh
-pnpm -s jank analyze recording.json --top 5
+npx jank analyze recording.json --top 5
 ```
 
 This takes a recording or a comparison exported from the panel or viewer, and prints
 JSON to stdout. `--top` limits each list (default 10). It exits 1 if the file can't be
-read or isn't valid, and 2 for bad arguments. It runs TypeScript directly, so it needs
-Node 22.18 or later.
+read or isn't valid, and 2 for bad arguments. In this repository, `pnpm -s jank analyze` runs the
+same command from source, which needs Node 22.18 or later.
 
 ## Drive a running host
 
@@ -44,6 +45,8 @@ This is the same capture a person drives with Rec, so the two share one recorder
 results and rejects if they fail, so an agent can't mistake a failure for a clean report.
 
 ## Compare two builds
+
+From this repository:
 
 ```sh
 pnpm -s jank experiment --a <url> --b <url> --out results --label-a before --label-b after

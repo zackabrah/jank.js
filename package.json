@@ -16,7 +16,7 @@
     "test:e2e:report": "playwright show-report",
     "test:package": "node scripts/package/verify.mjs",
     "build": "pnpm typecheck && pnpm build:package",
-    "build:package": "vite build --config vite.library.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",
+    "build:package": "vite build --config vite.library.config.ts && vite build --config vite.cli.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",
     "prepack": "pnpm build:package",
     "check": "pnpm verify:boundary && pnpm lint && pnpm knip && pnpm test:run && pnpm build",
     "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
@@ -88,6 +88,9 @@
     "webgpu",
     "game-development"
   ],
+  "bin": {
+    "jank": "dist-package/jank-cli.js"
+  },
   "files": [
     "dist-package",
     "licenses",

@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/knip/schema-jsonc.json",
   // Review pages and the standalone viewer are loaded by HTML, not imported.
-  "entry": ["src/viewer/entry.tsx", "checks/*.tsx"],
+  "entry": ["src/viewer/entry.tsx", "checks/*.tsx", "cli/bin.ts"],
   // Type declarations for the .mjs scripts that TypeScript sources import.
   "ignore": ["**/*.d.mts"],
   // Required by pnpm docs:captures, which says so when it is missing.

@@ -148,6 +148,22 @@ channel.dispose(); monitor.dispose();`,
   run(process.execPath, ["consumer.mjs"], temp);
 
   await writeFile(
+    join(temp, "record.mjs"),
+    `import { createDiagnostics, serializeRecording } from 'jank.js';
+import { writeFileSync } from 'node:fs';
+const monitor = createDiagnostics();
+for (let i = 1; i < 30; i++) monitor.frame(i * 17, 17, 1, 2);
+writeFileSync('recording.json', serializeRecording(monitor.export()));
+`,
+  );
+  run(process.execPath, ["record.mjs"], temp);
+  const jank = join(temp, "node_modules/.bin", windows ? "jank.cmd" : "jank");
+  const report = JSON.parse(run(jank, ["analyze", "recording.json", "--top", "2"], temp).toString());
+  assert.equal(report.format, "jank-analysis");
+  assert.equal(report.kind, "recording");
+  assert.throws(() => run(jank, ["experiment"], temp), /only runs from a checkout/);
+
+  await writeFile(
     join(temp, "consumer.ts"),
     `import { createDiagnostics, parseRecording, inspectFrame, type PerformanceRecording, type GpuProfile } from 'jank.js';
 import { createPerformancePanel, type PerformancePanelOptions, type SavedCapture } from 'jank.js/panel';

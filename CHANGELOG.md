@@ -22,7 +22,7 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - A Loading tab with a real-offset waterfall and cold/repeat comparison.
 - `jank.js/gpu` and `jank.js/adapters/three-host` for frame-linked GPU evidence and Three.js hosts.
 - `instrumentThreeDevice` from `jank.js/adapters/three-host` takes an optional `describePass` to name passes, and its new `gpuCalls()` reports pipelines, shaders, textures, buffers and bind groups created, plus submits and writes per frame.
-- A prototype agent interface: `jank.js/agent` adds `window.jank` to a host, and this repository's unpublished `pnpm jank analyze` and `pnpm jank experiment` read and compare recordings. See [the guide](docs/agent-interface.md).
+- A prototype agent interface: `jank.js/agent` adds `window.jank` to a host, the package's `jank analyze` reads a saved recording or comparison, and this repository's unpublished `pnpm jank experiment` compares two builds. See [the guide](docs/agent-interface.md).
 
 ### Earlier, for the 0.3 panel
 
