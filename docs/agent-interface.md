@@ -119,7 +119,7 @@ Each episode has frame IDs, so its details can be found in the viewer, and this 
 - **`kind`:** `spike` means CPU scopes account for at least half the time of its slow
   frames. `stall` means most of that time is outside instrumented CPU work, such as GPU
   waits or other load.
-- **`scopes`:** the longest CPU scopes.
+- **`scopes`:** the longest CPU scopes, with matching system/label intervals unioned within each frame before summing. Summary CPU-scope statistics use the same union; different labels may overlap.
 - **`events`:** host events within 50 ms. Hosts get more from this by reporting their
   meaningful moments with `monitor.event`.
 - **`gpu`:** the longest GPU span from 5 frames before the episode to its end. GPU work

@@ -7,6 +7,7 @@ import {
   RECORDING_LIFECYCLE_EVENTS,
   summarizeRecording,
 } from "../recording/summary.ts";
+import { unionDuration } from "../recording/timing.ts";
 import type { DiagnosticFrame, PerformanceRecording } from "../recording/types.ts";
 
 const DEFAULT_TOP = 10;
@@ -73,13 +74,32 @@ function findEpisodes(frames: readonly DiagnosticFrame[], limitMs: number) {
   return episodes;
 }
 
+function frameScopes(frame: DiagnosticFrame) {
+  const groups = new Map<
+    string,
+    { system: string; label: string; intervals: DiagnosticFrame["scopes"] }
+  >();
+  for (const scope of frame.scopes) {
+    const key = JSON.stringify([scope.system, scope.label]);
+    const group = groups.get(key) ?? { system: scope.system, label: scope.label, intervals: [] };
+    group.intervals.push(scope);
+    groups.set(key, group);
+  }
+  return [...groups].map(([key, { system, label, intervals }]) => ({
+    key,
+    system,
+    label,
+    ms: unionDuration(intervals),
+  }));
+}
+
 function topScopes(frames: readonly DiagnosticFrame[]) {
   const totals = new Map<string, { system: string; label: string; ms: number }>();
   for (const frame of frames)
-    for (const scope of frame.scopes) {
-      const key = JSON.stringify([scope.system, scope.label]);
+    for (const scope of frameScopes(frame)) {
+      const { key } = scope;
       const total = totals.get(key) ?? { system: scope.system, label: scope.label, ms: 0 };
-      total.ms += scope.end - scope.start;
+      total.ms += scope.ms;
       totals.set(key, total);
     }
   return [...totals.values()]
@@ -139,10 +159,10 @@ function counterSteps(recording: PerformanceRecording, startAt: number, endAt: n
 
 function gpuEvidence(gpuFrames: ReadonlyMap<number, GpuFrame>, firstId: number, lastId: number) {
   let worst: { frame: GpuFrame; span: number } | null = null;
-  for (let id = firstId; id <= lastId; id++) {
-    const frame = gpuFrames.get(id);
-    const span = frame ? gpuSpan(frame) : null;
-    if (frame && span !== null && (!worst || span > worst.span)) worst = { frame, span };
+  for (const [id, frame] of gpuFrames) {
+    if (id < firstId || id > lastId) continue;
+    const span = gpuSpan(frame);
+    if (span !== null && (!worst || span > worst.span)) worst = { frame, span };
   }
   if (!worst) return null;
   const coverage = gpuFrameCoverage(worst.frame);
@@ -306,14 +326,14 @@ function describePasses(complete: readonly GpuFrame[], top: number) {
 function describeCpuScopes(frames: readonly DiagnosticFrame[], top: number) {
   const perFrame = new Map<string, { system: string; label: string; times: number[] }>();
   frames.forEach((frame, index) => {
-    for (const scope of frame.scopes) {
-      const key = JSON.stringify([scope.system, scope.label]);
+    for (const scope of frameScopes(frame)) {
+      const { key } = scope;
       const entry = perFrame.get(key) ?? {
         system: scope.system,
         label: scope.label,
         times: Array.from({ length: frames.length }, () => 0),
       };
-      entry.times[index] = (entry.times[index] ?? 0) + scope.end - scope.start;
+      entry.times[index] = scope.ms;
       perFrame.set(key, entry);
     }
   });
@@ -335,7 +355,8 @@ function describeEventCosts(recording: PerformanceRecording, limitMs: number, to
     if (event.at < first.at - first.interval || event.at > last.at) continue;
     const near = frames.filter(
       (frame) =>
-        frame.at >= event.at - EVENT_COST_WINDOW_MS && frame.at <= event.at + EVENT_COST_WINDOW_MS,
+        frame.at >= event.at - EVENT_COST_WINDOW_MS &&
+        frame.at - frame.interval <= event.at + EVENT_COST_WINDOW_MS,
     );
     const key = JSON.stringify([event.label, event.detail]);
     const group = groups.get(key) ?? { label: event.label, detail: event.detail, worst: [] };

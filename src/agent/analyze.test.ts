@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { comparisonFixture } from "../compare/fixtures.ts";
 import type { GpuFrame } from "../gpu/model.ts";
 import { recordingFixture } from "../recording/fixtures.ts";
+import { parseRecording } from "../recording/format.ts";
 import type {
   DiagnosticFrame,
   DiagnosticSystem,
@@ -62,6 +63,72 @@ const gpuFrame = (frameId: number, spanMs: number): GpuFrame => ({
 });
 
 describe("episodes", () => {
+  test("sparse imported frame IDs bound GPU lookup by available evidence", () => {
+    const frames = framesOf([10, 100]).map((frame, index) => ({
+      ...frame,
+      id: index === 0 ? 1 : Number.MAX_SAFE_INTEGER,
+    }));
+    const recording = parseRecording(JSON.stringify(recordingOf(frames)));
+    expect(analyzeRecording(recording).episodes[0]?.gpu).toBeNull();
+    recording.gpuTiming = {
+      version: 1,
+      frames: [gpuFrame(0, 1000), gpuFrame(1, 40), gpuFrame(Number.MAX_SAFE_INTEGER, 30)],
+    };
+    expect(analyzeRecording(recording).episodes[0]?.gpu).toMatchObject({ frame: 1, spanMs: 40 });
+  });
+
+  test("CPU hotspots union matching scopes within each frame in summaries and episodes", () => {
+    const frames = framesOf([30, 30]);
+    for (const frame of frames) {
+      const start = frame.at - frame.interval;
+      frame.scopes = [
+        [0, 10],
+        [2, 8],
+        [8, 12],
+        [15, 18],
+      ].map(([from = 0, to = 0]) => ({
+        system: "work",
+        label: "Work",
+        start: start + from,
+        end: start + to,
+      }));
+      frame.scopes.push({ system: "other", label: "Work", start, end: start + 5 });
+    }
+    const report = analyzeRecording(recordingOf(frames));
+    expect(report.summary.cpuScopes).toEqual([
+      { system: "work", label: "Work", median: 15, p95: 15 },
+      { system: "other", label: "Work", median: 5, p95: 5 },
+    ]);
+    expect(report.episodes[0]?.scopes).toEqual([
+      { system: "work", label: "Work", ms: 30 },
+      { system: "other", label: "Work", ms: 10 },
+    ]);
+  });
+
+  test("event costs include long frames overlapping the event window", () => {
+    const report = analyzeRecording(
+      recordingOf(framesOf([1000, 10, 1000]), {
+        events: [
+          { at: 1, label: "Compile", detail: "" },
+          { at: 1011, label: "Compile", detail: "" },
+          { at: -1, label: "Before recording", detail: "" },
+          { at: 2011, label: "After recording", detail: "" },
+        ],
+      }),
+    );
+    expect(report.eventCosts).toEqual([
+      {
+        label: "Compile",
+        detail: "",
+        pattern: "recurring",
+        occurrences: 2,
+        firstMs: 1000,
+        repeatMedianMs: 1000,
+        worstMs: [1000, 1000],
+      },
+    ]);
+  });
+
   test("a clean recording has none, and still reports its summary", () => {
     const report = analyzeRecording(recordingOf(framesOf(Array(100).fill(10))));
     expect(report.episodes).toEqual([]);
