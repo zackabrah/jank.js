@@ -1,4 +1,4 @@
-import type { GpuCoverage } from "../gpu/model.ts";
+import { type GpuCoverage, gpuInventoryUnknown } from "../gpu/model.ts";
 
 /** Counts refer to explicit frame records, never an inferred pass inventory. */
 export function GpuCoverageBar({
@@ -10,6 +10,7 @@ export function GpuCoverageBar({
   label?: string;
   compact?: boolean;
 }) {
+  const inventoryUnknown = gpuInventoryUnknown(coverage);
   const description = `${coverage.complete} complete · ${coverage.partial} partial · ${coverage.unknown} unknown · ${coverage.missing} missing GPU frame records`;
   return (
     <div class="space-y-1 py-2 text-label-12 text-jank-text-secondary">
@@ -18,9 +19,11 @@ export function GpuCoverageBar({
           {label} · {coverage.total} {coverage.total === 1 ? "frame" : "frames"}
         </p>
         <span class="font-mono">
-          {coverage.total
-            ? `${(Math.floor((coverage.complete * 1000) / coverage.total) / 10).toFixed(1)}% complete`
-            : "No frames yet"}
+          {inventoryUnknown
+            ? "Unknown inventory"
+            : coverage.total
+              ? `${(Math.floor((coverage.complete * 1000) / coverage.total) / 10).toFixed(1)}% complete`
+              : "No frames yet"}
         </span>
       </div>
       <div
@@ -46,7 +49,9 @@ export function GpuCoverageBar({
       </div>
       {compact ? (
         <p>
-          {coverage.complete.toLocaleString()} / {coverage.total.toLocaleString()} complete frames
+          {inventoryUnknown
+            ? "The host did not declare every submitted invocation."
+            : `${coverage.complete.toLocaleString()} / ${coverage.total.toLocaleString()} complete frames`}
         </p>
       ) : (
         <dl class="space-y-1">

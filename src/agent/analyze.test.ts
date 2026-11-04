@@ -86,6 +86,21 @@ describe("episodes", () => {
     expect(report.episodes[0]).toMatchObject({ kind: "spike", frames: 1, worstFrame: 40 });
   });
 
+  // What: the report says unknown when no frame declared an inventory, as the viewer does.
+  // Why: issue #8. An agent reading "0/3 complete" would take valid timings for a failed source.
+  test("a source with no declared inventory reports unknown coverage", () => {
+    const frames = framesOf([16, 16, 16]);
+    const report = analyzeRecording(
+      recordingOf(frames, {
+        gpuTiming: {
+          version: 1,
+          frames: frames.map((frame) => ({ ...gpuFrame(frame.id, 2), inventory: "unknown" })),
+        },
+      }),
+    );
+    expect(report.summary.gpu.coverage).toBe("unknown");
+  });
+
   describe("a display slower than the budget", () => {
     const timedAt = (spanMs: number) => (id: number) => gpuFrame(id, spanMs);
     const atDisplayRate = (spanMs: number | null, intervals: number[]) => {

@@ -1,4 +1,5 @@
 import { formatMs } from "../format.ts";
+import { gpuInventoryUnknown } from "../gpu/model.ts";
 import type { PerformanceRecording } from "../recording/types.ts";
 import { GpuCoveragePopover } from "./coverage-popover.tsx";
 import type { RecordingInspection } from "./inspection.ts";
@@ -73,11 +74,11 @@ export function RecordingSummary({
           <span>
             {!count
               ? "No frames"
-              : !recording.gpuTiming
-                ? recording.gpu
+              : !recording.gpuTiming && !recording.gpu
+                ? "Not recorded"
+                : !recording.gpuTiming || gpuInventoryUnknown(summary.gpu)
                   ? "Unknown"
-                  : "Not recorded"
-                : `${(Math.floor((summary.gpu.complete / count) * 1000) / 10).toFixed(1)}%`}
+                  : `${(Math.floor((summary.gpu.complete / count) * 1000) / 10).toFixed(1)}%`}
           </span>
           <GpuCoveragePopover recording={recording} summary={summary} onInspect={onInspect} />
         </dd>

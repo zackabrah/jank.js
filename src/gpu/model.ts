@@ -113,6 +113,10 @@ export function gpuCoverage(frameIds: readonly number[], records: readonly GpuFr
 }
 export type GpuCoverage = ReturnType<typeof gpuCoverage>;
 
+/** No frame declared its inventory, so a share of complete frames would only read as a failure. */
+export const gpuInventoryUnknown = (coverage: GpuCoverage) =>
+  coverage.unknown > 0 && coverage.complete === 0 && coverage.partial === 0;
+
 export function gpuFrameToLive(frame: GpuFrame, currentFrame: number): LiveGpu {
   validateGpuFrame(frame);
   const coverage = gpuFrameCoverage(frame);

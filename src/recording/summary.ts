@@ -1,4 +1,4 @@
-import { gpuCoverage } from "../gpu/model.ts";
+import { gpuCoverage, gpuInventoryUnknown } from "../gpu/model.ts";
 import { recordingDisplayPace } from "./display-pace.ts";
 import type { PerformanceRecording } from "./types.ts";
 
@@ -32,7 +32,9 @@ export function summarizeRecording(recording: PerformanceRecording) {
   return {
     gpu,
     gpuLabel: recording.gpuTiming
-      ? `${gpu.complete}/${gpu.total} complete`
+      ? gpuInventoryUnknown(gpu)
+        ? "unknown"
+        : `${gpu.complete}/${gpu.total} complete`
       : recording.gpu
         ? "unknown"
         : "not recorded",
