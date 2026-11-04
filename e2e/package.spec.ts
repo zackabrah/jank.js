@@ -1,24 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
-import { extname, join } from "node:path";
-import { expect, type Page, test } from "@playwright/test";
-
-const dist = "dist-package";
-const origin = "http://jank.test";
-const types: Record<string, string> = { ".js": "text/javascript", ".html": "text/html" };
-
-/** Serves the built files with no dev server involved, as a consumer's static host would. */
-async function servePackage(page: Page, html: string) {
-  await page.route(`${origin}/**`, (route) => {
-    const path = new URL(route.request().url()).pathname;
-    if (path === "/") return route.fulfill({ contentType: "text/html", body: html });
-    const file = join(dist, path);
-    if (!existsSync(file)) return route.fulfill({ status: 404, body: "" });
-    return route.fulfill({
-      contentType: types[extname(file)] ?? "application/octet-stream",
-      body: readFileSync(file),
-    });
-  });
-}
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { expect, test } from "@playwright/test";
+import { dist, origin, servePackage } from "./serve-package.ts";
 
 const host = `<!doctype html><html><head><title>Consumer</title><script type="importmap">
 {"imports":{"jank.js":"/index.js","jank.js/panel":"/panel.js"}}</script></head>
