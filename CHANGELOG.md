@@ -12,7 +12,7 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - `parseRecording` from `jank.js` now keeps capture rules, episode context and GPU evidence, which panel exports carry.
 - The panel and viewer target desktop widths. The bundled UI runtime (Preact) grows the panel from ~23 KB to ~64 KB gzipped; the core stays ~4.6 KB and the viewer loads only when opened. There is still nothing extra to install.
 - The collector keeps a scope shorter than one clock tick, at 0 ms, instead of dropping it from a frame it called complete. New recordings can contain zero-length scopes.
-- `recordingSummary().overBudgetFrames` now matches the panel and viewer: it allows two timer ticks, and counts from the display's pace when GPU timing shows the display set the frame time. On such a run the count drops, so a saved recording with GPU timing can report far fewer frames than before.
+- `recordingSummary().overBudgetFrames` now matches the panel and viewer: it allows the larger of 1 ms or 5% past the budget, and counts from the display's pace when GPU timing shows the display set the frame time. On such a run the count drops, so a saved recording with GPU timing can report far fewer frames than before.
 - Frame times stay ordered from zero. A `frame()` or `beginFrame()` timestamp from before the monitor started, or before the previous frame, moves up to that point, where it used to make `panel.refresh` throw into the host's loop. A `beginFrame()` too far from the last one to give a finite interval now throws the documented `RangeError` instead of recording `Infinity`.
 
 ### New

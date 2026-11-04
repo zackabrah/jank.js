@@ -1,15 +1,12 @@
 import { gpuCoverage, gpuInventoryUnknown } from "../gpu/model.ts";
-import { recordingDisplayPace } from "./display-pace.ts";
+import { frameToleranceMs, recordingDisplayPace } from "./display-pace.ts";
 import type { PerformanceRecording } from "./types.ts";
 
-/** The one over-budget rule for a recording: the display's pace, or the budget plus two timer ticks. */
+/** The one over-budget rule: the display's pace, or the budget plus the larger of 1 ms or 5%. */
 export const frameOverLimit = (
   recording: PerformanceRecording,
   pace = recordingDisplayPace(recording),
-) =>
-  pace?.limitMs ??
-  recording.budget.frameMs +
-    (recording.metadata.environment.cpuTimer.estimatedResolutionMs ?? 0) * 2;
+) => pace?.limitMs ?? recording.budget.frameMs + frameToleranceMs(recording.budget.frameMs);
 
 export function summarizeRecording(recording: PerformanceRecording) {
   const { frames } = recording;

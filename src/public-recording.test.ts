@@ -84,12 +84,12 @@ test("the public parser still reads what the collector exports", () => {
 
 // JANK-006: a host reading the public count must get the number the panel and viewer show.
 test.each([
-  // A 57 Hz display sets the pace, so only the hitch is slow, not every frame.
-  ["a display-paced run", 17.5, 2, 1],
+  // A 54 Hz display sets the pace, so only the hitch is slow, not every frame.
+  ["a display-paced run", 18.5, 2, 1],
   // The same frame time from heavy GPU work is really slow; the display is not excused.
-  ["GPU work filling the frame", 17.5, 15, 80],
+  ["GPU work filling the frame", 18.5, 15, 80],
   // Without GPU timing a GPU-limited scene looks the same, so no pace is claimed.
-  ["no GPU timing", 17.5, null, 80],
+  ["no GPU timing", 18.5, null, 80],
 ])("overBudgetFrames matches the viewer on %s", (_name, intervalMs, gpuMs, expected) => {
   const recording = runAt(intervalMs, gpuMs);
   expect(recordingSummary(recording).overBudgetFrames).toBe(expected);

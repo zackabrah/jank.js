@@ -2,7 +2,7 @@
 import { type GpuFrame, gpuFrameCoverage, validateGpuFrame } from "../gpu/model.ts";
 import { type LoadingSnapshot, readLoading } from "../loading/model.ts";
 import type { Measurement } from "../measurement.ts";
-import { displayPace, medianOf } from "../recording/display-pace.ts";
+import { displayPace, frameToleranceMs, medianOf } from "../recording/display-pace.ts";
 import type { DiagnosticEvent } from "../recording/types.ts";
 import { formatCounter } from "./counters.ts";
 import { readEvents } from "./events.ts";
@@ -83,16 +83,16 @@ function checkMeasurement(value: Measurement) {
 export function judgeBudget(
   frames: DiagnosticsSnapshot["frames"],
   budget: number,
-  tolerance: number,
   workMs: number | null = null,
 ) {
   const pace = frames.length
     ? displayPace(budget, medianOf(frames.map((frame) => frame.interval)), workMs)
     : null;
-  const overLimit = pace?.limitMs ?? budget + tolerance;
+  const overLimit = pace?.limitMs ?? budget + frameToleranceMs(budget);
   const overCount = frames.filter((frame) => frame.interval > overLimit).length;
   return {
     budget,
+    tolerance: frameToleranceMs(budget),
     overLimit,
     displayPacedMs: pace?.typicalMs ?? null,
     overCount,
@@ -176,13 +176,6 @@ export function readLive({ diagnostics, gpu, loading }: LiveSnapshot) {
   const frames = diagnostics.frames.slice(-180);
   const latest = frames.at(-1);
   const durations = frames.map((frame) => frame.interval).sort((a, b) => a - b);
-  // Match jank.js: ignore floating-point noise and allow two observed clock ticks.
-  let tick = Infinity;
-  for (let i = 1; i < durations.length; i++) {
-    const step = (durations[i] ?? 0) - (durations[i - 1] ?? 0);
-    if (step >= 0.001) tick = Math.min(tick, step);
-  }
-  const tolerance = Number.isFinite(tick) ? 2 * Math.min(1, tick) : 0;
   let average = 0;
   let worst = frames[0];
   frames.forEach((frame, index) => {
@@ -265,8 +258,7 @@ export function readLive({ diagnostics, gpu, loading }: LiveSnapshot) {
     frames,
     loading: readLoading(loading),
     events: readEvents(diagnostics.events, frames),
-    ...judgeBudget(frames, budget, tolerance, workMs),
-    tolerance,
+    ...judgeBudget(frames, budget, workMs),
     workMs,
     fps,
     average: frames.length ? measured(average) : unknown(noFrames),

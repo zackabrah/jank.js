@@ -1,12 +1,8 @@
 import { type ComparisonBundle, settingDifferences } from "../compare/model.ts";
 import { comparisonResults } from "../compare/results.ts";
 import { type GpuFrame, gpuFrameCoverage, gpuSpan } from "../gpu/model.ts";
-import {
-  frameCpuMs as cpuOf,
-  frameToleranceMs,
-  recordingDisplayPace,
-} from "../recording/display-pace.ts";
-import { summarizeRecording } from "../recording/summary.ts";
+import { frameCpuMs as cpuOf, recordingDisplayPace } from "../recording/display-pace.ts";
+import { frameOverLimit, summarizeRecording } from "../recording/summary.ts";
 import type { DiagnosticFrame, PerformanceRecording } from "../recording/types.ts";
 
 const DEFAULT_TOP = 10;
@@ -420,7 +416,7 @@ export function analyzeRecording(recording: PerformanceRecording, top = DEFAULT_
   const gpu = describeGpu(recording, summary.gpuLabel, top);
   const pace = recordingDisplayPace(recording);
   const displayLimited = pace !== null;
-  const limitMs = pace?.limitMs ?? budget.frameMs + frameToleranceMs(budget.frameMs);
+  const limitMs = frameOverLimit(recording, pace);
   const slowFrames = frames.filter((frame) => frame.interval > limitMs).length;
   const { episodes, omitted } = describeEpisodes(recording, limitMs, top);
   return {

@@ -49,8 +49,9 @@ export function OverheadFooter({ view }: { view: LiveView }) {
             </p>
             <p class="mt-2">
               FPS counts frame endings over one second. Other KPIs use the last {view.frames.length}{" "}
-              frames. Budget crossings allow {withUnit(view.tolerance.toFixed(3), "ms")} for two
-              observed timer ticks.
+              frames. Without display pacing, a frame is over budget when it runs more than{" "}
+              {withUnit(view.tolerance.toFixed(2), "ms")} past the budget, the larger of 1 ms or 5%,
+              so normal frame-time jitter doesn't count.
             </p>
             <p class="mt-2">
               Collection <MeasurementValue measurement={view.overhead.collection} precision={3} />{" "}

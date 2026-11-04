@@ -178,7 +178,7 @@ export function LivePanel({
       ?.focus();
   }, [mode]);
   const view = frozen
-    ? { ...frozen, ...judgeBudget(frozen.frames, latest.budget, frozen.tolerance, frozen.workMs) }
+    ? { ...frozen, ...judgeBudget(frozen.frames, latest.budget, frozen.workMs) }
     : latest;
   const toggleFreeze = () => setFrozen((held) => (held ? null : structuredClone(latest)));
   const resume = () => {

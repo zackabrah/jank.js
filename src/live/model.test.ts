@@ -54,17 +54,18 @@ test("uses 180-frame nearest-rank statistics and one full second for FPS", () =>
   expect(readLive(sample([frame(1, 0)])).p95).toEqual(measured(0));
 });
 
-test("allows two observed clock ticks before flagging a budget crossing", () => {
+test("allows the larger of 1 ms or 5% before flagging a budget crossing", () => {
   const source = sample([
     frame(1, 16),
-    { ...frame(2), interval: 16.1 },
-    { ...frame(3), interval: 16.8 },
-    { ...frame(4), interval: 17 },
+    { ...frame(2), interval: 16.8 },
+    { ...frame(3), interval: 17.6 },
+    { ...frame(4), interval: 18 },
   ]);
   const view = readLive(source);
-  expect(view.tolerance).toBeCloseTo(0.2);
+  expect(view.tolerance).toBe(1);
+  expect(view.overLimit).toBeCloseTo(17.667);
   expect(view.overCount).toBe(1);
-  expect(view.p95).toEqual(measured(17));
+  expect(view.p95).toEqual(measured(18));
 });
 
 test("clips and unions nested CPU scopes, excludes partial frames, and preserves absence versus zero", () => {
@@ -143,8 +144,13 @@ test("a light scene on a slow display isn't over budget, and a real hitch still 
   expect(paced.overCount).toBe(1);
   expect(paced.overLimit).toBeCloseTo(18.6);
   // Frozen frames are judged again, and must reach the same answer.
-  expect(judgeBudget(frames, 1000 / 60, paced.tolerance, paced.workMs).overCount).toBe(1);
+  expect(judgeBudget(frames, 1000 / 60, paced.workMs).overCount).toBe(1);
+  expect(judgeBudget(frames, 50, paced.workMs)).toMatchObject({
+    tolerance: 2.5,
+    overLimit: 52.5,
+  });
   const unknownGpu = readLive({ diagnostics, gpu: null });
   expect(unknownGpu.displayPacedMs).toBeNull();
-  expect(unknownGpu.overCount).toBe(100);
+  // Without GPU timing the budget's own limit applies: 17.7 ms frames are over 17.667 ms, 17.5 ms aren't.
+  expect(unknownGpu.overCount).toBe(50);
 });

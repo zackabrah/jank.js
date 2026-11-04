@@ -54,7 +54,7 @@ Orange marks time over budget.
 
 "Recent" means the last 180 frames, which are the frames in the graph: about 3 seconds at 60 FPS.
 
-A frame counts as over budget when it is longer than the budget by more than two ticks of the browser's timer. Both ends of a frame interval are timer readings, so a smaller difference cannot be measured. With a 0.1 ms timer and a 16.667 ms budget, the limit is 16.867 ms.
+A frame counts as over budget when it runs past the budget by more than the larger of 1 ms or 5%. At a 16.667 ms budget the limit is 17.667 ms. Smaller differences are normal frame-time jitter, so a smooth run doesn't read as janky.
 
 GPU timing allows one exception. When the busier of median CPU and GPU work uses under 80% of both the typical frame time and the budget, the display set the pace, so a frame counts only above the larger of the typical frame time and the budget, plus 5% or 1 ms. On a 57 Hz display with a typical 17.5 ms frame, the limit is 18.5 ms. The graph, the tiles, the viewer and `recordingSummary` all use these rules. The **ⓘ** button in the footer states the allowance for your browser.
 

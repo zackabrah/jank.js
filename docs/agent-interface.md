@@ -101,10 +101,9 @@ The more a host reports, the more a report can say:
 | `trends`   | Counters rising steadily and still rising at the end             |
 | `notes`    | How to read the above                                            |
 
-A frame counts as slow above `summary.overBudget.limitMs`, the budget plus the same
-tolerance comparisons use: 5% or 1 ms, whichever is larger. Without it, vsync jitter makes
-a smooth run look over budget when the display's frame time equals the budget. This can
-differ from the viewer's over-budget count, which has a smaller tolerance.
+A frame counts as slow above `summary.overBudget.limitMs`, the budget plus 5% or 1 ms,
+whichever is larger. This is the panel's and viewer's rule too. Without it, vsync jitter makes
+a smooth run look over budget when the display's frame time equals the budget.
 
 `summary.displayLimited` means the busier of median CPU and GPU work uses under 80% of both the
 typical frame time and the budget, so the display is setting the pace, as on a 57 Hz or a 144 Hz
