@@ -63,6 +63,8 @@ export interface PerformancePanelOptions {
  */
 export function createPerformancePanel(options: PerformancePanelOptions) {
   const { shell, monitor, corner = "top-right", comparison: comparisonHost } = options;
+  // The Live tab's CPU rows need per-frame scopes, which the collector keeps only when asked.
+  monitor.setExpanded(true);
   const container = shell.ownerDocument.createElement("div");
   if (corner !== "none") {
     const [vertical, horizontal] = corner.split("-") as ["top" | "bottom", "left" | "right"];
@@ -153,6 +155,7 @@ export function createPerformancePanel(options: PerformancePanelOptions) {
       capture.discard();
       closeViewer();
       panel.destroy();
+      monitor.setExpanded(false);
       container.remove();
     },
   };

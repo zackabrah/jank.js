@@ -6,12 +6,14 @@ export function MetricRow({
   detail,
   duration,
   budget,
+  overLimit,
   precision = 2,
 }: {
   label: string;
   detail?: string;
   duration: Measurement;
   budget: number;
+  overLimit: number;
   precision?: number;
 }) {
   const value = duration.status === "measured" ? duration.value : null;
@@ -20,7 +22,7 @@ export function MetricRow({
       {value !== null && (
         <span
           aria-hidden="true"
-          class={`pointer-events-none absolute inset-y-0 left-0 ${value > budget ? "bg-jank-over-band" : "bg-jank-fill-hover"}`}
+          class={`pointer-events-none absolute inset-y-0 left-0 ${value > overLimit ? "bg-jank-over-band" : "bg-jank-fill-hover"}`}
           style={{ width: `${Math.min(1, value / budget) * 100}%` }}
         />
       )}

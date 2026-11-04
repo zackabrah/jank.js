@@ -195,7 +195,7 @@ export function CaptureView({
         summary="latest 10 kept"
         defaultOpen
       >
-        {state.saved[0] && (
+        {state.saved[0]?.recording.gpuTiming && (
           <GpuCoverageBar
             coverage={summarizeRecording(state.saved[0].recording).gpu}
             label={`Capture C${state.saved[0].id} GPU coverage`}

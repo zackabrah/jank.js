@@ -24,7 +24,11 @@ export function CaptureSummary({
     <span class="block min-w-0 flex-1">
       <span class="block truncate text-label-12">
         {notice
-          ? `Capture C${capture.id} saved`
+          ? `Capture C${capture.id} saved${
+              !automatic && capture.recording.frames.length >= capture.recording.frameCapacity
+                ? " at capacity"
+                : ""
+            }`
           : automatic
             ? `Auto · ${capture.recording.capture.context?.rule.mode ?? "spike"} `
             : "Manual · worst "}

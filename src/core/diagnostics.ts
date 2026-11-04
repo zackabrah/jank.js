@@ -491,7 +491,8 @@ export function createDiagnostics(
       const a = Math.max(start - origin, scope.start),
         b = Math.min(at - origin, scope.end);
 
-      if (b <= a) return;
+      // Keep a scope under one clock tick; only drop intervals clipped away.
+      if (b < a || (b === a && scope.end > scope.start)) return;
 
       if (scopes.length < scopeLimit)
         scopes.push({ ...scope, start: a, end: b });
@@ -501,12 +502,13 @@ export function createDiagnostics(
     for (const scope of ended) add(scope);
 
     for (const scope of open.values())
-      add({
-        system: scope.channel.id,
-        label: scope.channel.label,
-        start: scope.start - origin,
-        end: at - origin,
-      });
+      if (scope.start < at)
+        add({
+          system: scope.channel.id,
+          label: scope.channel.label,
+          start: scope.start - origin,
+          end: at - origin,
+        });
 
     for (const channel of channels.values()) {
       if (pending.detailed) {

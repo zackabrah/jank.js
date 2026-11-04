@@ -1,6 +1,11 @@
 import { gpuCoverage } from "../gpu/model.ts";
 import type { PerformanceRecording } from "./types.ts";
 
+/** The one over-budget rule for a recording: the frame budget plus two timer ticks. */
+export const frameOverLimit = (recording: PerformanceRecording) =>
+  recording.budget.frameMs +
+  (recording.metadata.environment.cpuTimer.estimatedResolutionMs ?? 0) * 2;
+
 export function summarizeRecording(recording: PerformanceRecording) {
   const { frames } = recording;
   let worstIndex = 0;
@@ -9,8 +14,7 @@ export function summarizeRecording(recording: PerformanceRecording) {
   });
   const triggerIndex = frames.findIndex((frame) => frame.id === recording.capture.triggerFrame);
   const intervals = frames.map((frame) => frame.interval).sort((a, b) => a - b);
-  const tolerance = (recording.metadata.environment.cpuTimer.estimatedResolutionMs ?? 0) * 2;
-  const overLimit = recording.budget.frameMs + tolerance;
+  const overLimit = frameOverLimit(recording);
   const gpu = gpuCoverage(
     frames.map((frame) => frame.id),
     recording.gpuTiming?.frames ?? [],

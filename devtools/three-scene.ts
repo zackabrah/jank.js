@@ -210,7 +210,6 @@ export async function startThreeScene(
   });
   const comparison = panel.comparison;
   if (!comparison) throw new Error("The scene always supplies a comparison.");
-  monitor.setExpanded(true);
   const resize = () => {
     const bounds = canvas.parentElement?.getBoundingClientRect();
     const w = Math.max(1, Math.floor(bounds?.width ?? 800));

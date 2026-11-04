@@ -17,6 +17,7 @@ export function StateStrip({
   frozen,
   mode,
   recordingSeconds,
+  recordingFramesLeft,
   cooldownSeconds,
   loadingCount,
   comparisonProgress,
@@ -25,6 +26,7 @@ export function StateStrip({
   frozen: boolean;
   mode: PanelMode;
   recordingSeconds?: number | undefined;
+  recordingFramesLeft?: number | undefined;
   cooldownSeconds?: number | undefined;
   loadingCount?: number | undefined;
   comparisonProgress?: string | undefined;
@@ -33,6 +35,13 @@ export function StateStrip({
   const measure = useRef<HTMLSpanElement>(null);
   const [compact, setCompact] = useState(0);
   const capture = captureState(latest);
+  // The capacity warning shows in every mode; elapsed time needs the full header's room.
+  const recordingDetail =
+    recordingFramesLeft !== undefined
+      ? `${withUnit(recordingFramesLeft, "f")} left`
+      : mode === "full" && recordingSeconds !== undefined
+        ? formatSeconds(recordingSeconds)
+        : "";
   useLayoutEffect(() => {
     const container = strip.current;
     const content = measure.current;
@@ -58,11 +67,8 @@ export function StateStrip({
         <StateBadge
           state={capture}
           compact={level > 1}
-          {...(level === 0 &&
-          capture === "recording" &&
-          mode === "full" &&
-          recordingSeconds !== undefined
-            ? { detail: formatSeconds(recordingSeconds) }
+          {...(level === 0 && capture === "recording" && recordingDetail
+            ? { detail: recordingDetail }
             : {})}
           {...(level === 0 &&
           capture === "cooldown" &&

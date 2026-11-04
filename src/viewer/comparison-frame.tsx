@@ -137,11 +137,13 @@ export function ComparisonFrame({
   chart,
   at,
   budgetMs,
+  overLimit,
 }: {
   lanes: ReturnType<typeof comparisonLanes>;
   chart: ReturnType<typeof comparisonFrames>;
   at: number;
   budgetMs: number;
+  overLimit: number;
 }) {
   const pair = comparisonFramePair(lanes, chart, at);
   const inspected = useMemo(
@@ -172,7 +174,7 @@ export function ComparisonFrame({
             {frame ? (
               <dd class="m-0 min-w-0">
                 <p
-                  data-over={frame.value > budgetMs ? "" : undefined}
+                  data-over={frame.value > overLimit ? "" : undefined}
                   class="font-mono text-label-13 data-over:text-jank-over"
                 >
                   f{frame.id} · {formatMs(frame.value, 2)}

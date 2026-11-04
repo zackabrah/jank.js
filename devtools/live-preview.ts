@@ -22,7 +22,6 @@ export async function startLivePreview(
     particles: particles.length,
     steps,
   }));
-  monitor.setExpanded(true);
   let request = 0;
   let stopped = false;
   const destroy = () => {

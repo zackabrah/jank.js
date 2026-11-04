@@ -45,6 +45,7 @@ export function LiveDetails({
               label={row.label}
               duration={row.duration}
               budget={view.budget}
+              overLimit={view.overLimit}
             />
           ))}
           <MetricRow
@@ -52,6 +53,7 @@ export function LiveDetails({
             detail="wait + untracked"
             duration={view.unattributed}
             budget={view.budget}
+            overLimit={view.overLimit}
           />
           <p class="py-2 text-label-12 text-jank-text-secondary">
             Avg of {view.complete} complete frames · {view.excluded} excluded
@@ -76,6 +78,7 @@ export function LiveDetails({
                 duration={gpu.timedWork ?? unknown("No timed pass sum supplied")}
                 precision={1}
                 budget={view.budget}
+                overLimit={view.overLimit}
               />
               {coverage && (
                 <p class="py-1 text-label-12 text-jank-text-secondary">
@@ -101,6 +104,7 @@ export function LiveDetails({
                   precision={1}
                   duration={pass.duration}
                   budget={view.budget}
+                  overLimit={view.overLimit}
                 />
               ))}
               <MetricRow
@@ -108,6 +112,7 @@ export function LiveDetails({
                 precision={1}
                 duration={gpu.span}
                 budget={view.budget}
+                overLimit={view.overLimit}
               />
               <p class="py-2 text-label-12 text-jank-text-secondary">
                 Sample {gpu.sampleFrame ?? "unknown"} · age {gpu.ageFrames ?? "unknown"} frames

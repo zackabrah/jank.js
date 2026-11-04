@@ -164,7 +164,11 @@ export function recordingSummary(recording: PerformanceRecording) {
     p95Ms: values.length ? sortedP95(values) : null,
     worstMs: values.at(-1) ?? null,
     overBudgetFrames: frames.filter(
-      (frame) => frame.interval > recording.budget.frameMs,
+      (frame) =>
+        frame.interval >
+        recording.budget.frameMs +
+          (recording.metadata.environment.cpuTimer.estimatedResolutionMs ?? 0) *
+            2,
     ).length,
   };
 }

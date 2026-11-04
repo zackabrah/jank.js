@@ -95,3 +95,53 @@ test("the adapter observes captures between display refreshes without rerenderin
     panel.destroy();
   }
 });
+
+test("warns near recording capacity and says why the recording stopped", async () => {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const { source, advance } = captureFixture(10);
+  const monitor = { ...source, measureRefresh: <T,>(work: () => T) => work() };
+  const controller = createCaptureController(monitor);
+  const panel = mountDiagnosticsPanel(container, monitor, undefined, {
+    controller,
+    onOpen: () => {},
+  });
+  panel.refresh(0);
+  const root = () => {
+    const shadow = container.firstElementChild?.shadowRoot;
+    if (!shadow) throw new Error("Missing panel");
+    return shadow;
+  };
+  const badges = (mode: string) =>
+    root().querySelector(`[data-mode-header="${mode}"] [data-state-badges]`)?.textContent ?? "";
+  const button = (name: string) =>
+    [...root().querySelectorAll("button")].find(
+      (item) => !item.closest("[hidden]") && item.textContent?.includes(name),
+    );
+  try {
+    await act(() => button("Rec")?.click());
+    advance(8);
+    await act(() => panel.refresh(1000, true));
+    expect(badges("full")).not.toContain("left");
+    advance(1);
+    await act(() => panel.refresh(2000, true));
+    expect(badges("full")).toMatch(/1\sf left/);
+    expect(badges("line")).toMatch(/1\sf left/);
+    advance(1);
+    await act(() => panel.refresh(3000, true));
+    const notice = root().querySelector('[aria-label="Capture C1 saved"]');
+    expect(notice?.textContent).toContain("Capture C1 saved at capacity");
+    // A host with no GPU timing has nothing to cover, which is not 0% coverage.
+    expect(root().textContent).not.toContain("C1 GPU coverage");
+    await act(() => controller.start());
+    advance(2);
+    await act(() => panel.refresh(4000, true));
+    await act(() => controller.stopAndSave());
+    const early = root().querySelector('[aria-label="Capture C2 saved"]');
+    expect(early?.textContent).toContain("Capture C2 saved");
+    expect(early?.textContent).not.toContain("at capacity");
+  } finally {
+    panel.destroy();
+    container.remove();
+  }
+});

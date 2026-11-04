@@ -29,6 +29,15 @@ async function instrumentationSwitch(
   );
 }
 
+test("collects CPU scopes only while mounted, so the Live tab's rows have data", () => {
+  const monitor = createDiagnostics();
+  expect(monitor.detailed).toBe(false);
+  const panel = createPerformancePanel({ shell: document.body, monitor });
+  expect(monitor.detailed).toBe(true);
+  panel.destroy();
+  expect(monitor.detailed).toBe(false);
+});
+
 test("floats over the page by default and leaves nothing behind when destroyed", () => {
   const monitor = createDiagnostics();
   const panel = createPerformancePanel({ shell: document.body, monitor });

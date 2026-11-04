@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useMemo, useRef } from "preact/hooks";
+import { frameOverLimit } from "../recording/summary.ts";
 import type { PerformanceRecording } from "../recording/types.ts";
 import { laneGeometry, laneValue, type recordingLanes, type TimingLane } from "./lanes.ts";
 import type { ViewerSelection } from "./selection.ts";
@@ -162,7 +163,7 @@ export function LaneRow({
       </FrameTrack>
       <span
         class="truncate text-right font-mono text-label-12 data-over:text-jank-over data-rejected:text-jank-error"
-        data-over={(cell.value !== null && cell.value > recording.budget.frameMs) || undefined}
+        data-over={(cell.value !== null && cell.value > frameOverLimit(recording)) || undefined}
         data-rejected={cell.status === "rejected" || undefined}
         title={`${value} · ${cell.reason}`}
         data-lane-value={cell.status}

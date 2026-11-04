@@ -257,6 +257,7 @@ export function ComparisonViewer({ bundle }: { bundle: ComparisonBundle }) {
                   chart={chart}
                   at={hover ?? range.at}
                   budgetMs={bundle.budgetMs}
+                  overLimit={bundle.budgetMs + model.frameTolerance}
                 />
               )}
               {tab === "Settings" && (

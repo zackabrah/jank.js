@@ -53,6 +53,40 @@ describe("exact frame capture", () => {
     expect(frame).toMatchObject({ update: 0, render: Number.MAX_VALUE });
   });
 
+  it("keeps a scope shorter than one clock tick without repeating it", () => {
+    let now = 0;
+
+    const monitor = createDiagnostics(() => now);
+
+    monitor.startRecording();
+    monitor.beginFrame(0);
+
+    const fast = monitor.register("fast", "Fast"),
+      open = monitor.register("open", "Open");
+
+    now = 5;
+    fast.end(fast.begin());
+
+    now = 16;
+
+    // Started on the boundary and still open, so it belongs to the next frame only.
+    const running = open.begin();
+
+    monitor.beginFrame(16);
+
+    now = 32;
+    open.end(running);
+    monitor.beginFrame(32);
+
+    const [first, second] = monitor.snapshot().frames;
+
+    expect(first?.coverage).toBe("complete");
+    expect(first?.scopes).toEqual([
+      { system: "fast", label: "Fast", start: 5, end: 5 },
+    ]);
+    expect(second?.scopes.map((scope) => scope.system)).toEqual(["open"]);
+  });
+
   it("unions nested and overlapping systems and does not invent CPU work in the remainder", () => {
     let now = 0;
 

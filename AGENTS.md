@@ -6,4 +6,4 @@ Use pnpm 11.24.0 and the pinned tooling. Run pnpm fix, then pnpm check. Run pnpm
 
 Keep commits focused and verified. Do not push, publish or deploy unless requested. Never invent repository or registry URLs. Use labelled controls, not raw JSON authoring fields.
 
-The collector in `src/core` is deliberately outside Biome for now, so it stays byte-identical to 0.3.0 until it can be brought under the formatter in its own change. See `docs/architecture.md` for how the panel and viewer behave.
+The collector in `src/core` is deliberately outside Biome for now, so it stays close to 0.3.0 (only deliberate fixes, no reformatting) until it can be brought under the formatter in its own change. See `docs/architecture.md` for how the panel and viewer behave.

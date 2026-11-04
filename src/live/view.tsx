@@ -132,6 +132,10 @@ export function LivePanel({
   const autoPressed = !!automatic && automatic.state !== "off";
   const manualRecording =
     captureProgress?.phase === "recording" && captureProgress.kind === "manual";
+  const recordingFramesLeft =
+    manualRecording && captureProgress.frames >= captureProgress.capacity * 0.9
+      ? captureProgress.capacity - captureProgress.frames
+      : undefined;
   const status = captureProgress
     ? {
         ...latest,
@@ -236,6 +240,7 @@ export function LivePanel({
             latest={status}
             frozen={!!frozen}
             mode="line"
+            recordingFramesLeft={recordingFramesLeft}
             loadingCount={loadingActive ? loading.pending : undefined}
             comparisonProgress={comparisonProgress}
           />
@@ -264,6 +269,7 @@ export function LivePanel({
             recordingSeconds={
               manualRecording && captureProgress ? captureProgress.elapsedMs / 1000 : undefined
             }
+            recordingFramesLeft={recordingFramesLeft}
             cooldownSeconds={
               automatic?.state === "cooldown" ? automatic.cooldownRemainingMs / 1000 : undefined
             }
