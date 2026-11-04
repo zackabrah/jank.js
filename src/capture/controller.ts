@@ -577,4 +577,4 @@ export function createCaptureController(source: CaptureSource) {
   return controller;
 }
 
-type CaptureController = ReturnType<typeof createCaptureController>;
+export type CaptureController = ReturnType<typeof createCaptureController>;

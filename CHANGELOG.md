@@ -21,6 +21,8 @@ The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the 
 - Automatic capture by spike, sustained slowdown or whole episode, with frame-linked GPU evidence and coverage explanations.
 - A Loading tab with a real-offset waterfall and cold/repeat comparison.
 - `jank.js/gpu` and `jank.js/adapters/three-host` for frame-linked GPU evidence and Three.js hosts.
+- `instrumentThreeDevice` from `jank.js/adapters/three-host` takes an optional `describePass` to name passes, and its new `gpuCalls()` reports pipelines, shaders, textures, buffers and bind groups created, plus submits and writes per frame.
+- A prototype agent interface in this repository, not the published package: `pnpm jank analyze`, `pnpm jank experiment` and `window.jank`. See [the guide](docs/agent-interface.md).
 
 ### Earlier, for the 0.3 panel
 

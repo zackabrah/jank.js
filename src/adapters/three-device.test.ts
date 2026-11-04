@@ -115,3 +115,109 @@ test("refuses competing timestamp owners instead of overwriting their queries", 
   ).toThrow("timestamp tracking must be disabled");
   probe.dispose();
 });
+
+function miniDevice() {
+  const encoder = {
+    beginRenderPass: () => ({ end() {} }),
+    resolveQuerySet() {},
+    copyBufferToBuffer() {},
+    finish: () => ({}),
+  };
+  const buffer = () => ({
+    mapAsync: async () => {},
+    getMappedRange: () => new BigUint64Array(64).buffer,
+    unmap() {},
+    destroy() {},
+  });
+  const device = {
+    features: new Set(["timestamp-query"]),
+    lost: new Promise<GPUDeviceLostInfo>(() => {}),
+    queue: { submit() {}, writeBuffer() {}, writeTexture() {} },
+    createQuerySet: () => ({ destroy() {} }),
+    createBuffer: buffer,
+    createTexture: () => ({}),
+    createBindGroup: () => ({}),
+    createRenderPipeline: () => ({}),
+    createShaderModule: () => ({}),
+    createCommandEncoder: () => encoder,
+  };
+  return { raw: device, device: device as unknown as GPUDevice };
+}
+
+test("names passes from the host, numbering repeats rather than positions", () => {
+  const { device } = miniDevice();
+  const frames: GpuFrame[] = [];
+  const names = ["Main", "Mips", "Mips"];
+  const probe = instrumentThreeDevice(
+    device,
+    (frame) => frames.push(frame),
+    () => names.shift() ?? null,
+  );
+  probe.beginFrame(1);
+  const encoder = device.createCommandEncoder({ label: "any" });
+  for (let i = 0; i < 4; i++) encoder.beginRenderPass({ colorAttachments: [] });
+  probe.endFrame();
+  expect(frames.at(-1)?.invocations.map((pass) => pass.label)).toEqual([
+    "Main",
+    "Mips",
+    "Mips 2",
+    "Scene · render 1",
+  ]);
+  probe.dispose();
+});
+
+test("passes the encoder's label to the host so it can recognize a mip chain", () => {
+  const { device } = miniDevice();
+  const seen: (string | undefined)[] = [];
+  const probe = instrumentThreeDevice(
+    device,
+    () => {},
+    (label) => {
+      seen.push(label);
+      return "Pass";
+    },
+  );
+  probe.beginFrame(1);
+  device.createCommandEncoder({ label: "mipmapEncoder" }).beginRenderPass({ colorAttachments: [] });
+  device.createCommandEncoder().beginRenderPass({ colorAttachments: [] });
+  expect(seen).toEqual(["mipmapEncoder", undefined]);
+  probe.endFrame();
+  probe.dispose();
+});
+
+test("counts GPU calls per frame and created resources per session, and restores on dispose", () => {
+  const { raw, device } = miniDevice();
+  const writeBuffer = raw.queue.writeBuffer;
+  const createTexture = raw.createTexture;
+  const probe = instrumentThreeDevice(device, () => {});
+  const write = (bytes: number) =>
+    device.queue.writeBuffer({} as GPUBuffer, 0, new Uint8Array(bytes));
+  device.createTexture({} as GPUTextureDescriptor);
+  device.createBindGroup({} as GPUBindGroupDescriptor);
+  probe.beginFrame(1);
+  write(100);
+  write(28);
+  device.queue.submit([]);
+  device.createRenderPipeline({} as GPURenderPipelineDescriptor);
+  probe.endFrame();
+  expect(probe.gpuCalls()).toMatchObject({
+    texturesCreated: 1,
+    bindGroupsCreated: 1,
+    pipelinesCreated: 1,
+    bufferWritesPerFrame: 2,
+    bufferWriteBytesPerFrame: 128,
+    submitsPerFrame: 1,
+  });
+  probe.beginFrame(2);
+  write(4);
+  probe.endFrame();
+  expect(probe.gpuCalls()).toMatchObject({
+    texturesCreated: 1,
+    bufferWritesPerFrame: 1,
+    bufferWriteBytesPerFrame: 4,
+    submitsPerFrame: 0,
+  });
+  probe.dispose();
+  expect(raw.queue.writeBuffer).toBe(writeBuffer);
+  expect(raw.createTexture).toBe(createTexture);
+});

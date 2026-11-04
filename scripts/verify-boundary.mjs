@@ -8,6 +8,7 @@ const allowedSource = new Set([
   "panel-api.test.ts",
   "public-recording.test.ts",
   "gpu-api.ts",
+  "agent",
   "core",
   "performance",
   "types",

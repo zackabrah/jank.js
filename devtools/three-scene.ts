@@ -13,6 +13,7 @@ import {
 } from "three";
 import { readThreeCounters } from "../src/adapters/three-counters.ts";
 import { observeThreeInstances } from "../src/adapters/three-instances.ts";
+import { installAgentApi } from "../src/agent/api.ts";
 import type { SavedCapture } from "../src/capture/controller.ts";
 import { createGpuHistory } from "../src/gpu/history.ts";
 import { type GpuFrame, gpuFrameToLive } from "../src/gpu/model.ts";
@@ -210,6 +211,7 @@ export async function startThreeScene(
   });
   const comparison = panel.comparison;
   if (!comparison) throw new Error("The scene always supplies a comparison.");
+  const removeAgentApi = installAgentApi(window, panel.capture, { event: monitor.event });
   const resize = () => {
     const bounds = canvas.parentElement?.getBoundingClientRect();
     const w = Math.max(1, Math.floor(bounds?.width ?? 800));
@@ -245,6 +247,7 @@ export async function startThreeScene(
     observer.disconnect();
     canvas.removeEventListener("webglcontextlost", contextLost);
     signal.removeEventListener("abort", stop);
+    removeAgentApi();
     panel.destroy();
     instances.dispose();
     void loading.dispose().finally(() => graphics.dispose());
@@ -342,6 +345,7 @@ export async function startThreeScene(
       renderCounters = {
         frameId: currentId,
         ...readThreeCounters(renderer.info),
+        ...graphics.gpuCalls(),
         ...instances.read(settings.instances),
         passes: paused ? 0 : settings.passes,
         widthPx: width,

@@ -34,6 +34,7 @@ export interface ComparisonBundle {
 }
 
 export const MAX_REASON_LENGTH = 2000;
+export const MAX_COMPARISON_MEASURE_MS = 30000;
 export const defaultComparisonPlan: ComparisonPlan = { warmupMs: 500, measureMs: 1000, pairs: 2 };
 export function validatePlan(plan: ComparisonPlan) {
   if (
@@ -42,7 +43,7 @@ export function validatePlan(plan: ComparisonPlan) {
     plan.warmupMs > 10000 ||
     !Number.isFinite(plan.measureMs) ||
     plan.measureMs < 100 ||
-    plan.measureMs > 30000 ||
+    plan.measureMs > MAX_COMPARISON_MEASURE_MS ||
     !Number.isSafeInteger(plan.pairs) ||
     plan.pairs < 1 ||
     plan.pairs > 5

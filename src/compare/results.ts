@@ -38,6 +38,9 @@ export interface MetricResult {
   unavailable: string | null;
 }
 
+/** Keeps vsync jitter around a budget equal to the display's frame time from counting as slow. */
+export const frameToleranceMs = (budgetMs: number) => Math.max(1, budgetMs * 0.05);
+
 /** Nonnegative observations; absent scopes in complete frames contribute known zeros. */
 function summarize(values: number[], count = values.length, limit = Infinity) {
   const sorted = values.toSorted((a, b) => a - b);
@@ -69,7 +72,7 @@ function verdict(range: readonly [number, number] | null): Verdict {
 export function comparisonResults(bundle: ComparisonBundle) {
   const scopeNames = new Map<string, { system: string; label: string }>();
   const schedule = comparisonSchedule(bundle.plan.pairs);
-  const frameTolerance = Math.max(1, bundle.budgetMs * 0.05);
+  const frameTolerance = frameToleranceMs(bundle.budgetMs);
   // Nothing timed in any trial and no known-idle frame: no timing source, or timing was off. That
   // is an absence to report once, not a coverage failure in every trial. Hosts still send records.
   const gpuRecords = bundle.trials.flatMap((trial) => trial.recording.gpuTiming?.frames ?? []);

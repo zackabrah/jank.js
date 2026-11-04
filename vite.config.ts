@@ -39,7 +39,12 @@ export default defineConfig({
   define: { JANK_BUILD_INFO: JSON.stringify(readBuildInfo()) },
   plugins: [tailwindcss()],
   test: {
-    include: ["src/**/*.test.{ts,tsx}", "devtools/**/*.test.{ts,tsx}", "vite.config.test.ts"],
+    include: [
+      "src/**/*.test.{ts,tsx}",
+      "devtools/**/*.test.{ts,tsx}",
+      "cli/**/*.test.ts",
+      "vite.config.test.ts",
+    ],
     exclude: [...configDefaults.exclude, "e2e/**"],
     css: true,
     // Tailwind CSS depends on scanned JSX, beyond the imported CSS module.
