@@ -165,6 +165,8 @@ renderer.setAnimationLoop((at) => {
 
 Use `renderer.setAnimationLoop` so Three advances its native frame ID. The adapter exclusively owns `resolveTimestampsAsync("render")`; do not resolve the same renderer's render timestamps elsewhere. It resolves asynchronously with one request in flight, rejects stale cached results, and links accepted results to the originating diagnostics frame. Disabling or disposing invalidates in-flight results. Disposal restores the original tracking setting when still owned by the adapter, without disposing the renderer.
 
+On a display slower than the budget, this adapter reads as over budget and a Sustained capture rule will fire, because it can't show that it timed all the GPU work. To have readings follow the display's pace, use [frame-linked GPU evidence](gpu-measurements.md) and declare a complete inventory.
+
 The reported value is the **sum of render-pass durations** for one completed renderer frame. Queue span stays null. There are no individual named render-pass or compute timings in this adapter, and timestamps may be delayed or absent. For this intentionally small integration, [local hardware evidence](verification/webgpu.json) does not certify other devices. The current upstream [WebGPURenderer documentation](https://threejs.org/docs/pages/WebGPURenderer.html) describes the renderer; this adapter's pinned source contract remains authoritative for compatibility.
 
 ## WebGL2 GPU timing
@@ -195,6 +197,8 @@ function frame(at) {
 ```
 
 Passes run one after another: WebGL2 allows one timer query at a time, so beginning a pass while another is open throws, as does capturing a frame with a pass still open. Results arrive a few frames late and are linked to the diagnostics frame that drew them. Results read during a disjoint event, such as a GPU power-state change, are dropped and counted. A lost context reports an error and recovers on the first frame after it is restored. Each frame times at most 32 passes, and at most 64 frames wait for results; anything beyond is counted as omitted or dropped. Disposal deletes only the adapter's queries.
+
+Over-budget readings and capture rules keep using the budget with this adapter, for the same reason as the WebGPU adapter above. `jank.js/gpu` gives the same timer queries with a declared inventory.
 
 A timer query measures elapsed GPU time between its start and end, which can include other work the GPU interleaves, such as the page's compositor. Read pass times as an upper bound on the pass's own cost.
 

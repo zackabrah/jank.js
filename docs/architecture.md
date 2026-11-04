@@ -2,7 +2,7 @@
 
 How the panel and viewer behave, slice by slice, and the measurement rules behind them. For how to contribute, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-Run `pnpm check`, `pnpm test`, and `pnpm build` before committing.
+Run `pnpm fix`, then `pnpm check`, before committing; it runs the tests and the build.
 Run `pnpm test:e2e` for changes to browser interactions or visible layouts.
 
 `pnpm build` explicitly minifies production JavaScript with Oxc and CSS with
@@ -35,9 +35,9 @@ widths; mobile layout issues do not block v1 releases.
 Use Playwright for routine browser verification in this repository, including
 screenshots; it runs its own browser instead of driving the user's Chrome tabs.
 
-- `pnpm exec playwright install chromium`: install the test browser after a fresh
-  checkout or Playwright upgrade.
-- `pnpm test:e2e`: run the desktop Chromium suite headlessly.
+- `pnpm exec playwright install chromium firefox webkit`: install the test browsers after
+  a fresh checkout or Playwright upgrade.
+- `pnpm test:e2e`: run the desktop suite headlessly in Chromium, Firefox and WebKit.
 - `pnpm test:e2e:ui`: open the interactive test runner to inspect and replay steps.
 - `pnpm test:e2e:report`: open the latest HTML report and its screenshots/traces.
 
@@ -103,10 +103,7 @@ of manual DOM listeners for app controls.
 Add new component sources to the appropriate stylesheet when needed.
 Budget warnings use `data-over:text-jank-over`.
 
-Run `pnpm dev` and open `/checks/theme.html` for the desktop review/check page:
-dark/light HUDs, unknown versus zero, computed contrast, focus, collapse, local
-font-download absence, teardown and host-style isolation. It is excluded from the normal
-production entry. `src/theme.test.ts` checks literal classes against compiled CSS;
+`src/theme.test.ts` checks literal classes against compiled CSS;
 add new source files to that check when adding components. Shared component
 variant classes are also checked in `src/ui/components.test.tsx`.
 `/checks/components.html` provides an interactive dark/light review of buttons,
