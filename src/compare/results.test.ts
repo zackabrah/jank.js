@@ -65,6 +65,7 @@ describe("comparison results", () => {
         const start = trial.measurementStartMs + i * 200;
         frame.at = start + 200;
         frame.interval = 200;
+        frame.update = 0;
         frame.scopes = [{ system: "test", label: "scope", start, end: start + cost }];
       });
       trial.measurementEndMs = trial.recording.frames.at(-1)?.at ?? 0;
@@ -240,11 +241,52 @@ describe("comparison results", () => {
       "overlapping",
     );
   });
+  // What: work the host times and reports, but doesn't scope, still counts toward CPU results.
+  // Why: with the README's old setup, removing 4 ms of drawing read "No observed difference".
+  it("counts update and render time that no scope covers", () => {
+    const bundle = comparisonFixture("same");
+    for (const trial of bundle.trials)
+      for (const frame of trial.recording.frames) {
+        const start = frame.at - frame.interval;
+        frame.update = 0.1;
+        frame.render = trial.variant === "A" ? 4 : 0;
+        frame.scopes = [{ system: "test", label: "physics", start, end: start + 0.1 }];
+      }
+    const result = metric(comparisonResults(bundle), "CPU-median");
+    expect(result.verdict).toBe("B faster");
+    expect(result.a).toBeCloseTo(4.1);
+    expect(result.b).toBeCloseTo(0.1);
+  });
+
+  // What: a difference far below any browser timer reads as none.
+  // Why: floating-point noise printed as +1.2e-8, and could have decided a verdict.
+  it("treats floating-point noise as no difference", () => {
+    const bundle = comparisonFixture("same");
+    for (const trial of bundle.trials)
+      for (const frame of trial.recording.frames) {
+        const start = frame.at - frame.interval;
+        frame.update = 0;
+        frame.scopes = [
+          {
+            system: "test",
+            label: "work",
+            start,
+            end: start + 0.1 + (trial.variant === "B" ? 1e-8 : 0),
+          },
+        ];
+      }
+    expect(metric(comparisonResults(bundle), "CPU-median")).toMatchObject({
+      verdict: "No observed difference",
+      delta: 0,
+    });
+  });
+
   it("retains sub-millisecond differences without rounding the verdict", () => {
     const bundle = comparisonFixture("same");
     for (const trial of bundle.trials)
       for (const frame of trial.recording.frames) {
         const start = frame.at - frame.interval;
+        frame.update = 0;
         frame.scopes = [
           {
             system: "test",
@@ -316,6 +358,7 @@ describe("comparison results", () => {
       trial.recording.budget = { targetFps: 1000 / 18, frameMs: 18 };
       for (const [index, frame] of trial.recording.frames.entries()) {
         const start = frame.at - frame.interval;
+        frame.update = 0;
         frame.scopes = [
           { system: "test", label: "work", start, end: start + (index >= 47 ? 19 : 1) },
         ];

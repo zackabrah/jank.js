@@ -55,6 +55,7 @@ const panel = createPerformancePanel({ shell: document.body, monitor });
 const physics = monitor.register("physics", "Physics", () => ({
   bodies: world.bodyCount,
 }));
+const drawing = monitor.register("drawing", "Drawing");
 
 function frame(at) {
   monitor.beginFrame(at);
@@ -64,7 +65,9 @@ function frame(at) {
   stepPhysics(); // your update
   physics.end(scope);
   const drawn = performance.now();
+  const drawScope = drawing.begin();
   drawScene(); // your render
+  drawing.end(drawScope);
   monitor.endFrame(drawn - start, performance.now() - drawn);
   requestAnimationFrame(frame);
 }

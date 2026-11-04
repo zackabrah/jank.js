@@ -33,7 +33,7 @@ The controls sit under the header in the full view:
 | ------- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Rec     | R   | Starts a manual recording and opens the full panel on **Capture**. Pressed again, it stops and saves.                                                                                        |
 | Auto    | A   | Arms automatic capture with the current rule.                                                                                                                                                |
-| Freeze  | F   | Holds the display so you can read it. The application, collection and any recording carry on. **Resume** returns to live numbers.                                                            |
+| Freeze  | F   | Holds the display so you can read it. The application, collection and any recording carry on. **Resume**, or **Freeze** again, returns to live numbers.                                                            |
 | Budget  |     | The frame time to judge against: 33.3 ms (30 FPS), 16.7 ms (60 FPS), 8.3 ms (120 FPS) or a custom 1 to 1000 ms. It does not change the application's frame rate. Locked during a comparison. |
 | Views   | M   | Cycles Full, Mini and Line.                                                                                                                                                                  |
 
@@ -155,7 +155,7 @@ The **Compare** tab appears when the application reports two variants, A and B. 
 
 A verdict has no minimum size. A range that clears zero by 0.05 ms still reads **B slower**, so read the size beside the badge before acting on it. Verdicts describe this device, display and run.
 
-Over-budget counts here allow more room than the Live tab: a frame must exceed the budget by the larger of 1 ms or 5%. The **Method** section under the results gives the details.
+CPU results take the larger of a frame's scopes and the update and render time the application reports, so work it times but doesn't scope still counts. Over-budget counts here allow more room than the Live tab: a frame must exceed the budget by the larger of 1 ms or 5%. The **Method** section under the results gives the details.
 
 **Export** saves the trials as one file for the viewer. Running again over results you have not exported asks first.
 

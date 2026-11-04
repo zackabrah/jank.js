@@ -15,6 +15,8 @@ export interface DiagnosticsSnapshot {
     id: number;
     at: number;
     interval: number;
+    update?: number;
+    render?: number;
     coverage: "complete" | "truncated" | "unavailable";
     scopes: readonly { system: string; label: string; start: number; end: number }[];
     overhead: { collectionMs: number; refreshMs: number };
@@ -240,7 +242,12 @@ export function readLive({ diagnostics, gpu, loading }: LiveSnapshot) {
     complete.length && gpuSpanMs !== null
       ? Math.max(
           medianOf(
-            complete.map((frame) => union(frame.scopes, frame.at - frame.interval, frame.at)),
+            complete.map((frame) =>
+              Math.max(
+                union(frame.scopes, frame.at - frame.interval, frame.at),
+                (frame.update ?? 0) + (frame.render ?? 0),
+              ),
+            ),
           ),
           gpuSpanMs,
         )

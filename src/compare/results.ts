@@ -1,5 +1,5 @@
 import { gpuFrameCoverage } from "../gpu/model.ts";
-import { frameToleranceMs, recordingDisplayPace } from "../recording/display-pace.ts";
+import { frameCpuMs, frameToleranceMs, recordingDisplayPace } from "../recording/display-pace.ts";
 import { unionDuration } from "../recording/timing.ts";
 import { type ComparisonBundle, comparisonSchedule } from "./model.ts";
 
@@ -131,7 +131,7 @@ export function comparisonResults(bundle: ComparisonBundle) {
         groups.set(key, group);
       }
       if (complete) {
-        cpu.push(unionDuration(frame.scopes));
+        cpu.push(frameCpuMs(frame));
         for (const [key, group] of groups) {
           const values = scopes.get(key) ?? [];
           values.push(unionDuration(group));
@@ -224,7 +224,7 @@ export function comparisonResults(bundle: ComparisonBundle) {
         const av = values[ai],
           bv = values[bi];
         if (av !== null && av !== undefined && bv !== null && bv !== undefined)
-          differences.push(bv - av);
+          differences.push(Math.round((bv - av) * 1e6) / 1e6);
       }
     const range: readonly [number, number] | null =
       differences.length === bundle.plan.pairs

@@ -9,7 +9,7 @@ export const frameToleranceMs = (budgetMs: number) => Math.max(1, budgetMs * 0.0
 const PACED_WORK_SHARE = 0.8;
 
 export const frameCpuMs = (frame: DiagnosticFrame) =>
-  frame.scopes.length ? unionDuration(frame.scopes) : frame.update + frame.render;
+  Math.max(unionDuration(frame.scopes), frame.update + frame.render);
 
 export function medianOf(values: readonly number[]) {
   const sorted = values.toSorted((a, b) => a - b);

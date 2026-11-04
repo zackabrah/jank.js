@@ -420,9 +420,10 @@ function ComparisonMethod({ model }: { model: ComparisonResults }) {
             Unknown.
           </p>
           <p>
-            CPU is the union of recorded scopes in complete frames, not total main-thread busy time.
-            GPU is the sum of timed invocations with a complete inventory, not device utilization or
-            busy time. Absent, partial or legacy GPU evidence is excluded, never zero-filled.
+            CPU is the larger of the union of recorded scopes and the update and render time the
+            host reports, in complete frames. It is not total main-thread busy time. GPU is the sum
+            of timed invocations with a complete inventory, not device utilization or busy time.
+            Absent, partial or legacy GPU evidence is excluded, never zero-filled.
           </p>
           <p>
             Median averages the middle two samples; p95 uses the nearest rank. Frame over-budget
