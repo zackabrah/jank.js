@@ -10,9 +10,11 @@ Keep the `repository`, `bugs` and `homepage` fields in `package.json` pointing a
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium firefox webkit
 pnpm check:full
-pnpm bench
+pnpm docs:captures
 pnpm pack --pack-destination artifacts
 ```
+
+`pnpm docs:captures` retakes the README's images from a scripted run in real Chrome, on this machine's GPU, so they show measurements rather than fixtures. It needs Chrome and ffmpeg, and it opens a window for about 30 seconds. Review the images and commit them with the release.
 
 `pnpm verify:boundary` checks the source boundary. `pnpm test:package` installs the tarball in an isolated consumer and checks exports, types, styles, fonts, the offline viewer and the package version written into recordings. Inspect the archive and open `OPEN RECORDING VIEWER.html` before release. The package must have zero runtime dependencies. The viewer at `dist/viewer/viewer/index.html` can be served by any static host. When the panel or viewer has changed, run `pnpm docs:images` and `pnpm docs:captures`, then review the screenshot diff.
 

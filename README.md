@@ -10,9 +10,9 @@
 ```
 
 <p>
-  <img alt="Zero dependencies" src="docs/readme/badge-deps.svg" height="22">
-  <img alt="~4.3 KB core" src="docs/readme/badge-core.svg" height="22">
-  <img alt="~23 KB with the live panel" src="docs/readme/badge-panel.svg" height="22">
+  <img alt="Nothing else to install" src="docs/readme/badge-deps.svg" height="22">
+  <img alt="~4.6 KB core" src="docs/readme/badge-core.svg" height="22">
+  <img alt="~64 KB with the live panel" src="docs/readme/badge-panel.svg" height="22">
   <img alt="MIT" src="docs/readme/badge-mit.svg" height="22">
   <img alt="Current version" src="docs/readme/badge-version.svg" height="22">
   <img alt="A Junklab production" src="docs/readme/badge-junklab.svg" height="22">
@@ -28,12 +28,12 @@
 
 # jank.js
 
-A performance monitor that runs inside your browser game. It shows frame pacing, the time spent in each system you name, and the slow frame with the frames around it, then exports a recording you can open offline.
+A performance monitor that runs inside your browser game. It shows frame pacing, the time spent in each system you name, and the slow frame with the frames around it. Record what happened, compare two versions of your workload, and read the results in a viewer that never leaves your machine.
 
-Zero runtime dependencies. ~4.3 KB core, ~23 KB with the panel, gzipped. Nothing is uploaded, estimated or smoothed.
+Nothing to install beyond the package: its small UI runtime is bundled. ~4.6 KB core, ~64 KB with the panel, gzipped; the viewer loads only when you open it. Nothing is uploaded, estimated or smoothed. Missing data stays missing.
 
 <p align="center">
-  <img alt="The full jank.js panel running on the fixture game, LIVE tab, recording. The frame graph glides left as frames arrive, a 33.3 ms spike enters in orange and becomes the worst frame, and a load chunk 14 event tick follows it. FPS holds at 60 with its range, 59 to 61, beside it; five CPU systems with unattributed time, GPU passes from the fixture source, counters, and the panel's own overhead under everything." src="docs/readme/panel-running.gif" width="400">
+  <img alt="The full panel on its LIVE tab, measuring a real Three.js scene on WebGPU. The frame graph scrolls as frames arrive, an 80 ms spike enters in orange and becomes the worst frame, and the CPU and GPU sections below report the time spent." src="docs/readme/panel-running.gif" width="360">
 </p>
 
 ## Install
@@ -47,20 +47,18 @@ npm install jank.js
 Call it from your own frame loop:
 
 ```js
-import { createDiagnostics, createPerformanceTray } from "jank.js";
-import "jank.js/style.css";
+import { createDiagnostics } from "jank.js";
+import { createPerformancePanel } from "jank.js/panel";
 
 const monitor = createDiagnostics();
-const tray = createPerformanceTray({
-  shell: document.querySelector("#app"), // a positioned element
-  monitor,
-});
+const panel = createPerformancePanel({ shell: document.body, monitor });
 const physics = monitor.register("physics", "Physics", () => ({
   bodies: world.bodyCount,
 }));
 
 function frame(at) {
   monitor.beginFrame(at);
+  panel.refresh(at);
   const start = performance.now();
   const scope = physics.begin();
   stepPhysics(); // your update
@@ -68,58 +66,96 @@ function frame(at) {
   const drawn = performance.now();
   drawScene(); // your render
   monitor.endFrame(drawn - start, performance.now() - drawn);
-  tray.refresh(at);
   requestAnimationFrame(frame);
 }
 
 requestAnimationFrame(frame);
 ```
 
-Mark moments with `monitor.event("Scene changed")`. Only what your app supplies is shown; sections without a source stay hidden.
+Mark moments with `monitor.event("Scene changed")`. Only what your app supplies is shown; sections without a source stay hidden or read as unavailable, never as zero.
 
 ## The panel
 
-<p align="center">
-  <img alt="The full LIVE panel with callouts on its left. FPS 59, with 59 and 61 beside it: frames in the last second, beside the slowest and fastest second. Worst 33.4 ms at frame 195, 2 missed: the slowest frame and when it came, ▲ means over budget. The graph with two orange spikes and three event ticks: each frame against the budget line, with events below. CPU, five rows ending in unattributed 12.0 ms: time in the systems you named, the rest is unattributed. GPU shadow, opaque and post passes from the fixture source: gpu time per render pass, from timer queries. Counters from objects to textures: counts your systems report, by source. FREEZE, STOP REC, CLEAR and EXPORT JSON: freeze the display, record, export for the offline viewer. Overhead, 0.03 ms collection and 0.09 ms panel refresh: what jank.js costs, collecting frames and redrawing this panel. The footer: timer precision here, and the jank.js build." src="docs/readme/panel-annotated.png" width="694">
-</p>
-
-Three sizes, all collecting: one line for a playtest, a mini HUD, the full panel when something stutters.
+It floats in a corner of the viewport, in its own Shadow DOM, so your styles and its styles cannot touch. Three sizes, all collecting: one line for a playtest, a mini HUD, the full panel when something stutters. It's built for desktop widths.
 
 <p>
-  <img alt="One line: JANK.JS, 59 fps, 16.8 ms, a 33.4 ms worst frame in orange, REC, and a plus to open the panel." src="docs/readme/panel-line.png" width="400" align="top">
-  <img alt="The mini corner HUD while recording: 59 fps, 16.8 ms, 16.7 p95, a rolling frame graph with one orange bar, the worst frame 33.4 ms at frame 92, and the heaviest scope, scene at 1.5 ms." src="docs/readme/panel-mini.png" width="280" align="top">
+  <img alt="The one-line view: live status, p95 frame time, frames per second and the share over budget." src="docs/readme/panel-line.png" width="360" align="top">
+  <img alt="The mini view: p95, frame rate and over-budget figures above a rolling frame graph, with the worst frame and the heaviest system below." src="docs/readme/panel-mini.png" width="240" align="top">
 </p>
 
-**LOADING** puts load stages on one axis, this session against the cold start. **CAPTURE** keeps the frames before and after each spike.
+**CAPTURE** records manually, or automatically on a spike, a sustained slowdown or a whole episode, keeping the frames before and after. **LOADING** puts your load stages on one axis, with cold and repeat runs compared. **COMPARE** runs an A/B test.
 
 <p>
-  <img alt="The LOADING tab: total 301.3 ms against a 602.9 ms cold start, 94 percent cache hits, five stages on one axis with the cold run behind them and decode textures the heaviest, 212 hits and 14 misses, and four sessions listed." src="docs/readme/panel-loading.png" width="400" align="top">
-  <img alt="The CAPTURE tab in cooldown: budget 60 fps, auto capture on with a 33.3 ms threshold, 120 frames before and after and a 5 second cooldown, what recordings contain, and one capture kept: frame 97 at 50.0 ms near the wave 3 and spawn ×184 events." src="docs/readme/panel-capture.png" width="400" align="top">
+  <img alt="The CAPTURE tab: its automatic capture rule and manual recording controls." src="docs/readme/panel-capture.png" width="360" align="top">
+  <img alt="The LOADING tab: a real load and compile, its stages on one time axis, with cold-run and cache figures reading unknown where the host has not supplied them." src="docs/readme/panel-loading.png" width="360" align="top">
 </p>
+
+## A/B comparison
+
+Report two variants and how to switch between them, and the panel runs them in alternating pairs with warm-up, then gives a verdict for CPU, GPU and frame time:
+
+```js
+const shadows = getShadows();
+const panel = createPerformancePanel({
+  shell: document.body,
+  monitor,
+  comparison: {
+    change: "shadows",
+    variants: {
+      A: { label: "Shadows on", settings: { shadows: true } },
+      B: { label: "Shadows off", settings: { shadows: false } },
+    },
+    activate: (variant) => setShadows(variant === "A"),
+    restore: () => setShadows(shadows),
+  },
+});
+```
+
+Other settings that differ are flagged as confounds. Results are a quick estimate, not a significance test: read the size of the difference beside each verdict. Stopped and failed runs keep their finished trials.
+
+<img alt="The comparison viewer on a real run of Baseline against CPU stress: verdict cards reading B slower on CPU and frame time, aligned frame-time graphs for A and B, and the paired frames under the cursor compared in the inspector." src="docs/readme/viewer-compare.png" width="800">
 
 ## The viewer
 
-`jank.js/viewer.html` is one self-contained file. Drop a recording on it to step through every frame, its CPU and GPU lanes, and a labelled guess at the culprit. No server, no network.
+Open a saved capture from the panel, or use `jank.js/viewer.html`: one self-contained file. Choose a recording or comparison to step through every frame, its CPU and GPU lanes, its counters and its evidence.
 
-<img alt="The recording viewer: the environment line, the session strip with two captures marked, the timeline at 4 px per frame with frame 185 selected at 50.0 ms, 3.0 times the budget, LIKELY scene update at plus 40.0 ms against its median, the exact CPU lanes, the GPU and counter lanes, and the two captures listed." src="docs/readme/viewer.png" width="100%">
+<img alt="The recording viewer on a real capture with three 80 ms spikes: summary tiles, an overview with ranked spike markers, aligned CPU and GPU lanes, and the worst frame open in the inspector." src="docs/readme/viewer.png" width="800">
 
 ## Adapters
 
-Optional, and none imports a renderer. `jank.js/adapters/three` reads `renderer.info` counters. `jank.js/adapters/three-webgpu` and `jank.js/adapters/webgl2` time render passes with GPU timer queries, and report `unsupported` where the browser has none, rather than guessing from CPU time.
+Optional, and none bundles a renderer. `jank.js/adapters/three` reads `renderer.info` counters. `jank.js/adapters/three-webgpu` and `jank.js/adapters/webgl2` time GPU passes: pass the source they return as `gpu`. `jank.js/adapters/three-host` adds renderer errors, instance and loading observers for Three.js hosts. `jank.js/gpu` gives frame-linked GPU evidence for recordings.
+
+## Upgrading from 0.3
+
+`createDiagnostics` and the rest of the core API, the recording format and existing recordings are unchanged. The panel and viewer are new:
+
+```diff
+-import { createDiagnostics, createPerformanceTray } from "jank.js";
+-import "jank.js/style.css";
++import { createDiagnostics } from "jank.js";
++import { createPerformancePanel } from "jank.js/panel";
+
+-const tray = createPerformanceTray({ shell, monitor, gpu });
++const panel = createPerformancePanel({ shell, monitor, gpu });
+```
+
+Call `panel.refresh(at)` straight after `monitor.beginFrame(at)`, and `panel.destroy()` instead of `tray.dispose()`. See [the changelog](CHANGELOG.md) for what was removed.
 
 ## Docs
 
-[User manual](docs/user-manual.md) · [Integration](docs/integration.md) · [Data model](docs/data-model.md) · [Measurements and limits](docs/measurements.md) · [Overhead](docs/performance.md) · [Changelog](CHANGELOG.md)
+[Integration](docs/integration.md) · [Data model](docs/data-model.md) · [Measurements and limits](docs/measurements.md) · [Overhead](docs/performance.md) · [GPU measurements](docs/gpu-measurements.md) · [Three.js playground](docs/three-playground.md) · [Architecture](docs/architecture.md)
 
 See it catch something in [Junktro](https://junktro.junklab.au/), a deliberately heavy CRT desktop.
 
 ## Develop
 
 ```sh
-pnpm check          # format, lint, unit tests, types and builds
-pnpm test:e2e       # the packaged panel and viewer in Chromium, Firefox and WebKit
-pnpm bench          # overhead on your machine
-pnpm docs:captures  # retake the README images and social card (needs ffmpeg)
+pnpm dev            # the playground and review pages
+pnpm check          # lint, types, unit tests and builds
+pnpm test:package   # the packed tarball in a clean consumer
+pnpm test:e2e       # the panel, viewer and built package in Chromium, Firefox and WebKit
+pnpm test:e2e:gpu   # real GPU timing in Chrome on your hardware
+pnpm docs:captures  # retake the README images from a real run (needs Chrome and ffmpeg)
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

@@ -1,0 +1,93 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "./theme.css";
+
+:host {
+  display: block;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--jank-text);
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A small shadow-local base; never apply Tailwind preflight to the host page. */
+@layer base {
+  /* Disclosures draw their own SVG chevron (src/ui/icons.tsx); hide the native marker. */
+  summary {
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    border: 0 solid;
+  }
+
+  p,
+  dl,
+  dt,
+  dd {
+    margin: 0;
+    padding: 0;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    padding: 0;
+  }
+
+  @media (forced-colors: none) {
+    * {
+      /* Inherited host colors would override the WebKit thumb styling. */
+      scrollbar-color: auto;
+    }
+
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      min-height: 32px;
+      border: 3px solid transparent;
+      border-radius: 9999px;
+      background-color: var(--jank-scrollbar-thumb);
+      background-clip: padding-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: var(--jank-scrollbar-thumb-hover);
+    }
+
+    ::-webkit-scrollbar-button {
+      display: none;
+    }
+
+    @supports not selector(::-webkit-scrollbar) {
+      * {
+        scrollbar-color: var(--jank-scrollbar-thumb) transparent;
+        scrollbar-width: thin;
+      }
+    }
+  }
+}
+
+/* Outside layers so display utilities cannot expose hidden content. */
+[hidden] {
+  display: none;
+}

@@ -10,6 +10,12 @@ pnpm check
 pnpm test:package
 # One retry: Playwright still reports a test that passes only on retry as flaky.
 pnpm test:e2e --retries=1
+# Images are retaken by hand: real measurements differ every run, so each retake adds to history.
+staged=$(git diff --cached --name-only)
+if echo "$staged" | grep -qE '^src/(live|capture|compare|loading|ui|viewer)/[^.]*\.(tsx|css)$|^src/theme\.css$' &&
+  ! echo "$staged" | grep -qE '^docs/readme/.*\.(png|gif)$'; then
+  echo "The panel or viewer changed. If it looks different, run pnpm docs:captures."
+fi
 # Every suite passed: redraw the README's version, test and coverage chips from these runs and
 # commit them too.
 chips=$(node scripts/readme/update.mjs)

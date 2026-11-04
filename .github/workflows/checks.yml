@@ -40,7 +40,6 @@ jobs:
           name: jank-js-build-${{ matrix.os }}
           path: |
             artifacts/*.tgz
-            dist/viewer
             dist-package
 
   browser:

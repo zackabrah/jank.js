@@ -4,13 +4,38 @@ import { readdir, readFile } from "node:fs/promises";
 
 const allowedSource = new Set([
   "index.ts",
+  "panel-api.ts",
+  "panel-api.test.ts",
+  "public-recording.test.ts",
+  "gpu-api.ts",
   "core",
   "performance",
   "types",
   "adapters",
+  "gpu",
+  "recording",
+  "capture",
+  "compare",
+  "live",
+  "loading",
   "viewer",
-  // junkui, the shared interface layer; extracted to its own package once Junktro uses it.
   "ui",
+  "assets",
+  "format.ts",
+  "format.test.ts",
+  "frame-chart-geometry.ts",
+  "measurement.ts",
+  "measurement-value.tsx",
+  "measurement-value.test.tsx",
+  "shadow-view.ts",
+  "shadow.css",
+  "theme.css",
+  // The development preview; none of these reach the published package.
+  "app.tsx",
+  "app.test.tsx",
+  "main.tsx",
+  "style.css",
+  "theme.test.ts",
 ]);
 
 for (const entry of await readdir("src")) {
@@ -19,7 +44,7 @@ for (const entry of await readdir("src")) {
 
 for (const entry of await readdir(".")) {
   assert.ok(
-    !["examples", "reference", "public", "Claude outputs"].includes(entry),
+    !["examples", "reference", "public", "comparison", "plugins", "Claude outputs"].includes(entry),
     `Private demo content must stay outside this repository: ${entry}`,
   );
 }
@@ -28,22 +53,20 @@ const sourceFiles = await readdir("src", { recursive: true });
 
 await Promise.all(
   sourceFiles.map(async (file) => {
-    assert.ok(
-      !/\.(glb|gltf|fbx|mp3|wav|ttf)$/i.test(file),
-      `Demo asset: ${file}`,
-    );
+    assert.ok(!/\.(glb|gltf|fbx|mp3|wav|ttf)$/i.test(file), `Demo asset: ${file}`);
 
-    if (!file.endsWith(".ts") || file.endsWith(".test.ts")) return;
+    if (!/\.tsx?$/.test(file) || /\.test\.tsx?$/.test(file)) return;
 
-    const source = await readFile(`src/${file}`, "utf8");
+    // Type-only imports erase at build time, so they cannot add a runtime dependency.
+    const source = (await readFile(`src/${file}`, "utf8")).replace(/^import type [^;]+;$/gm, "");
 
-    const imports = source.matchAll(
-      /(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g,
-    );
+    const imports = source.matchAll(/(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g);
 
     for (const [, specifier] of imports) {
+      // Preact is bundled into the panel and viewer; the core and adapters must stay free of it.
+      const bundled = /^preact(\/|$)/.test(specifier) && !/^(core|adapters|types)\//.test(file);
       assert.ok(
-        specifier.startsWith("."),
+        specifier.startsWith(".") || bundled,
         `Runtime dependency in ${file}: ${specifier}`,
       );
     }
@@ -61,19 +84,11 @@ for (const [field, value] of Object.entries({
   "repository.url": manifest.repository?.url,
   "bugs.url": manifest.bugs?.url,
 })) {
-  assert.ok(
-    typeof value === "string" && value.trim() !== "",
-    `package.json needs ${field}`,
-  );
+  assert.ok(typeof value === "string" && value.trim() !== "", `package.json needs ${field}`);
 }
 
 for (const dependency of ["gsap"]) {
-  assert.ok(
-    !(dependency in manifest.devDependencies),
-    `Demo dependency: ${dependency}`,
-  );
+  assert.ok(!(dependency in manifest.devDependencies), `Demo dependency: ${dependency}`);
 }
 
-console.log(
-  "Public boundary verified: tool-only source and zero runtime dependencies.",
-);
+console.log("Public boundary verified: tool-only source and zero runtime dependencies.");

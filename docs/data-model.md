@@ -52,24 +52,7 @@ Freeze is a presentation choice: retain a detached snapshot and continue collect
 
 ## Building a recording viewer
 
-```js
-import { createRecordingViewModel } from "jank.js";
-const view = createRecordingViewModel();
-view.load(await file.text());
-let state = view.snapshot();
-if (state?.frameIds.length) {
-  view.selectFrame(state.frameIds[0]);
-  view.step(1);
-}
-view.setRange(100, 500);
-state = view.snapshot(240); // Up to 240 timeline buckets; 1–1000 supported.
-```
-
-An empty model returns null. A failed load throws without replacing the previous recording. Each state is detached. Selection uses frame IDs, not array offsets. Timeline buckets retain the peak frame ID and mean/maximum interval so narrow views do not hide spikes. Ranges are in recording-relative milliseconds; the recording summary still describes the full recording.
-
-`state.selected` contains the frame, inclusive system timings, tracked/unattributed interval, explanation, frame-local events, preceding periodic counters with their age, explicitly linked GPU results, and budget exceedance. `state.unlinkedGpuSamples` counts samples without a matching recorded frame; do not attach these to a nearby frame based on arrival time.
-
-The jank.js viewer is `src/viewer/entry.ts` with `src/viewer/viewer.css`; it draws from per-frame lanes built once on load in `src/viewer/lanes.ts` and reads the recording through the model in `src/viewer/model.ts` (`recording()` returns a detached copy). The live panel is `src/performance/tray.ts`.
+`parseRecording` validates a file and returns detached data, or throws without touching what you already hold. `inspectFrame`, `recordingSummary` and `selectFrameRange` read it. Selection uses frame IDs, not array offsets. The jank.js viewer is `src/viewer/entry.tsx`; `jank.js/viewer` opens it over your page, and `jank.js/viewer.html` is the same viewer as one self-contained file.
 
 ## Required presentation states
 

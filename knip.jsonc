@@ -1,17 +1,15 @@
 {
   "$schema": "./node_modules/knip/schema-jsonc.json",
-  // Loaded by HTML pages through <script> tags rather than imported.
-  "entry": ["src/viewer/entry.ts", "e2e/fixtures/*.js"],
+  // Review pages and the standalone viewer are loaded by HTML, not imported.
+  "entry": ["src/viewer/entry.tsx", "checks/*.tsx"],
   // Type declarations for the .mjs scripts that TypeScript sources import.
   "ignore": ["**/*.d.mts"],
-  // The accuracy fixture loads both from node_modules by URL, not by import.
-  "ignoreDependencies": ["stats.js", "stats-gl"],
-  // Browser imports of the built package and stats-gl, resolved by the test and benchmark
-  // servers rather than from source.
-  "ignoreUnresolved": [
-    "/index.js",
-    "./index.js",
-    "./adapters/webgl2.js",
-    "./stats-gl/main.js",
-  ],
+  // Required by pnpm docs:captures, which says so when it is missing.
+  "ignoreBinaries": ["ffmpeg"],
+  "ignoreIssues": {
+    // shortcut: the collector stays byte-identical to 0.3.0 for the move; prune its exports after.
+    "src/core/*.ts": ["exports"],
+    // Named by the published declarations of `frameEvidence`, though nothing imports it directly.
+    "src/recording/types.ts": ["types"]
+  }
 }

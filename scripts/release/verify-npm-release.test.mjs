@@ -10,6 +10,11 @@ import { tmpdir } from "node:os";
 
 import { join, resolve } from "node:path";
 
+// Git exports these to hooks, and in a linked worktree GIT_DIR names the real repository. Left
+// set, every `git` below would commit, tag and configure there instead of in its temp repository.
+for (const name of Object.keys(process.env))
+  if (name.startsWith("GIT_")) delete process.env[name];
+
 const script = resolve("scripts/release/verify-npm-release.mjs");
 
 function fixture(t) {

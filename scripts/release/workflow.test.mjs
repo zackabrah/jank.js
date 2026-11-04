@@ -16,6 +16,11 @@ import { join, resolve, delimiter } from "node:path";
 
 import { execFileSync } from "node:child_process";
 
+// Git exports these to hooks, and in a linked worktree GIT_DIR names the real repository. Left
+// set, every `git` below would commit, tag and configure there instead of in its temp repository.
+for (const name of Object.keys(process.env))
+  if (name.startsWith("GIT_")) delete process.env[name];
+
 const run = (cmd, args, cwd, env = process.env) =>
   execFileSync(cmd, args, {
     cwd,

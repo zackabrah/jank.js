@@ -1,5 +1,7 @@
 # jank.js user manual
 
+> This manual describes the 0.3 panel and is being rewritten for 1.0.0. See [Integration](integration.md) for the current API.
+
 jank.js helps developers and QA testers investigate uneven frames in browser games and interactive graphics. It runs inside the application, so the slowdown and the evidence are in the same place. Capture a slow frame, keep what happened around it, and open the recording offline. Measurements stay on your machine.
 
 ## 1. Quick start

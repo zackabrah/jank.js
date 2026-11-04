@@ -1,5 +1,7 @@
 # Monitor overhead
 
+> The table below measures the 0.3 panel. The collector is unchanged, but the panel it measures has been replaced, so these figures need re-measuring before 1.0.0.
+
 Measured on **27 October 2026** with the jank.js panel, Apple M3 Max, macOS arm64, headless Chromium 153.0.8010.12, on a cross-origin isolated fixture. These are measurements of the built library on one local fixture, not a guarantee for other applications or hardware. Raw report: [overhead.json](verification/overhead.json).
 
 | State                           | Mean monitoring + timer cost per frame | Largest observed cost |
@@ -32,6 +34,20 @@ The live panel reports collection and exclusive refresh mean/peak over recent fr
 
 The first v1 measurement identified live snapshot copying as a cost worth reducing. Explicit copies of the bounded frame schema lowered the collapsed mean from about 0.155 ms to 0.0385 ms in the immediate comparison while retaining detached snapshots. The table above is the final remeasurement, after browser-boundary fixes; run-to-run variation remains visible. The new API and extra scope capture still do more work than the earlier extraction benchmark; the original [pre-v1 report](verification/overhead-pre-v1.json) is retained separately.
 
-Run `pnpm bench` to produce `artifacts/overhead.json`, or `pnpm bench docs/verification/overhead.json` to refresh the [current raw report](verification/overhead.json). Run on an otherwise idle machine and compare equivalent workloads. More systems, scopes, custom views, DevTools recording and real GPU providers can cost more.
 
 The library ships minified ESM with internal identifier mangling and source maps for downstream bundling and debugging. Packaged panel CSS is minified. The panel and offline viewer use system monospace fonts; no font files are bundled. The core has zero runtime dependencies; application and renderer bundle sizes are outside these measurements.
+
+## A/B comparison on real hardware
+
+Chrome on an Apple M3 Max with Metal at about 144 Hz, one run each: two pairs, 0.5 s warm-up, 2 s measure, Baseline against each preset in [the playground](three-playground.md#ab-comparison). B − A median in ms, with the paired range in brackets:
+
+| Backend | B          | CPU                     | GPU                  | Frame                |
+| ------- | ---------- | ----------------------- | -------------------- | -------------------- |
+| WebGL2  | CPU stress | +13.95 [+13.90, +14.00] | −0.05 [−0.07, −0.03] | +7.50 [+7.50, +7.50] |
+| WebGL2  | GPU stress | +0.10 [+0.10, +0.10]    | +3.16 [+3.01, +3.32] | −0.00 [−0.00, +0.00] |
+| WebGPU  | CPU stress | +14.00 [+14.00, +14.00] | +0.03 [0.00, +0.07]  | +7.70 [+7.70, +7.70] |
+| WebGPU  | GPU stress | +0.25 [+0.20, +0.30]    | +2.13 [+1.97, +2.29] | 0.00 [0.00, 0.00]    |
+
+CPU stress adds its 14 ms of work, and GPU stress adds GPU time without moving a frame that has headroom at this refresh rate. Verdicts need only a range that excludes zero, so very small shifts still earn a label: read the size beside it.
+
+The runner costs nothing measurable when idle (0.015 µs per call) and about 0.15 ms per frame while running, 0.9% of a 16.7 ms budget, from recorded collection time with a 0.1 ms clock. It applies to A and B alike, so B − A is unaffected, but absolute frame times read slightly above an uninstrumented run. GPU-heavy runs exported up to 180 KB per measured second at 144 Hz, so the longest plans can pass the 32 MiB file limit; the run then ends as Failed and earlier trials stay exportable.

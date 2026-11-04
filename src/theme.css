@@ -1,0 +1,303 @@
+/* Values from the supplied Jank on Geist canvas; see docs/build-plan.md. */
+
+:root,
+:host,
+.dark-theme,
+:host(.dark-theme) {
+  color-scheme: dark;
+  --ds-background-100: #0a0a0a;
+  --ds-background-200: #000;
+  --ds-gray-100: #1a1a1a;
+  --ds-gray-200: #1f1f1f;
+  --ds-gray-300: #292929;
+  --ds-gray-400: #2e2e2e;
+  --ds-gray-500: #454545;
+  --ds-gray-600: #878787;
+  --ds-gray-700: #8f8f8f;
+  --ds-gray-800: #7d7d7d;
+  --ds-gray-900: #a1a1a1;
+  --ds-gray-1000: #ededed;
+  --ds-gray-alpha-100: #ffffff0f;
+  --ds-gray-alpha-200: #ffffff17;
+  --ds-gray-alpha-400: #ffffff24;
+  --ds-blue-700: #0072f5;
+  --ds-blue-900: #52a8ff;
+  --ds-red-100: #2a1314;
+  --ds-red-200: #3c1618;
+  --ds-red-300: #561a1e;
+  --ds-red-400: #671e21;
+  --ds-red-700: #e5484d;
+  --ds-red-800: #d93036;
+  --ds-red-900: #ff6166;
+  --ds-red-1000: #feecee;
+  --ds-amber-100: #291800;
+  --ds-amber-400: #573300;
+  --ds-amber-800: #ff990a;
+  --ds-amber-900: #ff990a;
+  --ds-amber-1000: #fef3dc;
+  --ds-green-200: #0f2e18;
+  --ds-green-900: #62c073;
+  --ds-purple-200: #2e1938;
+  --ds-purple-700: #8e4ec6;
+  --ds-purple-900: #bf7af0;
+  --ds-teal-100: #04201b;
+  --ds-teal-200: #062822;
+  --ds-teal-400: #053d35;
+  --ds-teal-900: #0ac7b4;
+  --ds-green-100: #0b2212;
+  --ds-green-400: #0c451b;
+  --ds-green-1000: #e5fbea;
+  --ds-purple-100: #231528;
+  --ds-purple-400: #4f2768;
+  --ds-purple-1000: #f8edfc;
+  --ds-teal-1000: #e0faf4;
+  --ds-shadow-menu: 0 2px 2px #00000052, 0 8px 16px -4px #0006;
+}
+
+.light-theme,
+:host(.light-theme) {
+  color-scheme: light;
+  --ds-background-100: #fff;
+  --ds-background-200: #fafafa;
+  --ds-gray-100: #f2f2f2;
+  --ds-gray-200: #ebebeb;
+  --ds-gray-300: #e6e6e6;
+  --ds-gray-400: #ebebeb;
+  --ds-gray-500: #c9c9c9;
+  --ds-gray-600: #a8a8a8;
+  --ds-gray-700: #8f8f8f;
+  --ds-gray-800: #7d7d7d;
+  --ds-gray-900: #666;
+  --ds-gray-1000: #171717;
+  --ds-gray-alpha-100: #0000000d;
+  --ds-gray-alpha-200: #00000014;
+  --ds-gray-alpha-400: #00000014;
+  --ds-blue-700: #0072f5;
+  --ds-blue-900: #0068d6;
+  --ds-red-100: #fff0f0;
+  --ds-red-200: #ffebeb;
+  --ds-red-300: #ffe5e5;
+  --ds-red-400: #fdd8d8;
+  --ds-red-700: #e5484d;
+  --ds-red-800: #da2f35;
+  --ds-red-900: #cb2a2f;
+  --ds-red-1000: #391417;
+  --ds-amber-100: #fff6e5;
+  --ds-amber-400: #ffdd8f;
+  --ds-amber-800: #ff990a;
+  --ds-amber-900: #a35200;
+  --ds-amber-1000: #4e2009;
+  --ds-green-200: #ebfaeb;
+  --ds-green-900: #297a3a;
+  --ds-purple-200: #f9f1fe;
+  --ds-purple-700: #8e4ec6;
+  --ds-purple-900: #7820bc;
+  --ds-teal-100: #eefcf9;
+  --ds-teal-200: #e5faf6;
+  --ds-teal-400: #bef4eb;
+  --ds-teal-900: #067a6e;
+  --ds-green-100: #effbef;
+  --ds-green-400: #c6f1c7;
+  --ds-green-1000: #1b311e;
+  --ds-purple-100: #f9f0ff;
+  --ds-purple-400: #eddcf9;
+  --ds-purple-1000: #2e004c;
+  --ds-teal-1000: #073c34;
+  --ds-shadow-menu: 0 2px 2px #0000000a, 0 8px 16px -4px #0000000a;
+}
+
+:root,
+:host,
+.dark-theme,
+.light-theme {
+  --jank-page: var(--ds-background-200);
+  --jank-surface: var(--ds-background-100);
+  --jank-fill: var(--ds-gray-100);
+  --jank-fill-hover: var(--ds-gray-200);
+  --jank-fill-active: var(--ds-gray-300);
+  --jank-divider: var(--ds-gray-400);
+  --jank-track: var(--ds-gray-400);
+  --jank-text: var(--ds-gray-1000);
+  --jank-text-secondary: var(--ds-gray-900);
+  --jank-text-disabled: var(--ds-gray-700);
+  --jank-control: var(--ds-gray-600);
+  --jank-scrollbar-thumb: var(--ds-gray-500);
+  --jank-scrollbar-thumb-hover: var(--ds-gray-600);
+  --jank-over: var(--ds-amber-900);
+  --jank-bar: var(--ds-gray-600);
+  --jank-bar-area: var(--ds-gray-300);
+  --jank-over-mark: var(--ds-amber-900);
+  --jank-budget-line: var(--ds-gray-1000);
+  --jank-no-gpu-record: var(--ds-gray-300);
+  --jank-series-a: var(--ds-gray-1000);
+  --jank-series-b: var(--ds-blue-900);
+  --jank-series-b-text: var(--ds-blue-900);
+  --jank-live: var(--ds-green-900);
+  --jank-rec: var(--ds-red-800);
+  --jank-rec-text: var(--ds-red-900);
+  --jank-capture: var(--ds-purple-900);
+  --jank-frozen: var(--ds-teal-900);
+  --jank-error: var(--ds-red-900);
+  --jank-focus: var(--ds-blue-900);
+  --jank-over-band: #ff990a1a;
+  --jank-graph-motion: glide;
+}
+
+.light-theme,
+:host(.light-theme) {
+  --jank-bar: var(--ds-gray-700);
+  --jank-control: var(--ds-gray-700);
+  --jank-scrollbar-thumb: var(--jank-control);
+  --jank-scrollbar-thumb-hover: var(--jank-text-secondary);
+  --jank-series-b: var(--ds-blue-700);
+  --jank-focus: var(--ds-blue-700);
+  --jank-over-band: #ff990a1f;
+  --jank-over-mark: color-mix(in oklab, var(--ds-amber-900) 60%, var(--ds-amber-800));
+}
+
+@theme inline {
+  --color-*: initial;
+  --text-*: initial;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --color-white: #fff;
+  --color-background-100: var(--ds-background-100);
+  --color-background-200: var(--ds-background-200);
+  --color-gray-100: var(--ds-gray-100);
+  --color-gray-200: var(--ds-gray-200);
+  --color-gray-300: var(--ds-gray-300);
+  --color-gray-400: var(--ds-gray-400);
+  --color-gray-500: var(--ds-gray-500);
+  --color-gray-600: var(--ds-gray-600);
+  --color-gray-700: var(--ds-gray-700);
+  --color-gray-800: var(--ds-gray-800);
+  --color-gray-900: var(--ds-gray-900);
+  --color-gray-1000: var(--ds-gray-1000);
+  --color-gray-alpha-100: var(--ds-gray-alpha-100);
+  --color-gray-alpha-200: var(--ds-gray-alpha-200);
+  --color-gray-alpha-400: var(--ds-gray-alpha-400);
+  --color-blue-700: var(--ds-blue-700);
+  --color-blue-900: var(--ds-blue-900);
+  --color-red-100: var(--ds-red-100);
+  --color-red-200: var(--ds-red-200);
+  --color-red-300: var(--ds-red-300);
+  --color-red-400: var(--ds-red-400);
+  --color-red-700: var(--ds-red-700);
+  --color-red-800: var(--ds-red-800);
+  --color-red-900: var(--ds-red-900);
+  --color-red-1000: var(--ds-red-1000);
+  --color-amber-100: var(--ds-amber-100);
+  --color-amber-400: var(--ds-amber-400);
+  --color-amber-900: var(--ds-amber-900);
+  --color-amber-1000: var(--ds-amber-1000);
+  --color-green-200: var(--ds-green-200);
+  --color-green-900: var(--ds-green-900);
+  --color-purple-200: var(--ds-purple-200);
+  --color-purple-700: var(--ds-purple-700);
+  --color-purple-900: var(--ds-purple-900);
+  --color-teal-100: var(--ds-teal-100);
+  --color-teal-200: var(--ds-teal-200);
+  --color-teal-400: var(--ds-teal-400);
+  --color-teal-900: var(--ds-teal-900);
+  --color-green-100: var(--ds-green-100);
+  --color-green-400: var(--ds-green-400);
+  --color-green-1000: var(--ds-green-1000);
+  --color-purple-100: var(--ds-purple-100);
+  --color-purple-400: var(--ds-purple-400);
+  --color-purple-1000: var(--ds-purple-1000);
+  --color-teal-1000: var(--ds-teal-1000);
+  --color-jank-page: var(--jank-page);
+  --color-jank-surface: var(--jank-surface);
+  --color-jank-fill: var(--jank-fill);
+  --color-jank-fill-hover: var(--jank-fill-hover);
+  --color-jank-fill-active: var(--jank-fill-active);
+  --color-jank-divider: var(--jank-divider);
+  --color-jank-track: var(--jank-track);
+  --color-jank-text: var(--jank-text);
+  --color-jank-text-secondary: var(--jank-text-secondary);
+  --color-jank-text-disabled: var(--jank-text-disabled);
+  --color-jank-control: var(--jank-control);
+  --color-jank-over: var(--jank-over);
+  --color-jank-bar: var(--jank-bar);
+  --color-jank-bar-area: var(--jank-bar-area);
+  --color-jank-over-mark: var(--jank-over-mark);
+  --color-jank-budget-line: var(--jank-budget-line);
+  --color-jank-no-gpu-record: var(--jank-no-gpu-record);
+  --color-jank-series-a: var(--jank-series-a);
+  --color-jank-series-b: var(--jank-series-b);
+  --color-jank-series-b-text: var(--jank-series-b-text);
+  --color-jank-live: var(--jank-live);
+  --color-jank-rec: var(--jank-rec);
+  --color-jank-rec-text: var(--jank-rec-text);
+  --color-jank-capture: var(--jank-capture);
+  --color-jank-frozen: var(--jank-frozen);
+  --color-jank-error: var(--jank-error);
+  --color-jank-focus: var(--jank-focus);
+  --color-jank-over-band: var(--jank-over-band);
+}
+
+@theme {
+  --text-heading-24: 1.5rem;
+  --text-heading-24--line-height: 2rem;
+  --text-heading-24--font-weight: 600;
+  --text-heading-24--letter-spacing: -0.04em;
+  --text-heading-16: 1rem;
+  --text-heading-16--line-height: 1.5rem;
+  --text-heading-16--font-weight: 600;
+  --text-heading-16--letter-spacing: -0.02em;
+  --text-heading-14: 0.875rem;
+  --text-heading-14--line-height: 1.25rem;
+  --text-heading-14--font-weight: 600;
+  --text-heading-14--letter-spacing: -0.02em;
+  --text-label-20: 1.25rem;
+  --text-label-20--line-height: 2rem;
+  --text-label-14: 0.875rem;
+  --text-label-14--line-height: 1.25rem;
+  --text-label-13: 0.8125rem;
+  --text-label-13--line-height: 1rem;
+  --text-label-12: 0.75rem;
+  --text-label-12--line-height: 1rem;
+  --text-copy-13: 0.8125rem;
+  --text-copy-13--line-height: 1.125rem;
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--jank-focus);
+    outline-offset: 2px;
+  }
+}
+
+@utility material-menu {
+  border: 1px solid var(--ds-gray-alpha-400);
+  border-radius: var(--radius-xl);
+  background: var(--jank-surface);
+  box-shadow: var(--ds-shadow-menu);
+}
+
+@utility bg-coverage-missing {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--jank-track) 0 2px,
+    var(--jank-text-secondary) 2px 3px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  :host,
+  .dark-theme,
+  .light-theme {
+    --jank-graph-motion: step;
+  }
+}
+
+@media (forced-colors: active) {
+  :root,
+  :host,
+  .dark-theme,
+  .light-theme {
+    --jank-focus: Highlight;
+    --jank-control: ButtonText;
+  }
+}

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Breaking: a new panel and viewer
+
+The panel and viewer are rebuilt. The collector is unchanged: `createDiagnostics`, recording format v2, the rest of the core API and existing recordings keep working.
+
+- Replace `createPerformanceTray` with `createPerformancePanel` from `jank.js/panel`. Call `panel.refresh(at)` straight after `monitor.beginFrame(at)`, and `panel.destroy()` instead of `tray.dispose()`.
+- Remove the tray options `mode`, `viewerUrl`, `capture`, `culling`, `temporal` and `preparation`. Capture rules are set in the panel, the panel opens its own viewer (or pass `onOpenCapture`), and host values appear under Counters through `monitor.register`. `createCullingBoundsOverlay` and `createPreparationProfiler` remain.
+- Remove `createRecordingViewModel`, along with the `--jank-*` theming tokens: styles now live in a Shadow DOM. `jank.js/style.css` and `jank.js/font.css` remain as empty stylesheets so existing imports keep working.
+- `parseRecording` from `jank.js` now keeps capture rules, episode context and GPU evidence, which panel exports carry.
+- The panel and viewer target desktop widths. The bundled UI runtime (Preact) grows the panel from ~23 KB to ~64 KB gzipped; the core stays ~4.6 KB and the viewer loads only when opened. There is still nothing extra to install.
+
+### New
+
+- A/B comparison: alternating pairs with warm-up, per-metric verdicts, per-scope changes, confound warnings, and a viewer with aligned graphs, signed differences, zoom and paired frame inspection. Stopped and failed runs keep their finished trials.
+- Automatic capture by spike, sustained slowdown or whole episode, with frame-linked GPU evidence and coverage explanations.
+- A Loading tab with a real-offset waterfall and cold/repeat comparison.
+- `jank.js/gpu` and `jank.js/adapters/three-host` for frame-linked GPU evidence and Three.js hosts.
+
+### Earlier, for the 0.3 panel
+
 - Build the recording viewer on junkui too. Its root carries `jl`, and junkui now supplies its type, reset, focus, dim text, primary button and screen-reader text; the documented `--jank-*` overrides still apply. junkui keeps buttons' labels centred and `<summary>` disclosure markers, which its reset had removed.
 - Centre the viewer's button labels as the panel's are, and space its status bar again: the frame mark shows and "FRAME 61" no longer runs into the range beside it.
 - Build the panel's shared controls on junkui, Junklab's CSS-variable interface layer (`src/ui/junkui.css`): buttons, toggles, icon buttons, chips, inputs, focus, and visually hidden text now use `jl-` classes under the panel root, which also carries `jl`. Nothing looks or behaves differently, and the documented `--jank-*` overrides still apply. Host CSS aimed at the old internal classes (`jank-btn`, `jank-toggle`, `jank-icon`, `jank-chip`, `jank-primary`, `jank-small`, `jank-sr`, `jank-dim`) must use the `jl-` names.
