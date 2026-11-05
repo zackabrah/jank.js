@@ -84,6 +84,11 @@ try {
     ].map((file) => readFile(join(installed, file))),
   );
 
+  const readme = await readFile(join(installed, "README.md"), "utf8");
+  const guideLinks = [...readme.matchAll(/\]\((docs\/[^)#]+\.md)(?:#[^)]*)?\)/g)];
+  assert.ok(guideLinks.length > 0, "The packaged README must link to its guides");
+  await Promise.all(guideLinks.map(([, file]) => readFile(join(installed, file))));
+
   const viewer = await readFile(join(installed, "dist-package/viewer.html"), "utf8");
 
   assert.ok(viewer.includes("jank.js recording viewer"));
@@ -219,7 +224,7 @@ export function webgl(gl: WebGL2RenderingContext) { return createPerformancePane
   run(executable("vite"), ["build"], temp);
 
   console.log(
-    "Package verified: isolated install, zero runtime dependencies, public imports, declarations, system fonts, CSS assets and consumer build.",
+    "Package verified: isolated install, zero runtime dependencies, public imports, declarations, linked guides, system fonts, CSS assets and consumer build.",
   );
 } catch (error) {
   if (error.stdout) console.error(error.stdout.toString());

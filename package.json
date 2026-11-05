@@ -95,6 +95,7 @@
   },
   "files": [
     "dist-package",
+    "docs",
     "licenses",
     "THIRD_PARTY_NOTICES.md",
     "CHANGELOG.md",
