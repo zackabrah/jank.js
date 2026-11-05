@@ -1,0 +1,33 @@
+@import "tailwindcss" source(none);
+@import "../src/theme.css";
+@source "./three.html";
+@source "./three.tsx";
+@source "../src/ui/button.tsx";
+@source "../src/ui/notice.tsx";
+
+.playground {
+  display: grid;
+  grid-template-columns: minmax(560px, 1fr) 360px;
+  gap: 24px;
+  max-width: 1560px;
+  min-width: 1000px;
+  margin-inline: auto;
+}
+
+.scene-viewport {
+  height: clamp(360px, 53vh, 640px);
+  overflow: hidden;
+  background: #080e18;
+}
+
+.scene-viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.stress-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}

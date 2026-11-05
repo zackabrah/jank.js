@@ -1,12 +1,8 @@
-import { execFileSync } from "node:child_process";
-
-import { mkdtemp, readFile, writeFile, readdir, rm } from "node:fs/promises";
-
-import { tmpdir } from "node:os";
-
-import { join, resolve } from "node:path";
-
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 const root = process.cwd();
 
@@ -19,8 +15,7 @@ const windows = process.platform === win32;
 const npm = windows ? "npm.cmd" : "npm";
 
 /** Path to a locally installed CLI, with the .cmd shim on Windows. */
-const executable = (name) =>
-  resolve("node_modules/.bin", name + (windows ? ".cmd" : ""));
+const executable = (name) => resolve("node_modules/.bin", name + (windows ? ".cmd" : ""));
 
 /** Runs a command synchronously and captures its output; Windows needs a shell for .cmd shims. */
 const run = (command, args, cwd) =>
@@ -37,10 +32,7 @@ try {
 
   assert.ok(archive);
 
-  await writeFile(
-    join(temp, "package.json"),
-    JSON.stringify({ private: true, type: "module" }),
-  );
+  await writeFile(join(temp, "package.json"), JSON.stringify({ private: true, type: "module" }));
 
   run(
     npm,
@@ -70,9 +62,7 @@ try {
     "The library package must not include local or demo scene assets",
   );
 
-  const manifest = JSON.parse(
-    await readFile(join(installed, "package.json"), "utf8"),
-  );
+  const manifest = JSON.parse(await readFile(join(installed, "package.json"), "utf8"));
 
   assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);
 
@@ -86,19 +76,24 @@ try {
       "SECURITY.md",
       "licenses/ibm-plex-mono-OFL.txt",
       "licenses/shadcn-ui.txt",
+      "licenses/preact.txt",
+      "licenses/tailwindcss.txt",
       "dist-package/style.css",
       "dist-package/font.css",
       "dist-package/viewer.html",
     ].map((file) => readFile(join(installed, file))),
   );
 
-  const viewer = await readFile(
-    join(installed, "dist-package/viewer.html"),
-    "utf8",
-  );
+  const readme = await readFile(join(installed, "README.md"), "utf8");
+  const guideLinks = [...readme.matchAll(/\]\((docs\/[^)#]+\.md)(?:#[^)]*)?\)/g)];
+  assert.ok(guideLinks.length > 0, "The packaged README must link to its guides");
+  await Promise.all(guideLinks.map(([, file]) => readFile(join(installed, file))));
+
+  const viewer = await readFile(join(installed, "dist-package/viewer.html"), "utf8");
 
   assert.ok(viewer.includes("jank.js recording viewer"));
-  assert.ok(viewer.includes("Recording file"));
+  assert.ok(viewer.includes("Open a jank.js recording"));
+  assert.ok(viewer.includes("Preact"), "The viewer must embed its bundled notices");
   assert.ok(!viewer.includes("@font-face"), "The viewer must use system fonts");
   assert.ok(
     !packageFiles.some((file) => /\.(woff2?|otf|ttf)$/i.test(file)),
@@ -120,26 +115,31 @@ try {
   );
 
   assert.ok(
-    style.includes("--jank-miss") && !style.includes("@import"),
-    "style.css must carry the jank.js tokens inline",
+    style.includes("Empty compatibility stylesheet"),
+    "style.css stays only so existing imports keep working",
   );
 
   await writeFile(
     join(temp, "consumer.mjs"),
-    `import { buildInfo, createDiagnostics, createPreparationProfiler, createRecordingViewModel, serializeRecording } from 'jank.js';
+    `import { buildInfo, createDiagnostics, createPreparationProfiler, parseRecording, serializeRecording } from 'jank.js';
+import { createPerformancePanel } from 'jank.js/panel';
+import { createGpuHistory, gpuFrameToLive } from 'jank.js/gpu';
+import { installAgentApi } from 'jank.js/agent';
+import { openRecordingViewer } from 'jank.js/viewer';
 import { createThreeWebGpuSource } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer } from 'jank.js/adapters/three';
+import { readThreeCounters } from 'jank.js/adapters/three-host';
 import { createWebGl2GpuSource } from 'jank.js/adapters/webgl2';
 import assert from 'node:assert/strict';
+// Importing every entry above in Node proves none of them touches the DOM at import time.
+for (const fn of [installAgentApi, createPerformancePanel, createGpuHistory, gpuFrameToLive, openRecordingViewer, readThreeCounters]) assert.equal(typeof fn, 'function');
 assert.equal(buildInfo.version, ${JSON.stringify(manifest.version)});
 assert.match(buildInfo.commit, /^[a-f0-9]{40}$/);
 const monitor = createDiagnostics(); monitor.frame(performance.now(), 16, 1, 2);
 assert.equal(monitor.snapshot().frames.length, 1);
 assert.equal(monitor.export().format, 'jank.js-recording');
-assert.equal(monitor.export().metadata.jankVersion, ${JSON.stringify(manifest.version)}, 'Recordings must carry the package version; update src/core/environment.ts');
-const view = createRecordingViewModel(); view.load(serializeRecording(monitor.export()));
-assert.equal(view.snapshot().summary.frames, 1);
-assert.equal(view.snapshot().selected.attribution, 'unavailable');
+assert.equal(monitor.export().metadata.jankVersion, ${JSON.stringify(manifest.version)}, 'Recordings must carry the package version');
+assert.equal(parseRecording(serializeRecording(monitor.export())).frames.length, 1);
 const gpu = createThreeWebGpuSource({info:{frame:0},backend:{},hasFeature:()=>false,resolveTimestampsAsync:async()=>undefined},{revision:'186'});
 assert.equal(gpu.read().status, 'unsupported'); gpu.dispose();
 const webgl = createWebGl2GpuSource({QUERY_RESULT:0,QUERY_RESULT_AVAILABLE:0,getExtension:()=>null,getParameter:()=>null,isContextLost:()=>false,createQuery:()=>null,deleteQuery(){},beginQuery(){},endQuery(){},getQueryParameter:()=>null});
@@ -153,20 +153,46 @@ channel.dispose(); monitor.dispose();`,
   run(process.execPath, ["consumer.mjs"], temp);
 
   await writeFile(
+    join(temp, "record.mjs"),
+    `import { createDiagnostics, serializeRecording } from 'jank.js';
+import { writeFileSync } from 'node:fs';
+const monitor = createDiagnostics();
+for (let i = 1; i < 30; i++) monitor.frame(i * 17, 17, 1, 2);
+writeFileSync('recording.json', serializeRecording(monitor.export()));
+`,
+  );
+  run(process.execPath, ["record.mjs"], temp);
+  const jank = join(temp, "node_modules/.bin", windows ? "jank.cmd" : "jank");
+  const report = JSON.parse(run(jank, ["analyze", "recording.json", "--top", "2"], temp).toString());
+  assert.equal(report.format, "jank-analysis");
+  assert.equal(report.kind, "recording");
+  assert.throws(() => run(jank, ["experiment"], temp), /only runs from a checkout/);
+
+  await writeFile(
     join(temp, "consumer.ts"),
-    `import { createDiagnostics, createPerformanceTray, createRecordingViewModel, parseRecording, inspectFrame, type PerformanceRecording, type PerformanceTrayOptions, type GpuProfile } from 'jank.js';
+    `import { createDiagnostics, parseRecording, inspectFrame, type PerformanceRecording, type GpuProfile } from 'jank.js';
+import { createPerformancePanel, type PerformancePanelOptions, type SavedCapture } from 'jank.js/panel';
+import { createGpuHistory, type GpuFrame } from 'jank.js/gpu';
+import { installAgentApi } from 'jank.js/agent';
+import { openRecordingViewer } from 'jank.js/viewer';
 import { createThreeWebGpuSource, type ThreeTimestampRenderer } from 'jank.js/adapters/three-webgpu';
 import { registerThreeRenderer, type ThreeRendererInfo } from 'jank.js/adapters/three';
 import { createWebGl2GpuSource } from 'jank.js/adapters/webgl2';
-const options: PerformanceTrayOptions = { shell: document.body, monitor: createDiagnostics() };
-createPerformanceTray(options).dispose();
+const monitor = createDiagnostics();
+const options: PerformancePanelOptions = { shell: document.body, monitor };
+const panel = createPerformancePanel(options); panel.refresh();
+const removeAgent = installAgentApi(window, panel.capture, { event: monitor.event });
+export const agentVersion: number | undefined = window.jank?.version;
+removeAgent(); panel.destroy();
 export type Profile = GpuProfile;
-const viewer = createRecordingViewModel(); viewer.clear();
+export type Frame = GpuFrame;
+export function open(capture: SavedCapture) { return openRecordingViewer(document, capture); }
+export const history = createGpuHistory(6000, () => {});
 export function recording(text: string): PerformanceRecording { return parseRecording(text); }
 export function frame(data: PerformanceRecording, id: number) { return inspectFrame(data, id); }
 export function timestamps(renderer: ThreeTimestampRenderer) { return createThreeWebGpuSource(renderer, {revision:'186'}); }
-export function counters(info: ThreeRendererInfo) { return registerThreeRenderer(options.monitor, info); }
-export function webglTray(gl: WebGL2RenderingContext) { return createPerformanceTray({ ...options, gpu: createWebGl2GpuSource(gl) }); }`,
+export function counters(info: ThreeRendererInfo) { return registerThreeRenderer(monitor, info); }
+export function webgl(gl: WebGL2RenderingContext) { return createPerformancePanel({ ...options, gpu: createWebGl2GpuSource(gl) }); }`,
   );
 
   run(
@@ -192,13 +218,13 @@ export function webglTray(gl: WebGL2RenderingContext) { return createPerformance
 
   await writeFile(
     join(temp, "main.js"),
-    `import { createDiagnostics, createPerformanceTray } from 'jank.js'; import 'jank.js/style.css'; import 'jank.js/font.css'; createPerformanceTray({shell:document.querySelector('#app'),monitor:createDiagnostics()});`,
+    `import { createDiagnostics } from 'jank.js'; import { createPerformancePanel } from 'jank.js/panel'; import 'jank.js/style.css'; import 'jank.js/font.css'; createPerformancePanel({shell:document.querySelector('#app'),monitor:createDiagnostics()});`,
   );
 
   run(executable("vite"), ["build"], temp);
 
   console.log(
-    "Package verified: isolated install, zero runtime dependencies, public imports, declarations, system fonts, CSS assets and consumer build.",
+    "Package verified: isolated install, zero runtime dependencies, public imports, declarations, linked guides, system fonts, CSS assets and consumer build.",
   );
 } catch (error) {
   if (error.stdout) console.error(error.stdout.toString());

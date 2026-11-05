@@ -1,376 +1,249 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import AxeBuilder from "@axe-core/playwright";
-
-import { mkdir, readFile } from "node:fs/promises";
-
-import { pathToFileURL } from "node:url";
-
-import { resolve } from "node:path";
-
-import { createDiagnostics } from "../src/core/diagnostics.ts";
-
-import { parseRecording } from "../src/core/recording.ts";
-
-import { boardShot, openFixture } from "./fixture.ts";
-
-test.use({ viewport: { width: 1440, height: 900 } });
-
-function fixture() {
-  let now = 0;
-
-  const monitor = createDiagnostics({
-    now: () => now,
-    application: { name: "Viewer fixture" },
+for (const theme of ["dark", "light"]) {
+  test(`overview window pans at fixed width and dotted handles resize in ${theme}`, async ({
+    page,
+  }, info) => {
+    await page.goto(`/checks/viewer.html?theme=${theme}`);
+    const first = page.getByRole("slider", { name: "First visible frame", exact: true });
+    const last = page.getByRole("slider", { name: "Last visible frame", exact: true });
+    const selected = page.getByRole("slider", { name: "Selected frame", exact: true });
+    const brush = page.locator("[data-overview-brush]");
+    const bounds = await brush.boundingBox();
+    if (!bounds) throw new Error("Missing overview");
+    // Firefox delivers no mouse events past the viewport edge, so stay just inside it.
+    const point = (index: number) =>
+      Math.max(0, Math.min(1439, bounds.x + (bounds.width * (index + 0.5)) / 360));
+    const drag = async (from: number, to: number) => {
+      await page.mouse.move(point(from), bounds.y + 30);
+      await page.mouse.down();
+      await page.mouse.move(point(to), bounds.y + 30, { steps: 4 });
+      await page.mouse.up();
+    };
+    await drag(200, 220);
+    await expect(first).toHaveAttribute("aria-valuenow", "0");
+    await expect(last).toHaveAttribute("aria-valuenow", "359");
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    // Clicking inside keeps the range; moving either direction preserves its width.
+    await drag(200, 200);
+    await expect(first).toHaveAttribute("aria-valuenow", "152");
+    await expect(last).toHaveAttribute("aria-valuenow", "331");
+    await drag(200, 210);
+    await expect(first).toHaveAttribute("aria-valuenow", "162");
+    await expect(last).toHaveAttribute("aria-valuenow", "341");
+    await drag(200, 160);
+    await expect(first).toHaveAttribute("aria-valuenow", "122");
+    await expect(last).toHaveAttribute("aria-valuenow", "301");
+    await expect(selected).toHaveAttribute("aria-valuenow", "242");
+    await drag(200, 400);
+    await expect(first).toHaveAttribute("aria-valuenow", "180");
+    await expect(last).toHaveAttribute("aria-valuenow", "359");
+    await drag(250, -20);
+    await expect(first).toHaveAttribute("aria-valuenow", "0");
+    await expect(last).toHaveAttribute("aria-valuenow", "179");
+    await expect(selected).toHaveAttribute("aria-valuenow", "179");
+    await page.mouse.move(point(100), bounds.y + 30);
+    await page.mouse.down();
+    await page.mouse.move(point(150), bounds.y + 30);
+    await expect(first).toHaveAttribute("aria-valuenow", "50");
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(first).toHaveAttribute("aria-valuenow", "0");
+    await expect(last).toHaveAttribute("aria-valuenow", "179");
+    // Hit the grip's child SVG directly so it cannot accidentally start a pan.
+    await first.locator("circle").first().hover();
+    await page.mouse.down();
+    await page.mouse.move(point(20), bounds.y + 30);
+    await page.mouse.up();
+    await expect(first).toHaveAttribute("aria-valuenow", "20");
+    await expect(last).toHaveAttribute("aria-valuenow", "179");
+    await last.locator("circle").first().hover();
+    await page.mouse.down();
+    await page.mouse.move(point(160), bounds.y + 30);
+    await page.mouse.up();
+    await expect(first).toHaveAttribute("aria-valuenow", "20");
+    await expect(last).toHaveAttribute("aria-valuenow", "160");
+    await last.press("ArrowLeft");
+    await expect(last).toHaveAttribute("aria-valuenow", "159");
+    await info.attach(`range grips ${theme}`, {
+      body: await brush.screenshot(),
+      contentType: "image/png",
+    });
   });
 
-  monitor.startRecording();
-  monitor.beginFrame(0);
-
-  const parent = monitor.register("parent", "Parent"),
-    child = monitor.register("child", "<img src=x onerror=alert(1)>");
-
-  now = 2;
-
-  const a = parent.begin();
-
-  now = 4;
-
-  const b = child.begin();
-
-  now = 8;
-
-  child.end(b);
-
-  now = 10;
-
-  parent.end(a);
-
-  monitor.event("Test event");
-
-  now = 20;
-
-  monitor.beginFrame(20);
-
-  now = 40;
-
-  monitor.beginFrame(40);
-
-  return Buffer.from(JSON.stringify(monitor.export()));
+  test(`viewer selection, brush, zoom and inspector stay synchronized in ${theme}`, async ({
+    page,
+  }, info) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`/checks/viewer.html?theme=${theme}`);
+    const selected = page.getByRole("slider", { name: "Selected frame", exact: true });
+    const first = page.getByRole("slider", { name: "First visible frame", exact: true });
+    const last = page.getByRole("slider", { name: "Last visible frame", exact: true });
+    const readout = page.locator("[data-range-readout]");
+    const frame = page.getByRole("region", { name: "Selected frame details" });
+    await expect(frame).toContainText("Frame f1485");
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    await expect(readout).toContainText("180 frames");
+    await selected.focus();
+    await selected.press("k");
+    await expect(frame).toContainText("Frame f1671");
+    await expect(readout).toContainText("f1313 – f1671 · 180 frames");
+    await selected.press("j");
+    await expect(frame).toContainText("Frame f1485");
+    await selected.press("j");
+    await expect(frame).toContainText("Frame f1335");
+    await selected.press("w");
+    await expect(frame).toContainText("Frame f1485");
+    await selected.press("End");
+    await expect(last).toHaveAttribute("aria-valuenow", "359");
+    await expect(selected).toHaveAttribute("aria-valuenow", "359");
+    await selected.press("Home");
+    await expect(first).toHaveAttribute("aria-valuenow", "0");
+    await expect(selected).toHaveAttribute("aria-valuenow", "0");
+    await page.getByRole("button", { name: "Fit", exact: true }).click();
+    await expect(readout).toContainText("360 frames");
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    const brush = page.locator("[data-overview-brush]");
+    const bounds = await brush.boundingBox();
+    if (!bounds) throw new Error("Missing overview");
+    // Reverse drag from frame position 200 to 100; IDs deliberately have gaps.
+    await page.mouse.move(bounds.x + (bounds.width * 200.5) / 360, bounds.y + 30);
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + (bounds.width * 100.5) / 360, bounds.y + 30, { steps: 4 });
+    await page.mouse.up();
+    await expect(first).toHaveAttribute("aria-valuenow", "100");
+    await expect(last).toHaveAttribute("aria-valuenow", "200");
+    await expect(readout).toContainText("f1201 – f1401 · 101 frames");
+    await expect(frame).toContainText("Frame f1201");
+    await first.focus();
+    await first.press("ArrowRight");
+    await expect(first).toHaveAttribute("aria-valuenow", "101");
+    await expect(frame).toContainText("Frame f1203");
+    await last.focus();
+    await last.press("Home");
+    await expect(readout).toContainText("f1203 – f1203 · 1 frame");
+    await selected.press("ArrowRight");
+    await expect(readout).toContainText("f1205 – f1205 · 1 frame");
+    await page.getByRole("button", { name: "Zoom out", exact: true }).click();
+    await expect(readout).toContainText("2 frames");
+    await page.getByRole("button", { name: "Fit", exact: true }).click();
+    await page.getByRole("button", { name: "Worst", exact: true }).click();
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    await page.locator("[data-frame-readout]").click();
+    const plot = await selected.boundingBox();
+    if (!plot) throw new Error("Missing timeline");
+    await selected.click({ position: { x: 1, y: plot.height / 2 } });
+    await expect(selected).toHaveAttribute(
+      "aria-valuenow",
+      (await first.getAttribute("aria-valuenow")) ?? "",
+    );
+    await page.getByRole("button", { name: "Worst", exact: true }).click();
+    await info.attach(`viewer ${theme}`, {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+    expect(await page.locator("main").evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+      true,
+    );
+    const inspector = await page
+      .getByRole("complementary", { name: "Frame inspector" })
+      .boundingBox();
+    expect(inspector?.x).toBeGreaterThan(plot.x + plot.width);
+    expect(errors).toEqual([]);
+  });
 }
 
-test("single HTML viewer loads offline, inspects scopes, navigates and rejects bad imports safely", async ({
+test("cancelled brush and invalid imports preserve navigation; a replacement resets it", async ({
   page,
-}, info) => {
-  const requests: string[] = [];
-
-  page.on("request", (request) => {
-    if (/^https?:/.test(request.url())) requests.push(request.url());
-  });
-
-  await page.goto(pathToFileURL(resolve("OPEN RECORDING VIEWER.html")).href);
-
-  await expect(page.locator('[data-k="empty"]')).toContainText(
-    "drop a recording here",
-  );
-
-  await page.getByLabel("Recording file").setInputFiles({
-    name: "capture.json",
+}) => {
+  await page.goto("/checks/viewer.html?large");
+  const selected = page.getByRole("slider", { name: "Selected frame", exact: true });
+  const readout = page.locator("[data-range-readout]");
+  await expect(readout).toContainText("6000 frames");
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  const before = await readout.textContent();
+  const brush = await page.locator("[data-overview-brush]").boundingBox();
+  if (!brush) throw new Error("Missing overview");
+  await page.mouse.move(brush.x + brush.width / 2, brush.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(brush.x + brush.width * 0.75, brush.y + 30);
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await expect(readout).toHaveText(before ?? "");
+  const file = page.getByLabel("Open recording or comparison file");
+  await file.setInputFiles({
+    name: "broken.json",
     mimeType: "application/json",
-    buffer: fixture(),
+    buffer: Buffer.from("broken"),
   });
-
-  await expect(page.locator('[data-k="totals"]')).toContainText("2 frames");
-
-  await expect(page.locator('[data-k="file"]')).toHaveText("capture.json");
-
-  const inspector = page.getByRole("complementary", {
-    name: "Frame inspector",
-  });
-
-  // 20 ms frame, 8 ms covered by the parent scope: 12 ms unattributed.
-  await expect(
-    inspector.locator(".jank-viewer-row-k", { hasText: "unattributed" }),
-  ).toContainText("12.0");
-
-  await expect(inspector).toContainText("<img src=x onerror=alert(1)>");
-
-  await expect(page.locator("img")).toHaveCount(0);
-
-  await expect(page.locator('[data-k="capture-empty"]')).toHaveText(
-    "no frame crossed the threshold in this recording.",
-  );
-
-  const playhead = page.getByRole("slider", { name: "Playhead" });
-
-  await expect(playhead).toHaveAttribute("aria-valuenow", "1");
-
-  await playhead.focus();
-
-  await page.keyboard.press("ArrowRight");
-
-  await expect(playhead).toHaveAttribute("aria-valuenow", "2");
-
-  await expect(page.locator('[data-k="s-frame"]')).toHaveText("FRAME 2");
-
-  await page.keyboard.press("Home");
-
-  await expect(playhead).toHaveAttribute("aria-valuenow", "1");
-
-  await expect(page.getByRole("alert")).toBeEmpty();
-
-  await page.getByLabel("Recording file").setInputFiles({
-    name: "bad.json",
+  await expect(page.getByRole("alert")).toContainText("current recording is still open");
+  await expect(readout).toHaveText(before ?? "");
+  // Replacing a file during a drag must not restore the old range on capture loss.
+  const replacementBrush = await page.locator("[data-overview-brush]").boundingBox();
+  if (!replacementBrush) throw new Error("Missing overview after failed import");
+  await page.mouse.move(replacementBrush.x + replacementBrush.width / 3, replacementBrush.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(replacementBrush.x + replacementBrush.width / 2, replacementBrush.y + 30);
+  await expect(readout).not.toHaveText(before ?? "");
+  await file.setInputFiles({
+    name: "single.json",
     mimeType: "application/json",
-    buffer: Buffer.from('{"version":999}'),
+    buffer: Buffer.from(
+      JSON.stringify({
+        format: "world-performance-recording",
+        version: 1,
+        units: "milliseconds",
+        frameCapacity: 6000,
+        frames: [{ at: 16, interval: 16, update: 0, render: 0 }],
+        samples: [],
+        systems: [],
+        events: [],
+      }),
+    ),
   });
-
-  await expect(page.getByRole("alert")).toContainText("Invalid recording");
-
-  await expect(page.locator('[data-k="totals"]')).toContainText("2 frames");
-
-  expect(requests).toEqual([]);
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-
-  if (info.project.name === "chromium")
-    await page.screenshot({ path: "artifacts/viewer.png", fullPage: true });
+  await expect(readout).toContainText("f1 – f1 · 1 frame");
+  await page.mouse.up();
+  await expect(selected).toHaveAttribute("aria-valuenow", "0");
+  await page.getByRole("button", { name: "Next slow K", exact: true }).click();
+  await selected.press("End");
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await expect(selected).toHaveAttribute("aria-valuenow", "0");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(await page.locator('svg path[d*="NaN"], svg path[d*="Infinity"]').count()).toBe(0);
 });
 
-test("hosted viewer is part of the static build", async ({ page }) => {
-  await page.goto("/viewer/");
-
-  await expect(page.locator('[data-k="build-info"]')).toHaveText(
-    /^v\d+\.\d+\.\d+ · [a-f0-9]{8}( · local changes)?$/,
-  );
-
-  await page.getByLabel("Recording file").setInputFiles({
-    name: "capture.json",
-    mimeType: "application/json",
-    buffer: fixture(),
-  });
-
-  await expect(page.locator(".jank-viewer-legend-text")).toContainText(
-    "unattributed frame interval",
-  );
-
-  await expect(page.locator('[data-k="env"]')).toContainText("Viewer fixture");
-});
-
-test("the panel hands its recording to the viewer, which inspects captures frame by frame", async ({
+test("fast range drags retain their final position when pointer capture is released", async ({
   page,
-  context,
-}, info) => {
-  const seen: string[] = [];
-
-  context.on("page", (opened) =>
-    opened.on("pageerror", (error) => seen.push(error.message)),
-  );
-
-  await openFixture(page, { mode: "full" });
-
-  // Recording starts through the monitor: a synthetic click can stall a headless frame,
-  // and that stall would rank above the spikes this test makes.
-  await page.evaluate(() => window.fixture.monitor.startRecording());
-
-  // Three slow frames between ordinary ones, with events around them, in order.
-  /* oxlint-disable no-await-in-loop */
-  for (const [wait, step] of [
-    [700, "wave 3"],
-    [500, "spike 45"],
-    [900, "load chunk 9"],
-    [300, "spike 70"],
-    [900, "checkpoint"],
-    [600, "spike 55"],
-    [1200, ""],
-  ] as const) {
-    await page.waitForTimeout(wait);
-
-    if (step.startsWith("spike")) {
-      // Captures group spikes within ten recorded frames, not a wall-clock gap.
-      // Wait for the preceding spike to be sampled and leave a separate window
-      // even when a busy browser delivers fewer frames during the sleeps above.
-      await page.waitForFunction(() => {
-        const previous = window.fixture.spikeFrames.at(-1);
-
-        const latest = window.fixture.monitor.export().frames.at(-1)?.id;
-
-        return (
-          previous === undefined ||
-          (latest !== undefined && latest - previous > 20)
-        );
-      });
-    }
-
-    const spikesBefore = await page.evaluate(
-      () => window.fixture.spikeFrames.length,
+}) => {
+  await page.goto("/checks/viewer.html");
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  const brush = page.locator("[data-overview-brush]");
+  const first = page.getByRole("slider", { name: "First visible frame", exact: true });
+  const last = page.getByRole("slider", { name: "Last visible frame", exact: true });
+  const bounds = await brush.boundingBox();
+  if (!bounds) throw new Error("Missing overview");
+  const x = (index: number) => bounds.x + (bounds.width * (index + 0.5)) / 360;
+  await page.mouse.move(x(200), bounds.y + 30);
+  await page.mouse.down();
+  await brush.evaluate((element) => {
+    // Release capture before pointerup, as when the browser interrupts a gesture.
+    element.addEventListener(
+      "pointermove",
+      (event) => element.releasePointerCapture((event as PointerEvent).pointerId),
+      { once: true },
     );
-
-    await page.evaluate((name) => {
-      if (name.startsWith("spike")) window.fixture.spike(Number(name.slice(6)));
-      else if (name) window.fixture.event(name);
-    }, step);
-
-    if (step.startsWith("spike")) {
-      await page.waitForFunction(
-        (before) => window.fixture.spikeFrames.length > before,
-        spikesBefore,
-      );
-    }
-  }
-
-  /* oxlint-enable no-await-in-loop */
-  await page.evaluate(() => window.fixture.monitor.stopRecording());
-
-  await page.getByRole("tab", { name: "CAPTURE" }).click();
-
-  const opening = context.waitForEvent("page");
-
-  await page.getByRole("button", { name: "OPEN IN VIEWER" }).click();
-
-  const viewer = await opening;
-
-  await expect(viewer.locator('[data-k="file"]')).toHaveText(
-    "jank-recording.json",
-  );
-
-  await expect(viewer.locator('[data-k="s-format"]')).toHaveText(
-    "format 2 · validated on open",
-  );
-
-  const rows = viewer.locator('[data-k="capture-rows"] [role="row"]');
-
-  const total = await rows.count();
-
-  expect(total).toBeGreaterThanOrEqual(3);
-
-  // The viewer opens on the longest capture.
-  await expect(rows.first()).toHaveAttribute("data-on", "");
-
-  await expect(viewer.locator('[data-k="i-capture"]')).toHaveText(
-    `capture 1 / ${total}`,
-  );
-
-  // Automation can stall a headless frame too, and a stall within ten frames of a spike
-  // joins its capture as the longer frame. Open the capture, then step to the frame the
-  // fixture made heavy.
-  const spike = rows.filter({ hasText: "spawn ×184" }).first();
-
-  await spike.getByRole("button").click();
-
-  await expect(spike).toHaveAttribute("data-on", "");
-
-  const shownFrame = async () =>
-    Number(
-      (await viewer.locator('[data-k="i-frame"]').textContent())?.replace(
-        /\D/g,
-        "",
-      ),
-    );
-
-  const opened = await shownFrame();
-
-  const spikeFrames = await page.evaluate(() => window.fixture.spikeFrames);
-
-  expect(spikeFrames).toHaveLength(3);
-
-  const heavy = spikeFrames.reduce((best, id) =>
-    Math.abs(id - opened) < Math.abs(best - opened) ? id : best,
-  );
-
-  const playhead = viewer.getByRole("slider", { name: "Playhead" });
-
-  await playhead.focus();
-
-  /* oxlint-disable no-await-in-loop */
-  for (let i = 0; i < Math.abs(heavy - opened); i++)
-    await viewer.keyboard.press(heavy > opened ? "ArrowRight" : "ArrowLeft");
-
-  /* oxlint-enable no-await-in-loop */
-  await expect.poll(shownFrame).toBe(heavy);
-
-  await expect(viewer.locator('[data-k="i-likely"]')).toHaveText(
-    "scene update",
-  );
-
-  await expect(viewer.locator('[data-k="i-ms"]')).toHaveAttribute(
-    "data-tone",
-    "miss",
-  );
-
-  // Back on the capture for the navigation checks below.
-  await spike.getByRole("button").click();
-
-  await expect.poll(shownFrame).toBe(opened);
-
-  // GPU samples are periodic: the section shows passes or says the frame has none.
-  await expect(viewer.locator('[data-k="i-gpu"]')).toContainText(
-    /no sample from this frame|shadow/,
-  );
-
-  const first = await playhead.getAttribute("aria-valuenow");
-
-  await playhead.focus();
-
-  await viewer.keyboard.press("Shift+ArrowRight");
-
-  await expect(playhead).toHaveAttribute(
-    "aria-valuenow",
-    String(Number(first) + 10),
-  );
-
-  // Off a capture, ] goes to capture 1; then ] and [ step through them.
-  await viewer.keyboard.press("]");
-
-  await expect(viewer.locator('[data-k="i-capture"]')).toHaveText(
-    `capture 1 / ${total}`,
-  );
-
-  await viewer.keyboard.press("]");
-
-  await expect(viewer.locator('[data-k="i-capture"]')).toHaveText(
-    `capture 2 / ${total}`,
-  );
-
-  await viewer.keyboard.press("[");
-
-  await expect(viewer.locator('[data-k="i-capture"]')).toHaveText(
-    `capture 1 / ${total}`,
-  );
-
-  const downloading = viewer.waitForEvent("download");
-
-  await viewer.getByRole("button", { name: "EXPORT CAPTURE" }).click();
-
-  const capture = await downloading;
-
-  expect(capture.suggestedFilename()).toBe("jank-recording-capture-1.json");
-
-  const kept = parseRecording(await readFile(await capture.path(), "utf8"));
-
-  expect(
-    kept.frames.some((frame) => frame.id === kept.capture.triggerFrame),
-  ).toBe(true);
-  expect((await new AxeBuilder({ page: viewer }).analyze()).violations).toEqual(
-    [],
-  );
-
-  if (info.project.name === "chromium") {
-    await spike.getByRole("button").click();
-
-    await mkdir("artifacts/screenshots", { recursive: true });
-
-    await viewer.screenshot({ path: boardShot("viewer.png") });
-  }
-
-  // Below 1100 px the inspector sits under the timeline.
-  await viewer.setViewportSize({ width: 900, height: 900 });
-
-  const timeline = await viewer.locator(".jank-viewer-timeline").boundingBox();
-
-  const inspector = await viewer
-    .getByRole("complementary", { name: "Frame inspector" })
-    .boundingBox();
-
-  expect(inspector!.y).toBeGreaterThan(timeline!.y + timeline!.height);
-  expect(seen).toEqual([]);
+  });
+  await page.mouse.move(x(160), bounds.y + 30);
+  await page.mouse.up();
+  await expect(first).toHaveAttribute("aria-valuenow", "112");
+  await expect(last).toHaveAttribute("aria-valuenow", "291");
+  await page.mouse.move(x(220), bounds.y + 30);
+  await expect(first).toHaveAttribute("aria-valuenow", "112");
+  // A second fast drag must start from the completed range, without intermediate moves.
+  await page.mouse.down();
+  await page.mouse.move(x(240), bounds.y + 30);
+  await page.mouse.up();
+  await expect(first).toHaveAttribute("aria-valuenow", "132");
+  await expect(last).toHaveAttribute("aria-valuenow", "311");
 });

@@ -8,6 +8,13 @@
     "outDir": "dist-package/types",
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/index.ts", "src/adapters/*.ts"],
-  "exclude": ["**/*.test.ts", "node_modules", "dist", "dist-package"]
+  "include": [
+    "src/index.ts",
+    "src/panel-api.ts",
+    "src/gpu-api.ts",
+    "src/agent-api.ts",
+    "src/viewer/mount.tsx",
+    "src/adapters/*.ts"
+  ],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "node_modules", "dist", "dist-package"]
 }

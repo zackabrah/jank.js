@@ -72,6 +72,9 @@ export interface Diagnostics {
   /** Attach CPU durations to the current explicit frame. Closing is deferred to the next boundary. */
   endFrame(updateMs: number, renderMs: number): void;
 
+  /** Discard the unfinished interval and its scopes before a known pause; keep captured frames. */
+  resetFrame(): void;
+
   /** Compatibility sampler. Scope attribution is unavailable; prefer beginFrame/endFrame. */
   frame(at: number, interval: number, update: number, render: number): void;
 
@@ -280,6 +283,7 @@ export function createDiagnostics(
     recording = false,
     disposed = false,
     origin = now(),
+    lastFrameAt = 0,
     lastSample = -Infinity;
 
   let nextFrame = 0,
@@ -418,6 +422,10 @@ export function createDiagnostics(
 
   /** Stores a finished frame, triggers auto capture on a spike and appends to a running recording. */
   function commit(frame: DiagnosticFrame) {
+    // A host timestamp can precede the origin (a first animation frame) or go
+    // backwards; readers rely on frame times being ordered from zero.
+    frame.at = lastFrameAt = Math.max(lastFrameAt, frame.at);
+
     history.push(frame);
 
     const absolute = frame.at + origin;
@@ -491,7 +499,8 @@ export function createDiagnostics(
       const a = Math.max(start - origin, scope.start),
         b = Math.min(at - origin, scope.end);
 
-      if (b <= a) return;
+      // Keep a scope under one clock tick; only drop intervals clipped away.
+      if (b < a || (b === a && scope.end > scope.start)) return;
 
       if (scopes.length < scopeLimit)
         scopes.push({ ...scope, start: a, end: b });
@@ -501,12 +510,13 @@ export function createDiagnostics(
     for (const scope of ended) add(scope);
 
     for (const scope of open.values())
-      add({
-        system: scope.channel.id,
-        label: scope.channel.label,
-        start: scope.start - origin,
-        end: at - origin,
-      });
+      if (scope.start < at)
+        add({
+          system: scope.channel.id,
+          label: scope.channel.label,
+          start: scope.start - origin,
+          end: at - origin,
+        });
 
     for (const channel of channels.values()) {
       if (pending.detailed) {
@@ -556,7 +566,12 @@ export function createDiagnostics(
     beginFrame(at) {
       if (disposed) return -1;
 
-      if (!Number.isFinite(at) || (pending && at < pending.start))
+      // The second check refuses a gap too wide to measure: its interval would be Infinity.
+      if (
+        !Number.isFinite(at) ||
+        (pending &&
+          (at < pending.start || !Number.isFinite(at - pending.start)))
+      )
         throw new RangeError(
           `Frame boundaries must increase on the diagnostics clock (${at} < ${pending?.start ?? "unset"})`,
         );
@@ -608,6 +623,21 @@ export function createDiagnostics(
         pending.update += update;
         pending.render += render;
       }
+
+      collectCost(cost);
+    },
+    resetFrame() {
+      if (disposed) return;
+
+      const cost = costClock();
+
+      pending = undefined;
+      ended = [];
+      open.clear();
+      droppedScopes = 0;
+      collectionMs = refreshMs = 0;
+
+      for (const channel of channels.values()) channel.current = 0;
 
       collectCost(cost);
     },
@@ -939,6 +969,8 @@ export function createDiagnostics(
       collectionMs = refreshMs = 0;
 
       origin = now();
+
+      lastFrameAt = 0;
 
       lastSample = -Infinity;
 

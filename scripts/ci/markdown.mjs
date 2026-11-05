@@ -49,7 +49,7 @@ export function coverage(total) {
     `${total[key].pct.toFixed(1)}%`,
   ]);
 
-  return `### Unit test coverage\n\n${table(["", "Covered", "Total", "Coverage"], rows)}\n\nThe floors live in \`vitest.config.ts\`.\n`;
+  return `### Unit test coverage\n\n${table(["", "Covered", "Total", "Coverage"], rows)}\n\nThe floors live in \`vite.config.ts\`.\n`;
 }
 
 /** Built package files with raw and gzipped sizes, and the packed tarballs. */

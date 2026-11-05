@@ -1,6 +1,47 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-rc.1 — 2026-11-05
+
+- Include the documentation directory in the npm package, so README guide links and their supporting images and measurement evidence are available in installed packages.
+- Verify README guide links against an isolated installation of the packed tarball.
+
+## 1.0.0-rc.0 — 2026-11-05
+
+### Breaking: a new panel and viewer
+
+The panel and viewer are rebuilt. `createDiagnostics`, recording format v2, the rest of the core API and existing recordings keep working, with the three collector changes listed last here.
+
+- Replace `createPerformanceTray` with `createPerformancePanel` from `jank.js/panel`. Call `panel.refresh(at)` straight after `monitor.beginFrame(at)`, and `panel.destroy()` instead of `tray.dispose()`.
+- Remove the tray options `mode`, `viewerUrl`, `capture`, `culling`, `temporal` and `preparation`. Capture rules are set in the panel, the panel opens its own viewer (or pass `onOpenCapture`), and host values appear under Counters through `monitor.register`. `createCullingBoundsOverlay` and `createPreparationProfiler` remain.
+- Remove `createRecordingViewModel`, along with the `--jank-*` theming tokens: styles now live in a Shadow DOM. `jank.js/style.css` and `jank.js/font.css` remain as empty stylesheets so existing imports keep working.
+- `parseRecording` from `jank.js` now keeps capture rules, episode context and GPU evidence, which panel exports carry.
+- The panel and viewer target desktop widths. The bundled UI runtime (Preact) grows the panel from ~23 KB to ~64 KB gzipped; the core stays ~4.6 KB and the viewer loads only when opened. There is still nothing extra to install.
+- The collector keeps a scope shorter than one clock tick, at 0 ms, instead of dropping it from a frame it called complete. New recordings can contain zero-length scopes.
+- `recordingSummary().overBudgetFrames` now matches the panel and viewer: it allows the larger of 1 ms or 5% past the budget, and counts from the display's pace when GPU timing shows the display set the frame time. On such a run the count drops, so a saved recording with GPU timing can report far fewer frames than before.
+- Frame times stay ordered from zero. A `frame()` or `beginFrame()` timestamp from before the monitor started, or before the previous frame, moves up to that point, where it used to make `panel.refresh` throw into the host's loop. A `beginFrame()` too far from the last one to give a finite interval now throws the documented `RangeError` instead of recording `Infinity`.
+
+### New
+
+- Add an opt-in npm `beta` publication path for tagged release candidates, with full release checks and a dry run enabled by default. Stable releases continue to use `latest`.
+- Add `monitor.resetFrame()` for host-declared pauses: keep completed frames and recording state, discard unfinished work, and resume at the next frame boundary. Analysis uses measured intervals for FPS and keeps episodes and GPU lookback within contiguous frame segments (#15).
+- A/B comparison: alternating pairs with warm-up, per-metric verdicts, per-scope changes, confound warnings, and a viewer with aligned graphs, signed differences, zoom and paired frame inspection. Stopped and failed runs keep their finished trials.
+- Automatic capture by spike, sustained slowdown or whole episode, with frame-linked GPU evidence and coverage explanations.
+- A Loading tab with a real-offset waterfall and cold/repeat comparison.
+- `jank.js/gpu` and `jank.js/adapters/three-host` for frame-linked GPU evidence and Three.js hosts.
+- `instrumentThreeDevice` from `jank.js/adapters/three-host` takes an optional `describePass` to name passes, and its new `gpuCalls()` reports pipelines, shaders, textures, buffers and bind groups created, plus submits and writes per frame.
+- Over-budget readings follow the display: when CPU and GPU work leave plenty of the frame unused, the panel, viewer, comparison and analyzer count slow frames from the display's pace and say so, and comparison frame results read `Display-paced`. Sustained and episode capture rules follow it too, so they no longer fire repeatedly on a smooth run; a spike rule keeps its own threshold. This needs GPU timing that covers all of a frame's work, so the renderer adapters' sources, which can't assert that, keep the budget.
+- A prototype agent interface: `jank.js/agent` adds `window.jank` to a host, the package's `jank analyze` reads a saved recording or comparison, and this repository's unpublished `pnpm jank experiment` compares two builds. See [the guide](docs/agent-interface.md).
+
+### Fixed
+
+- Release panel-owned automatic capture on destruction, disconnect agent observers on removal, and stop comparison-owned trial recording when only the frame budget changes.
+- Bound analysis of sparse frame IDs by recorded GPU entries, union overlapping matching CPU scopes, and include long frames overlapping event-cost windows.
+- Use the same over-budget tolerance in the live panel, viewer, public summary and analyzer; imported timer resolution cannot suppress warnings (#6, #14, #16).
+- Name the affected comparison trial for missing or malformed recordings, accept UTF-8 BOM-prefixed CLI inputs, and preserve unknown statistics for empty captures (#17, #19, #20).
+- Keep collector lifecycle markers out of unmatched-host-event warnings and event-cost analysis (#18).
+- Report elapsed WebGL pass totals and rankings without inventing timestamp spans or overlap.
+
+## 0.3.0 — 2026-11-01
 
 - Build the recording viewer on junkui too. Its root carries `jl`, and junkui now supplies its type, reset, focus, dim text, primary button and screen-reader text; the documented `--jank-*` overrides still apply. junkui keeps buttons' labels centred and `<summary>` disclosure markers, which its reset had removed.
 - Centre the viewer's button labels as the panel's are, and space its status bar again: the frame mark shows and "FRAME 61" no longer runs into the range beside it.
@@ -16,10 +57,19 @@
 - Line up the CAPTURE tab's ON/OFF toggles and status chips: they share one box, so ON and OFF sit in a straight column.
 - Make the panel easier to read. The graph's text stays still: the worst frame's time sits in the top-left corner and the newest event's label, with its age, sits under the graph, while only the worst-frame marker and event ticks move with the bars. Over-budget ▲ markers are drawn as tall as the digits they mark and are named "over budget" for screen readers. The mini readout splits into three equal columns, so readings keep their place as digits change; an extreme value keeps its digits and its unit gives way.
 - Add `jank.js/adapters/webgl2`, which times named WebGL2 render passes with `EXT_disjoint_timer_query_webgl2` and links each sample to the frame that drew it. Where the browser doesn't expose the extension it reports `unsupported` rather than estimating GPU time from CPU timing.
+
+## 0.2.1 — 2026-10-27
+
+Tagged, not published to npm.
+
 - Use system monospace fonts in the panel and offline viewer, removing bundled font downloads. The `jank.js/font.css` export remains as an empty compatibility stylesheet.
 - Minify packaged panel CSS while retaining the `--jank-*` theming properties.
 
-## 0.1.0 — Unreleased
+## 0.2.0 — 2026-10-27
+
+- Fix the viewer's pointer release and hit testing (#1).
+
+## 0.1.0 — 2026-10-27
 
 Initial public release.
 

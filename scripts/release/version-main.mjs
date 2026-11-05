@@ -125,6 +125,8 @@ if (process.argv[2] === step.plan) {
 
   manifest.version = plan.version;
 
+  manifest.publishConfig.tag = "latest";
+
   writeFileSync("package.json", JSON.stringify(manifest, null, 2) + "\n");
 
   writeFileSync(
@@ -171,11 +173,12 @@ if (process.argv[2] === step.plan) {
   if (JSON.parse(readFileSync("package.json", "utf8")).version !== plan.version)
     throw new Error("Version changed after verification");
 
-  git("add", "package.json", ".release-state.json", "VERSION_HISTORY.md");
+  git("add", "package.json", ".release-state.json", "VERSION_HISTORY.md",
+    "docs/readme/badge-*.svg", "docs/readme/social-preview.svg", "docs/readme/social-preview.png");
 
   // The workflow requires passing check/browser jobs and rechecks the versioned
   // package before this step. Developer hooks would repeat browser tests on a
-  // runner without browsers and could stage unrelated generated README assets.
+  // runner and could stage unrelated changes. CI explicitly regenerates the release assets.
   git("commit", "--no-verify", "-m", `chore(release): v${plan.version}`);
 
   git("tag", `v${plan.version}`);

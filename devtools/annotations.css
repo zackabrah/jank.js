@@ -1,0 +1,67 @@
+@import "tailwindcss" source(none);
+@import "../src/theme.css";
+@source "./annotations.tsx";
+@source "../src/ui/button.tsx";
+@source "../src/ui/notice.tsx";
+
+:host {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  font-family: var(--font-sans);
+  color: var(--jank-text);
+}
+
+.annotation-toolbar,
+.annotation-sidebar {
+  position: fixed;
+  right: 12px;
+  pointer-events: auto;
+}
+
+.annotation-toolbar {
+  top: 12px;
+}
+.annotation-sidebar {
+  top: 68px;
+  width: 336px;
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+}
+
+.annotation-highlight {
+  position: fixed;
+  outline: 2px solid #52a8ff;
+  outline-offset: 2px;
+  background: #52a8ff1a;
+  pointer-events: none;
+}
+
+.annotation-pin {
+  position: fixed;
+  pointer-events: auto;
+  width: 24px;
+  height: 24px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #0068d6;
+  color: white;
+  font: 600 12px / 20px var(--font-mono);
+  cursor: pointer;
+}
+
+.annotation-field {
+  display: block;
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  margin-block: 8px 12px;
+  padding: 8px;
+  border: 1px solid var(--jank-control);
+  border-radius: 6px;
+  background: var(--jank-fill);
+  font: inherit;
+  color: inherit;
+}

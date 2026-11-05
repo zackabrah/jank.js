@@ -1,341 +1,253 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import AxeBuilder from "@axe-core/playwright";
-
-import { mkdir, readFile } from "node:fs/promises";
-
-import { parseRecording } from "../src/core/recording.ts";
-
-import { boardShot, openFixture } from "./fixture.ts";
-
-test.use({ viewport: { width: 1440, height: 900 } });
-
-function errors(page: Page) {
-  const seen: string[] = [];
-
-  page.on("pageerror", (error) => seen.push(error.message));
-
-  return seen;
-}
-
-/** The board views, reproduced at 1440 × 900. `pnpm docs:images` copies them into the manual. */
-async function shoot(page: Page, info: TestInfo, name: string) {
-  if (info.project.name !== "chromium") return;
-
-  await mkdir("artifacts/screenshots", { recursive: true });
-
-  await page.screenshot({ path: boardShot(`${name}.png`) });
-}
-
-const slot = (page: Page, key: string) => page.locator(`[data-k="${key}"]`);
-
-test("full panel reads a running game, freezes the display and exports the recording", async ({
+test("temporal history counters hold through Freeze and show a host reset in both themes", async ({
   page,
 }, info) => {
-  const seen = errors(page);
-
-  await openFixture(page, { mode: "full" });
-
-  const panel = page.locator(".jank");
-
-  await expect(panel).toHaveAttribute("data-mode", "full");
-
-  await expect(slot(page, "build-info")).toHaveText(
-    /^v\d+\.\d+\.\d+ · [a-f0-9]{8}( · local changes)?$/,
-  );
-
-  await expect(slot(page, "fps")).toHaveText(/^\d+$/);
-
-  await page.getByRole("button", { name: "REC", exact: true }).click();
-
-  await expect(panel).toHaveAttribute("data-recording", "true");
-
-  await expect(slot(page, "rec-chip")).toBeVisible();
-
-  await expect(slot(page, "state")).toHaveText(/^[\d,]+ \/ 6,000$/);
-
-  await page.waitForTimeout(400);
-
-  await page.evaluate(() => window.fixture.spike(40));
-
-  await expect(slot(page, "worst")).toHaveAttribute("data-tone", "miss");
-
-  await expect(slot(page, "events")).toContainText("spawn ×184");
-
-  // Let the spike travel into the graph, then mark a later event, as the board shows.
-  await page.waitForTimeout(800);
-
-  await page.evaluate(() => window.fixture.event("load chunk 14"));
-
-  await page.waitForTimeout(400);
-
-  await expect(page.locator('[data-k="cpu"] .jank-row')).toHaveCount(5);
-
-  await expect(page.locator('[data-k="cpu"] .jank-row').last()).toContainText(
-    "unattributed",
-  );
-
-  await expect(slot(page, "gpu-src")).toHaveText("fixture");
-
-  await expect(slot(page, "gpu-frame")).toHaveText(/^from frame [\d,]+$/);
-
-  await expect(slot(page, "counters")).toContainText("draw calls");
-
-  await expect(slot(page, "honest-cpu")).toContainText("cpu timer");
-
-  await expect(slot(page, "oh-collect")).toHaveText(/^\d+\.\d\d$/);
-
-  await shoot(page, info, "panel-full");
-
-  expect(
-    (await new AxeBuilder({ page }).include(".jank").analyze()).violations,
-  ).toEqual([]);
-
-  await page.getByRole("button", { name: "FREEZE", exact: true }).click();
-
-  await expect(slot(page, "state")).toHaveText("FROZEN");
-
-  await expect(
-    page.getByRole("button", { name: "Resume display" }),
-  ).toHaveAttribute("aria-pressed", "true");
-
-  const held = await slot(page, "avg").innerText();
-
-  const recorded = await page.evaluate(
-    () => window.fixture.monitor.snapshot(false).recordedFrames,
-  );
-
-  await page.waitForTimeout(400);
-
-  await expect(slot(page, "avg")).toHaveText(held);
-
-  // Frozen stops the display, not the collection.
-  expect(
-    await page.evaluate(
-      () => window.fixture.monitor.snapshot(false).recordedFrames,
-    ),
-  ).toBeGreaterThan(recorded);
-
-  await page.getByRole("button", { name: "STOP REC", exact: true }).click();
-
-  await expect(panel).toHaveAttribute("data-recording", "false");
-
-  const downloading = page.waitForEvent("download");
-
-  await page
-    .getByRole("tabpanel", { name: "LIVE" })
-    .getByRole("button", { name: "EXPORT JSON" })
-    .click();
-
-  const download = await downloading;
-
-  expect(download.suggestedFilename()).toBe("jank-recording.json");
-
-  const recording = parseRecording(
-    await readFile(await download.path(), "utf8"),
-  );
-
-  expect(recording.events.map((event) => event.label)).toContain("spawn ×184");
-  expect(recording.frames.some((frame) => frame.scopes.length > 0)).toBe(true);
-
-  await page.getByRole("button", { name: "RESUME", exact: true }).click();
-
-  await page.getByRole("button", { name: "CLEAR", exact: true }).click();
-
-  await expect(slot(page, "events")).toHaveText("no events");
-
-  expect(seen).toEqual([]);
+  await page.goto("/checks/live.html");
+  for (const theme of ["dark", "light"]) {
+    const panel = page.locator("section").filter({
+      has: page.getByRole("heading", { name: `Full · ${theme}`, exact: true }),
+    });
+    await panel.getByRole("button", { name: /^.*Counters/ }).click();
+    const counters = panel.locator('dl[aria-label="Render submission counters"]');
+    const counter = (label: string) =>
+      counters
+        .locator("div")
+        .filter({
+          has: page.getByText(label, { exact: true }),
+        })
+        .locator("dd");
+    await expect(counter("Temporal History Valid")).toHaveText("Yes");
+    await expect(counter("Temporal History Age Frames")).toHaveText("32");
+    const freeze = panel.getByRole("button", { name: "Freeze", exact: true });
+    await freeze.click();
+    await panel.getByRole("button", { name: "Invalidate reference history" }).click();
+    await expect(counter("Temporal History Valid")).toHaveText("Yes");
+    await freeze.click();
+    await expect(counter("Temporal History Valid")).toHaveText("No");
+    await expect(counter("Temporal History Age Frames")).toHaveText("0");
+    await expect(counter("Temporal History Reset Reason")).toHaveText("Camera cut (reference)");
+    await counter("Temporal History Reset Reason").scrollIntoViewIfNeeded();
+    expect(await counters.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await info.attach(`Temporal counters ${theme}`, {
+      body: await panel.screenshot(),
+      contentType: "image/png",
+    });
+  }
 });
 
-test("line and mini sizes report the same frames and the size is remembered", async ({
+test("custom budget Apply and Cancel close the editor and preserve the saved value", async ({
   page,
-}, info) => {
-  const seen = errors(page);
-
-  await openFixture(page);
-
-  const panel = page.locator(".jank");
-
-  await expect(panel).toHaveAttribute("data-mode", "line");
-
-  await expect(panel).toHaveCSS("height", "28px");
-
-  await expect(slot(page, "line-fps")).toHaveText(/^\d+$/);
-
-  await page.evaluate(() => window.fixture.monitor.startRecording());
-
-  await page.evaluate(() => window.fixture.spike(40));
-
-  await expect(slot(page, "line-worst")).toHaveAttribute("data-tone", "miss");
-
-  await expect(slot(page, "line-rec")).toBeVisible();
-
-  await shoot(page, info, "panel-line");
-
-  await page.getByRole("button", { name: "Open full panel" }).click();
-
-  await expect(panel).toHaveAttribute("data-mode", "full");
-
-  await expect(page.getByRole("tab", { name: "LIVE" })).toBeFocused();
-
-  await page.getByRole("button", { name: "Shrink to mini view" }).click();
-
-  await expect(panel).toHaveAttribute("data-mode", "mini");
-
-  await expect(panel).toHaveCSS("width", "240px");
-
-  await expect(slot(page, "mini-worst")).toHaveAttribute("data-tone", "miss");
-
-  await expect(slot(page, "mini-top")).toHaveText(/^\S+$/);
-
-  await expect(slot(page, "mini-top-ms")).toHaveText(/^\d+\.\d$/);
-
-  await page.waitForTimeout(600);
-
-  await shoot(page, info, "panel-mini");
-
-  expect(
-    (await new AxeBuilder({ page }).include(".jank").analyze()).violations,
-  ).toEqual([]);
-
-  await page.reload();
-
-  await page.evaluate(() => window.fixture.loaded);
-
-  await expect(panel).toHaveAttribute("data-mode", "mini");
-
-  await page.getByRole("button", { name: "Collapse to one line" }).click();
-
-  await expect(panel).toHaveAttribute("data-mode", "line");
-
-  expect(seen).toEqual([]);
+}) => {
+  await page.goto("/checks/live.html");
+  await expect(page.getByText(/^PASS: 14 panels/)).toBeVisible();
+  const panel = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Full · dark", exact: true }) });
+  const budget = panel.getByRole("combobox", { name: "Frame budget" });
+  const field = panel.getByRole("spinbutton", { name: "Custom budget (ms)" });
+  await budget.selectOption("custom");
+  await field.fill("20");
+  await panel.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(field).toBeHidden();
+  await expect(budget).toHaveValue("current");
+  await expect(budget).toBeFocused();
+  await budget.selectOption("custom");
+  await expect(field).toHaveValue("20");
+  await field.fill("0");
+  await panel.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText("between 1 and 1000");
+  await panel.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(field).toBeHidden();
+  await expect(panel.getByRole("alert")).toHaveCount(0);
+  await budget.selectOption("custom");
+  await expect(field).toHaveValue("20");
 });
 
-test("LOADING lays the stages on one axis beside the cold run and every session", async ({
-  page,
-}, info) => {
-  await openFixture(page, { mode: "full" });
-
-  await page.getByRole("tab", { name: "LOADING" }).click();
-
-  const loading = page.getByRole("tabpanel", { name: "LOADING" });
-
-  await expect(loading).toBeVisible();
-
-  await expect(slot(page, "cache")).toHaveText("94%");
-
-  await expect(page.locator('[data-k="stages"] .jank-stage')).toHaveCount(6);
-
-  await expect(
-    page.locator('[data-k="stages"] [data-tone="heavy"]'),
-  ).toHaveCount(1);
-
-  await expect(
-    page.locator('[data-k="sessions"] .jank-row .jank-k'),
-  ).toHaveText(["#1 cold", "#2", "#3", "#4 now"]);
-
-  // The shared axis switches from milliseconds to seconds for slower cold runs.
-  await expect(slot(page, "total")).toHaveText(/^\d+\.\d{1,2}$/);
-
-  await shoot(page, info, "panel-loading");
-
-  expect(
-    (await new AxeBuilder({ page }).include(".jank").analyze()).violations,
-  ).toEqual([]);
+test("mode shortcuts preserve visible focus and stay out of form entry", async ({ page }) => {
+  await page.goto("/checks/live.html");
+  const panel = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Full · dark", exact: true }) });
+  const surface = panel.getByRole("region", { name: "Live performance panel" });
+  await panel.getByRole("button", { name: "Mini view", exact: true }).click();
+  const expand = panel.getByRole("button", { name: /^Expand to full panel/ });
+  await expect(surface).toHaveAttribute("data-mode", "mini");
+  await expect(expand).toBeFocused();
+  await expand.press("m");
+  await expect(surface).toHaveAttribute("data-mode", "line");
+  await expect(expand).toBeFocused();
+  await expand.press("m");
+  await expect(surface).toHaveAttribute("data-mode", "full");
+  await panel.getByRole("button", { name: "Freeze", exact: true }).press("f");
+  await expect(surface).toHaveAttribute("data-frozen", "");
+  const select = panel.getByRole("combobox", { name: "Frame budget" });
+  await select.focus();
+  await select.press("m");
+  await expect(surface).toHaveAttribute("data-mode", "full");
 });
 
-test("CAPTURE sets the budget, edits the capture window in place and keeps captures", async ({
+test("desktop review states fit in both themes", async ({ page }, testInfo) => {
+  await page.goto("/checks/capture.html");
+  await expect(page.getByText(/^PASS: eight capture states/)).toBeVisible();
+  await testInfo.attach("capture-states", {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: "image/png",
+  });
+});
+
+test("LIVE graph supports hover and keyboard inspection in both themes, including Freeze", async ({
+  page,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/checks/live.html");
+  await expect(page.getByText(/^PASS: 14 panels/)).toBeVisible();
+  for (const theme of ["dark", "light"]) {
+    const panel = page.locator("section").filter({
+      has: page.getByRole("heading", { name: `Full · ${theme}`, exact: true }),
+    });
+    const graph = panel.getByRole("slider", { name: "Inspect frame intervals" });
+    const readout = panel.locator('[data-chart="readout"]');
+    await expect(readout).toHaveText("Worst f1204 · 32.0 ms · +15.3 ms vs budget");
+    const box = await graph.boundingBox();
+    if (!box) throw new Error("Missing graph bounds");
+    await graph.hover({ position: { x: 1, y: 8 } });
+    await expect(readout).toContainText("f1067");
+    const readoutBox = await readout.boundingBox();
+    if (!readoutBox) throw new Error("Missing inspection readout");
+    expect(box.x).toBeCloseTo(readoutBox.x, 1);
+    expect(box.width).toBeCloseTo(readoutBox.width, 1);
+    // The scale overlays must not intercept inspection near the right edge.
+    await graph.hover({ position: { x: box.width - 12, y: 8 } });
+    await expect(readout).not.toContainText("f1067");
+    await graph.hover({ position: { x: box.width - 1, y: 8 } });
+    await expect(readout).toContainText("f1246");
+    // Frames are under 2px wide and WebKit's mouse coordinates are whole pixels: land on one.
+    const frame137 = Math.round(box.x + box.width * (137.5 / 180)) - box.x;
+    await graph.hover({ position: { x: frame137, y: 30 } });
+    await expect(readout).toHaveText("f1204 · 32.0 ms · +15.3 ms vs budget");
+    await expect(panel.locator('[data-chart="inspection"]')).toBeAttached();
+    await page.mouse.move(0, 0);
+    await expect(readout).toHaveText("Worst f1204 · 32.0 ms · +15.3 ms vs budget");
+    await graph.focus();
+    await graph.press("Home");
+    await expect(graph).toHaveAttribute("aria-valuetext", /^Frame 1067, 17.9 milliseconds/);
+    await graph.press("ArrowRight");
+    await expect(graph).toHaveAttribute("aria-valuetext", /^Frame 1068,/);
+    await graph.press("End");
+    await expect(graph).toHaveAttribute("aria-valuenow", "179");
+    await graph.press("f");
+    await expect(panel.getByRole("region", { name: "Live performance panel" })).toHaveAttribute(
+      "data-frozen",
+      "",
+    );
+    await graph.press("ArrowLeft");
+    await expect(readout).toContainText("f1245");
+    await expect(graph).toBeFocused();
+    await testInfo.attach(`graph-${theme}`, {
+      body: await panel.screenshot(),
+      contentType: "image/png",
+    });
+    await graph.press("f");
+    await panel.getByRole("button", { name: "Mini view", exact: true }).click();
+    await expect(graph).toBeHidden();
+    await expect(panel.getByRole("button", { name: /^Expand to full panel/ })).toBeFocused();
+  }
+  const empty = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Waiting", exact: true }),
+  });
+  await expect(empty.getByRole("slider")).toHaveCount(0);
+  await expect(empty.locator('[data-chart="readout"]')).toHaveText("No frame samples");
+});
+
+test("LIVE event markers align with frames, support keyboard inspection and freeze with the list", async ({
   page,
 }, info) => {
-  const seen = errors(page);
-
-  await openFixture(page, { mode: "full" });
-
-  const tab = page.getByRole("tab", { name: "LIVE" });
-
-  await tab.focus();
-
-  await page.keyboard.press("ArrowRight");
-
-  await expect(page.getByRole("tab", { name: "LOADING" })).toBeFocused();
-
-  await page.keyboard.press("End");
-
-  await expect(page.getByRole("tab", { name: "CAPTURE" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-
-  await page.getByRole("button", { name: "30", exact: true }).click();
-
-  await expect(slot(page, "budget")).toHaveText("33.3");
-
-  await page.getByRole("button", { name: "60", exact: true }).click();
-
-  await expect(slot(page, "budget")).toHaveText("16.7");
-
-  await expect(slot(page, "captures-empty")).toHaveText(
-    "nothing captured yet. that is a good sign, or a quiet build.",
-  );
-
-  const threshold = page.getByRole("button", { name: "threshold, edit" });
-
-  await threshold.click();
-
-  await page.keyboard.type("99");
-
-  await page.keyboard.press("Escape");
-
-  await expect(threshold).toHaveText("33.3 ms");
-
-  await threshold.click();
-
-  // Above one or two dropped frames, so a busy CI runner's own hitches can't trigger the
-  // capture before the spike does.
-  await page.getByLabel("threshold ms").fill("40");
-
-  await page.keyboard.press("Enter");
-
-  await expect(threshold).toHaveText("40.0 ms");
-
-  await expect(threshold).toBeFocused();
-
-  await page.getByRole("button", { name: "after, edit" }).click();
-
-  await page.getByLabel("after frames").fill("60");
-
-  await page.keyboard.press("Enter");
-
-  await page.getByRole("button", { name: "Automatic spike capture" }).click();
-
-  await expect(
-    page.getByRole("button", { name: "Automatic spike capture" }),
-  ).toHaveAttribute("aria-pressed", "true");
-
-  await expect(slot(page, "state")).toHaveText("armed");
-
-  // However the browser stamps 100 ms of work across frames, one interval clears 40 ms.
-  await page.evaluate(() => window.fixture.spike(100));
-
-  await expect(slot(page, "captured-meta")).toHaveText(
-    /^1 \/ 10 · \d+\.\d MB$/,
-    { timeout: 10000 },
-  );
-
-  // Each nearby event leads with its icon, the same one the viewer and recordings show.
-  await expect(page.locator('[data-k="captures"] .jank-near')).toHaveText(
-    "+ wave 3 · △ spawn ×184",
-  );
-
-  await expect(page.locator('[data-k="captures"] .jank-ms')).toHaveAttribute(
-    "data-tone",
-    "miss",
-  );
-
-  await shoot(page, info, "panel-capture");
-
-  expect(
-    (await new AxeBuilder({ page }).include(".jank").analyze()).violations,
-  ).toEqual([]);
-  expect(seen).toEqual([]);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/checks/live.html");
+  for (const theme of ["dark", "light"]) {
+    const panel = page.locator("section").filter({
+      has: page.getByRole("heading", { name: `Full · ${theme}`, exact: true }),
+    });
+    const rail = panel.getByRole("slider", { name: "Inspect events", exact: true });
+    const graph = panel.getByRole("slider", { name: "Inspect frame intervals", exact: true });
+    const marker = panel.locator('[data-event-frame="1204"]');
+    const details = panel.locator("[data-event-readout]");
+    const frameReadout = panel.locator('[data-chart="readout"]');
+    await expect(details).toHaveCount(0);
+    await expect(marker).toHaveAttribute("data-event-count", "2");
+    const graphBox = await graph.boundingBox();
+    const railBox = await rail.boundingBox();
+    const markerBox = await marker.boundingBox();
+    if (!graphBox || !railBox || !markerBox) throw new Error("Missing chart geometry");
+    expect(railBox.x).toBeCloseTo(graphBox.x, 1);
+    expect(railBox.width).toBeCloseTo(graphBox.width, 1);
+    expect(markerBox.x + markerBox.width / 2).toBeCloseTo(
+      graphBox.x + graphBox.width * (137.5 / 180),
+      1,
+    );
+    expect(markerBox.y + markerBox.height / 2).toBeCloseTo(graphBox.y + graphBox.height, 1);
+    await graph.hover({ position: { x: graphBox.width / 2, y: 30 } });
+    await expect(panel.locator('[data-chart="readout"]')).toBeVisible();
+    expect((await rail.boundingBox())?.y).toBeCloseTo(railBox.y, 1);
+    await rail.hover({ position: { x: railBox.width * (137.5 / 180), y: 12 } });
+    await expect(rail).toHaveAttribute("aria-valuetext", /Wave 3.*f1204.*Spawned 128/);
+    await expect(details).toContainText("Wave 3");
+    await expect(frameReadout).toBeHidden();
+    await page.mouse.move(0, 0);
+    await expect(details).toHaveCount(0);
+    await expect(frameReadout).toBeVisible();
+    await expect(frameReadout).toHaveText("Worst f1204 · 32.0 ms · +15.3 ms vs budget");
+    await rail.focus();
+    await expect(details).toContainText("Spawn complete");
+    await expect(frameReadout).toBeHidden();
+    await rail.press("Home");
+    await expect(details).toContainText("Loaded");
+    await expect(rail).toHaveAttribute("aria-valuetext", /Event 1 of 3: Loaded/);
+    await rail.press("ArrowRight");
+    await expect(rail).toHaveAttribute("aria-valuetext", /Event 2 of 3: Wave 3/);
+    await rail.press("ArrowRight");
+    await expect(rail).toHaveAttribute("aria-valuetext", /Event 3 of 3: Spawn complete.*f1204/);
+    await expect(rail).toBeFocused();
+    await rail.press("f");
+    await panel.getByRole("button", { name: /^Events/ }).click();
+    await expect(details).toHaveCount(0);
+    await expect(frameReadout).toBeVisible();
+    const list = panel.getByRole("list", { name: "Recent events", exact: true });
+    await expect(list.getByRole("listitem")).toHaveCount(3);
+    const held = (await list.textContent()) ?? "";
+    await panel.getByRole("button", { name: "Advance reference events", exact: true }).click();
+    await expect(list).toHaveText(held);
+    await expect(marker).toHaveAttribute("data-event-count", "2");
+    await info.attach(`events-${theme}`, {
+      body: await panel.screenshot(),
+      contentType: "image/png",
+    });
+    await panel.getByRole("button", { name: "Freeze", exact: true }).click();
+    await expect(list.getByRole("listitem")).toHaveCount(4);
+    await expect(list).toContainText("Reference advanced");
+    await expect(list.getByText(/no matching frame/)).toHaveCount(3);
+    await expect(marker).toHaveCount(0);
+    await expect(panel.locator("[data-event-frame]")).toHaveCount(1);
+    await expect(rail).toHaveAttribute("aria-valuetext", /Reference advanced.*f1486/);
+    await panel.getByRole("button", { name: "Mini view", exact: true }).click();
+    await expect(panel.getByRole("slider")).toHaveCount(0);
+    const miniEvents = panel.getByRole("img", {
+      name: "Events in displayed frames: 1",
+      exact: true,
+    });
+    await expect(miniEvents).toBeVisible();
+    const miniGraphBox = await panel.getByRole("img", { name: /frame intervals;/ }).boundingBox();
+    const miniMarkerBox = await miniEvents.locator("[data-event-frame]").boundingBox();
+    if (!miniGraphBox || !miniMarkerBox) throw new Error("Missing mini graph geometry");
+    expect(miniMarkerBox.y + miniMarkerBox.height / 2).toBeCloseTo(
+      miniGraphBox.y + miniGraphBox.height,
+      1,
+    );
+    await expect(details).toHaveCount(0);
+    const surface = panel.getByRole("region", { name: "Live performance panel" });
+    expect(await surface.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true,
+    );
+  }
 });
