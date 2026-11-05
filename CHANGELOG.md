@@ -1,6 +1,11 @@
 # Changelog
 
-## 1.0.0-rc.0 — release candidate, not yet published
+## 1.0.0-rc.1 — 2026-11-05
+
+- Include the documentation directory in the npm package, so README guide links and their supporting images and measurement evidence are available in installed packages.
+- Verify README guide links against an isolated installation of the packed tarball.
+
+## 1.0.0-rc.0 — 2026-11-05
 
 ### Breaking: a new panel and viewer
 

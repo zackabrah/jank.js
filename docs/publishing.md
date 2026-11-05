@@ -5,10 +5,10 @@ with `latest` for stable releases and `beta` for release candidates. Runtime
 dependencies remain zero. Publishing is
 manual; merging a PR or creating a version tag does not publish a package.
 
-The current `v1` branch is `1.0.0-rc.0`. Its package manifest and publication
+The current `v1` branch is `1.0.0-rc.1`. Its package manifest and publication
 workflow both select npm's `beta` tag. This keeps the existing RC identity while
 providing an opt-in beta channel. Once published, consumers can use
-`npm install jank.js@beta` or pin `jank.js@1.0.0-rc.0`. Publishing the candidate
+`npm install jank.js@beta` or pin `jank.js@1.0.0-rc.1`. Publishing the candidate
 does not change `latest`. Merging the candidate promotes its version to `1.0.0`
 and switches the manifest's publication tag to `latest`.
 
@@ -46,9 +46,9 @@ npm publish ./artifacts/npm/jank.js-X.Y.Z.tgz --dry-run --ignore-scripts
 ```
 
 The package allowlist includes the built library, optional adapters, TypeScript
-declarations, empty compatibility stylesheets, offline viewer, license notices and selected project
-documents. Source checkouts, test fixtures, screenshots, CI scripts and private
-demo content are not shipped. A dry run checks packaging, not npm ownership or
+declarations, empty compatibility stylesheets, offline viewer, license notices and project
+documentation, including its screenshots and measurement evidence. Source checkouts,
+test fixtures, CI scripts and private demo content are not shipped. A dry run checks packaging, not npm ownership or
 permission to publish.
 
 ## Configure GitHub releases

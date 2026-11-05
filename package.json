@@ -1,6 +1,6 @@
 {
   "name": "jank.js",
-  "version": "1.0.0-rc.0",
+  "version": "1.0.0-rc.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
