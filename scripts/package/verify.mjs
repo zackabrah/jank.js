@@ -170,7 +170,7 @@ writeFileSync('recording.json', serializeRecording(monitor.export()));
 
   await writeFile(
     join(temp, "consumer.ts"),
-    `import { createDiagnostics, parseRecording, inspectFrame, type PerformanceRecording, type GpuProfile } from 'jank.js';
+    `import { createDiagnostics, parseRecording, inspectFrame, type PerformanceRecording, type CaptureStatus, type GpuProfile } from 'jank.js';
 import { createPerformancePanel, type PerformancePanelOptions, type SavedCapture } from 'jank.js/panel';
 import { createGpuHistory, type GpuFrame } from 'jank.js/gpu';
 import { installAgentApi } from 'jank.js/agent';
@@ -189,6 +189,9 @@ export type Frame = GpuFrame;
 export function open(capture: SavedCapture) { return openRecordingViewer(document, capture); }
 export const history = createGpuHistory(6000, () => {});
 export function recording(text: string): PerformanceRecording { return parseRecording(text); }
+export function evidence(data: PerformanceRecording, capture: CaptureStatus) {
+  return { frames: data.gpuTiming?.frames, rule: capture.context?.rule };
+}
 export function frame(data: PerformanceRecording, id: number) { return inspectFrame(data, id); }
 export function timestamps(renderer: ThreeTimestampRenderer) { return createThreeWebGpuSource(renderer, {revision:'186'}); }
 export function counters(info: ThreeRendererInfo) { return registerThreeRenderer(monitor, info); }

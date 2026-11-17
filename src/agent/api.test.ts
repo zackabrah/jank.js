@@ -107,6 +107,24 @@ test("start explains a host's own recording instead of taking it over", () => {
   expect(() => api.start()).toThrow("outside this panel");
 });
 
+// Starting a script must preserve the spike even when the display has not refreshed yet.
+test.each([true, false])("preserves an automatic capture (refreshed: %s)", (refreshed) => {
+  const { api, source, advance, controller } = setup();
+  controller.toggleAuto();
+  advance(1, 48);
+  if (refreshed) controller.refresh(source.snapshot());
+  const capture = source.snapshot().capture;
+  expect(capture.triggerFrame).not.toBeNull();
+  expect(() => api.start()).toThrow(/recording/i);
+  controller.refresh(source.snapshot());
+  advance(capture.remainingFrames, 16);
+  controller.refresh(source.snapshot());
+  expect(controller.getSnapshot().saved[0]?.recording.capture).toMatchObject({
+    mode: "automatic",
+    triggerFrame: capture.triggerFrame,
+  });
+});
+
 test("installs on the window and only removes itself", () => {
   const first = setup();
   const removeFirst = installAgentApi(window, first.controller);
@@ -121,7 +139,7 @@ test("installs on the window and only removes itself", () => {
   expect(window.jank).toBeUndefined();
 });
 
-test("removing an API disconnects its observers even after replacement and ignores queued callbacks", () => {
+function stubMachineObservers() {
   const longFrames: { emit(): void; disconnect: ReturnType<typeof vi.fn> }[] = [];
   const pressure: { emit(): void; disconnect: ReturnType<typeof vi.fn> }[] = [];
   vi.stubGlobal(
@@ -159,6 +177,35 @@ test("removing an API disconnects its observers even after replacement and ignor
       }
     },
   );
+  return { longFrames, pressure };
+}
+
+// An observer queued before capture completion must never write into the next recording.
+test.each(["panel stop", "discard", "capacity"])("disconnects machine observers on %s", (end) => {
+  const { longFrames, pressure } = stubMachineObservers();
+  const { controller, source, advance } = setup();
+  const event = vi.fn();
+  const api = createAgentApi(controller, { event });
+  api.start();
+  if (end === "capacity") {
+    advance(api.status().capacity);
+    controller.refresh(source.snapshot(), false);
+  } else {
+    advance(2);
+    if (end === "discard") controller.discard();
+    else controller.stopAndSave();
+  }
+  expect(api.status().phase).toBe("idle");
+  for (const observer of [...longFrames, ...pressure])
+    expect(observer.disconnect).toHaveBeenCalledOnce();
+  controller.start();
+  for (const observer of [...longFrames, ...pressure]) observer.emit();
+  expect(event).not.toHaveBeenCalled();
+  api.dispose();
+});
+
+test("removing an API disconnects its observers even after replacement and ignores queued callbacks", () => {
+  const { longFrames, pressure } = stubMachineObservers();
   const first = setup();
   const firstEvent = vi.fn();
   const removeFirst = installAgentApi(window, first.controller, { event: firstEvent });

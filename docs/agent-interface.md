@@ -44,6 +44,8 @@ This is the same capture a person drives with Rec, so the two share one recorder
 `start` throws if a comparison or another recording holds it. `stop` waits for GPU
 results and rejects if they fail, so an agent can't mistake a failure for a clean report.
 
+Stopping or discarding the recording from the panel, or filling its frame buffer, also disconnects the agent's long-frame and CPU-pressure observers.
+
 The cleanup returned by `installAgentApi` disconnects its machine observers even
 if another API has replaced `window.jank`. It preserves the shared recording and
 the newer API. A retained API reference can still read/export saved captures, but
@@ -115,7 +117,8 @@ a smooth run look over budget when the display's frame time equals the budget.
 `summary.displayLimited` means the busier of median CPU and GPU work uses under 80% of both the
 typical frame time and the budget, so the display is setting the pace, as on a 57 Hz or a 144 Hz
 screen. A frame then counts as slow against the larger of the typical frame time and the budget.
-The panel, viewer and comparison use the same rule. This needs GPU timing, because a GPU-limited
+For saved recordings, a missing GPU frame or a timed pass without start/end timestamps cannot establish headroom. The median must still qualify when every such frame is counted as potentially slow.
+The panel, viewer and comparison use the same pacing threshold. This needs GPU timing, because a GPU-limited
 scene looks the same without it. Sustained and episode capture rules use it too; a spike rule keeps
 its own threshold.
 

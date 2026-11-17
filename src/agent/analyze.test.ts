@@ -219,6 +219,36 @@ describe("episodes", () => {
       expect(report.summary.overBudget.frames).toBeGreaterThan(30);
     });
 
+    // Missing or elapsed-only passes cannot establish headroom for a whole recording.
+    test("keeps slow frames when timestamp coverage cannot establish median GPU work", () => {
+      const frames = framesOf(Array(60).fill(33));
+      const light = frames.map((frame) => gpuFrame(frame.id, 1));
+      const mixed = light.map((frame) => ({
+        ...frame,
+        invocations: [
+          ...frame.invocations,
+          ...frame.invocations.map((pass) => ({
+            ...pass,
+            id: "post",
+            milliseconds: 30,
+            startMs: null,
+            endMs: null,
+          })),
+        ],
+      }));
+      const report = (gpuFrames: GpuFrame[]) =>
+        analyzeRecording(
+          recordingOf(frames, {
+            gpuTiming: { version: 1, frames: gpuFrames },
+          }),
+        );
+      for (const evidence of [light.slice(0, 1), light.slice(0, 30), mixed]) {
+        expect(report(evidence).summary.overBudget.frames).toBe(60);
+      }
+      expect(report(mixed).episodes[0]?.gpu).toBeNull();
+      expect(report(light.slice(0, 31)).summary.overBudget.frames).toBe(0);
+    });
+
     test("doesn't assume the display without GPU timing", () => {
       expect(atDisplayRate(null, smooth).summary.displayLimited).toBe(false);
     });

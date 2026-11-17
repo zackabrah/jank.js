@@ -19,9 +19,6 @@ function countCalls(target: object, method: string, onCall: (args: unknown[]) =>
   };
 }
 
-const byteLength = (data: unknown) =>
-  ArrayBuffer.isView(data) || data instanceof ArrayBuffer ? data.byteLength : 0;
-
 /** A development-only device boundary: observe real passes without Three.js private hooks. */
 export function instrumentThreeDevice(
   device: GPUDevice,
@@ -53,7 +50,14 @@ export function instrumentThreeDevice(
     countCalls(device.queue, "writeTexture", () => frameCalls.textureWrites++),
     countCalls(device.queue, "writeBuffer", (args) => {
       frameCalls.bufferWrites++;
-      frameCalls.bufferWriteBytes += byteLength(args[2]);
+      const [, , data, offset = 0, size] = args as Parameters<GPUQueue["writeBuffer"]>;
+      // WebGPU counts typed-array elements, and bytes for raw buffers and DataViews.
+      const unit =
+        "BYTES_PER_ELEMENT" in data && typeof data.BYTES_PER_ELEMENT === "number"
+          ? data.BYTES_PER_ELEMENT
+          : 1;
+      frameCalls.bufferWriteBytes +=
+        size === undefined ? data.byteLength - offset * unit : size * unit;
     }),
   ];
   function passLabel(kind: "render" | "compute", encoderLabel: string | undefined) {
