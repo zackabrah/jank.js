@@ -14,9 +14,9 @@ merge order, once each. `.release-state.json` records the last processed source
 commit; `VERSION_HISTORY.md` records the version assigned to each PR. Keep both
 files. Direct commits receive no independent bump.
 
-The `v1` branch is explicitly versioned `1.0.0-rc.1`, with opt-in npm publication
-under the `beta` tag. Builds and packed consumers
-carry that candidate identity. When an `X.Y.Z-rc.N` candidate reaches main through
+A release candidate is versioned explicitly as `X.Y.Z-rc.N` on its release branch
+(the 1.0.0 candidates were prepared on `v1`), with opt-in npm publication under
+the `beta` tag. Builds and packed consumers carry that candidate identity. When an `X.Y.Z-rc.N` candidate reaches main through
 a merged PR, its first version step promotes it to `X.Y.Z`, regardless of the PR's
 bump marker, and switches `publishConfig.tag` from `beta` to `latest`. Subsequent merged PRs receive the normal bumps. This prevents the v1
 breaking-change marker from skipping straight to 2.0.0. With no new merged PR,

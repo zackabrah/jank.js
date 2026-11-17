@@ -5,19 +5,19 @@ with `latest` for stable releases and `beta` for release candidates. Runtime
 dependencies remain zero. Publishing is
 manual; merging a PR or creating a version tag does not publish a package.
 
-The current `v1` branch is `1.0.0-rc.1`. Its package manifest and publication
-workflow both select npm's `beta` tag. This keeps the existing RC identity while
-providing an opt-in beta channel. Once published, consumers can use
-`npm install jank.js@beta` or pin `jank.js@1.0.0-rc.1`. Publishing the candidate
-does not change `latest`. Merging the candidate promotes its version to `1.0.0`
-and switches the manifest's publication tag to `latest`.
+A release candidate is versioned `X.Y.Z-rc.N` on its release branch, and its
+package manifest and publication workflow both select npm's `beta` tag, so
+consumers opt in with `npm install jank.js@beta` or pin the exact candidate.
+Publishing a candidate does not change `latest`. Merging the candidate into main
+promotes its version to `X.Y.Z` and switches the manifest's publication tag to
+`latest`. The 1.0.0 candidates (`1.0.0-rc.0` and `1.0.0-rc.1`) were prepared on
+the `v1` branch this way.
 
 ## Prepare the beta tag
 
-After the candidate's checks pass and its clean commit is pushed to `v1`, create
-and push the matching immutable tag (for the first candidate, `v1.0.0-rc.0`).
+After the candidate's checks pass and its clean commit is pushed to `v1`, create and push the matching immutable tag, such as `v1.0.0-rc.1`.
 Do not move a release tag or reuse an npm version; use the next RC number for
-subsequent candidates. Keep the `rc0` branch as the first candidate reference.
+subsequent candidates.
 
 Dispatch **Publish npm package** from that tag with **dry_run** enabled. The
 workflow requires the tagged candidate to be reachable from `origin/v1`; stable
@@ -53,8 +53,8 @@ permission to publish.
 
 ## Configure GitHub releases
 
-The package is on npm, with 0.3.0 as `latest`. Configure a GitHub Actions trusted
-publisher in its settings on npm:
+The package is on npm. Configure a GitHub Actions trusted publisher in its
+settings on npm:
 
 - Organization or user: `zackabrah`
 - Repository: `jank.js`
