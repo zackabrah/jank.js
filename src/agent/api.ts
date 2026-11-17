@@ -20,7 +20,7 @@ export function createAgentApi(
   controller: CaptureController,
   options: { event?: (label: string, detail?: string) => void } = {},
 ) {
-  let stopObserving = () => {};
+  let stopObserving: (() => void) | undefined;
   let disposed = false;
   // The controller lists captures newest first.
   const latest = () => controller.getSnapshot().saved[0];
@@ -69,22 +69,26 @@ export function createAgentApi(
       if (disposed) throw new Error("The agent API has been disposed.");
       // Asking the controller would also put this error on the person's panel.
       const current = controller.getSnapshot();
-      if (current.phase === "recording" && current.kind === "manual")
-        throw new Error("A recording is already running.");
+      if (current.phase === "recording") throw new Error("A recording is already running.");
       controller.start();
       const { phase, kind, error, blocked } = controller.getSnapshot();
       if (error || blocked || phase !== "recording" || kind !== "manual")
         throw new Error(error || blocked || `Could not start a recording from ${phase}.`);
-      stopObserving();
-      if (options.event) stopObserving = observeMachine(options.event);
+      if (options.event) {
+        const disconnect = observeMachine(options.event);
+        const unsubscribe = controller.subscribe(() => stopObserving?.(), "phase");
+        stopObserving = () => {
+          unsubscribe();
+          disconnect();
+          stopObserving = undefined;
+        };
+      }
     },
     /** Resolves once GPU results are in, with the capture's ID and report. */
     async stop(top?: number) {
       const before = controller.getSnapshot();
       if (before.phase !== "recording") throw new Error("No recording is running.");
       const previous = latest()?.id;
-      stopObserving();
-      stopObserving = () => {};
       controller.stopAndSave();
       await settled();
       const capture = latest();
@@ -102,8 +106,7 @@ export function createAgentApi(
     /** Disconnect observers without stopping or discarding the shared capture. */
     dispose() {
       disposed = true;
-      stopObserving();
-      stopObserving = () => {};
+      stopObserving?.();
     },
   };
 }

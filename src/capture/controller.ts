@@ -108,6 +108,7 @@ export function createCaptureController(source: CaptureSource) {
     message: "",
   };
   const listeners = new Set<() => void>();
+  const phaseListeners = new Set<() => void>();
   let notify = true;
   let startedAt = 0;
   let nextId = 1;
@@ -128,7 +129,9 @@ export function createCaptureController(source: CaptureSource) {
     );
   };
   const publish = (patch: Partial<CaptureState>) => {
+    const previous = state.phase;
     state = { ...state, ...patch };
+    if (state.phase !== previous) for (const listener of phaseListeners) listener();
     if (notify) {
       refreshBuffers();
       for (const listener of listeners) listener();
@@ -312,10 +315,12 @@ export function createCaptureController(source: CaptureSource) {
     },
     getSnapshot: () => state,
     getBuffers: () => buffers,
-    subscribe(listener: () => void) {
-      listeners.add(listener);
+    /** Phase changes end capture-owned work even between throttled display updates. */
+    subscribe(listener: () => void, updates: "display" | "phase" = "display") {
+      const subscribers = updates === "phase" ? phaseListeners : listeners;
+      subscribers.add(listener);
       return () => {
-        listeners.delete(listener);
+        subscribers.delete(listener);
       };
     },
     /** Call after every sealed frame; false defers subscriber updates to the next UI refresh. */
@@ -520,7 +525,11 @@ export function createCaptureController(source: CaptureSource) {
         if (state.phase === "unsaved" || (state.phase === "recording" && state.kind === "manual"))
           throw new Error("Save or discard the current recording first.");
         const snapshot = source.snapshot();
-        if (snapshot.recording && snapshot.capture.mode !== "automatic") {
+        const ownsAutomatic =
+          state.phase === "recording" &&
+          state.kind === "automatic" &&
+          snapshot.capture.mode === "automatic";
+        if (snapshot.recording && !ownsAutomatic) {
           // A blocked press, not a failure: the host's recording keeps running untouched.
           publish({ blocked: externalRecordingReason });
           return;
