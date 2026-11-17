@@ -1,3 +1,4 @@
+import { frameOverLimit } from "../recording/summary.ts";
 import { msPerSecond, toolEvent, unavailableCoverage } from "./recording.ts";
 
 import type {
@@ -151,7 +152,8 @@ export function inspectFrame(recording: PerformanceRecording, frameId: number) {
 /** Headline frame statistics: count, mean, fps, p95, worst and frames over budget. */
 export function recordingSummary(recording: PerformanceRecording) {
   const frames = recording.frames,
-    values = frames.map((frame) => frame.interval).toSorted((a, b) => a - b);
+    values = frames.map((frame) => frame.interval).toSorted((a, b) => a - b),
+    overLimit = frameOverLimit(recording);
 
   const mean = values.length
     ? values.reduce((sum, value) => sum + value, 0) / values.length
@@ -163,9 +165,8 @@ export function recordingSummary(recording: PerformanceRecording) {
     fps: mean ? msPerSecond / mean : null,
     p95Ms: values.length ? sortedP95(values) : null,
     worstMs: values.at(-1) ?? null,
-    overBudgetFrames: frames.filter(
-      (frame) => frame.interval > recording.budget.frameMs,
-    ).length,
+    overBudgetFrames: frames.filter((frame) => frame.interval > overLimit)
+      .length,
   };
 }
 

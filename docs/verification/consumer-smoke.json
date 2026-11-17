@@ -1,0 +1,31 @@
+{
+  "archive": "jank.js-0.3.0.tgz",
+  "browser": "156.0.8078.80",
+  "method": "Packed public ESM exports loaded into an existing production WebGPU application using a temporary bootstrap around its own animation callbacks. Application source and assets were read-only.",
+  "canvases": 1,
+  "recordingFrames": 123,
+  "panelCaptureSaved": true,
+  "lazyViewerOpened": true,
+  "errors": [],
+  "missing": [],
+  "gpuDevices": [
+    {
+      "vendorId": 4203,
+      "deviceId": 0,
+      "vendorString": "Google Inc. (Apple)",
+      "deviceString": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Version 26.5.2 (Build 25F84))",
+      "driverVendor": "Apple",
+      "driverVersion": "26.5.2"
+    }
+  ],
+  "runtimeDependencies": {},
+  "removed": true,
+  "checkedAt": "2026-11-05",
+  "codeCommit": "3ae3157",
+  "archiveSha256": "38f5645a86cdab3846f78c4e223d5f900779f0292ffcf85d69826c1b6dbae17b",
+  "limits": [
+    "Browser smoke test using a temporary integration, not a committed host integration or full gameplay test.",
+    "CPU frame collection, panel capture, viewer loading and cleanup were checked; no GPU adapter was added to the external host.",
+    "Private application assets, source, server setup and raw recordings are excluded from this repository."
+  ]
+}

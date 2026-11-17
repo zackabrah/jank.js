@@ -88,7 +88,7 @@ async function browser() {
 
   return [
     results ? browserResults(results) : absent("Browser tests"),
-    measured ? accuracy(measured) : absent("Accuracy against Chrome"),
+    ...(measured ? [accuracy(measured)] : []),
   ].join("\n");
 }
 

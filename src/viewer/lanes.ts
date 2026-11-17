@@ -1,354 +1,205 @@
-import {
-  intervalUnion,
-  nearbyEventLabels,
-  scopesBySystem,
-} from "../core/inspection.ts";
+import type { GpuFrame } from "../gpu/model.ts";
+import { readEvents } from "../live/events.ts";
+import { unionDuration } from "../recording/timing.ts";
+import type { PerformanceRecording } from "../recording/types.ts";
 
-import {
-  automaticCapture,
-  msPerSecond,
-  unavailableCoverage,
-} from "../core/recording.ts";
+export interface LaneValue {
+  value: number | null;
+  status:
+    | "measured"
+    | "partial"
+    | "missing"
+    | "unknown"
+    | "pending"
+    | "rejected"
+    | "omitted"
+    | "absent";
+  reason: string;
+}
 
-import { count, fixed, timerHonesty, words } from "../performance/ui/format.ts";
-
-import type {
-  PerformanceRecording,
-  RecordingMetadata,
-} from "../core/recording-types.ts";
-
-/** One value per frame, by frame index; NaN where the recording has no value. */
-export interface Lane {
+export interface TimingLane {
   id: string;
   label: string;
-  values: Float64Array;
+  description: string;
+  group: "cpu" | "gpu" | "context";
+  values: Map<number, LaneValue>;
 }
 
-export interface Lanes {
-  ids: number[];
-  index: Map<number, number>;
-  intervals: Float64Array;
-  /** Exact per frame: union of each system's scopes, NaN without scope capture. */
-  cpu: Lane[];
-  unattributed: Float64Array;
-  /** The tool's own synchronous cost in each frame: collection plus refresh. */
-  overhead: Float64Array;
-  /** Placed at the frame that produced the sample; NaN between samples. */
-  gpu: Lane[];
-  /** Frames after the source frame at which each GPU sample was read back. */
-  gpuAge: Float64Array;
-  gpuUnlinked: number;
-  /** Periodic snapshots, placed at the frame they were taken; NaN between them. */
-  counters: Lane[];
-  medians: Map<string, number>;
-}
-
-/** Recording-order lane data, computed once per load. */
-export function buildLanes(recording: PerformanceRecording): Lanes {
-  const frames = recording.frames;
-
-  const n = frames.length;
-
-  const index = new Map(frames.map((frame, i) => [frame.id, i]));
-
-  /** An empty lane: NaN for every frame until a value is recorded. */
-  const lane = (id: string, label: string): Lane => ({
-    id,
-    label,
-    values: new Float64Array(n).fill(Number.NaN),
-  });
-
-  const cpu = new Map<string, Lane>(
-    recording.systems.map((system) => [
-      system.id,
-      lane(system.id, system.label),
-    ]),
-  );
-
-  const unattributed = new Float64Array(n).fill(Number.NaN);
-
-  const overhead = new Float64Array(n);
-
-  const intervals = new Float64Array(n);
-
-  frames.forEach((frame, i) => {
-    intervals[i] = frame.interval;
-
-    overhead[i] = frame.overhead.collectionMs + frame.overhead.refreshMs;
-
-    if (frame.coverage === unavailableCoverage) return;
-
-    const groups = scopesBySystem(frame.scopes);
-
-    for (const entry of cpu.values()) entry.values[i] = 0;
-
-    for (const [system, group] of groups) {
-      let entry = cpu.get(system);
-
-      if (!entry) {
-        cpu.set(system, (entry = lane(system, group[0]!.label)));
-
-        for (let j = 0; j <= i; j++)
-          if (frames[j]!.coverage !== unavailableCoverage) entry.values[j] = 0;
-      }
-
-      entry.values[i] = intervalUnion(group);
-    }
-
-    unattributed[i] = Math.max(0, frame.interval - intervalUnion(frame.scopes));
-  });
-
-  // Systems registered for counters only, never timed, have no CPU lane.
-  const timed = [...cpu.values()].filter((entry) =>
-    entry.values.some((value) => value > 0),
-  );
-
-  const gpu = new Map<string, Lane>();
-
-  const gpuAge = new Float64Array(n).fill(Number.NaN);
-
-  let gpuUnlinked = 0;
-
-  for (const sample of recording.gpu?.samples ?? []) {
-    const at =
-      sample.diagnosticFrame == null
-        ? undefined
-        : index.get(sample.diagnosticFrame);
-
-    if (at === undefined) {
-      gpuUnlinked++;
-
-      continue;
-    }
-
-    gpuAge[at] = sample.sampleAgeFrames ?? Number.NaN;
-
-    for (const pass of sample.passes) {
-      let entry = gpu.get(pass.label);
-
-      if (!entry) gpu.set(pass.label, (entry = lane(pass.label, pass.label)));
-
-      if (pass.milliseconds !== null) entry.values[at] = pass.milliseconds;
-    }
-  }
-
-  const counters = new Map<string, Lane>();
-
-  let frame = 0;
-
-  for (const sample of recording.samples) {
-    while (frame < n - 1 && frames[frame]!.at < sample.at) frame++;
-
-    for (const system of sample.systems)
-      for (const [key, value] of Object.entries(system.values)) {
-        if (typeof value !== "number") continue;
-
-        const id = `${system.id}:${key}`;
-
-        let entry = counters.get(id);
-
-        if (!entry) counters.set(id, (entry = lane(id, words(key))));
-
-        entry.values[frame] = value;
-      }
-  }
-
-  const medians = new Map<string, number>();
-
-  for (const entry of timed) {
-    const sorted = entry.values
-      .filter((value) => !Number.isNaN(value))
-      .toSorted();
-
-    if (sorted.length) medians.set(entry.id, sorted[sorted.length >> 1]!);
-  }
-
-  return {
-    ids: frames.map((item) => item.id),
-    index,
-    intervals,
-    cpu: timed,
-    unattributed,
-    overhead,
-    gpu: [...gpu.values()],
-    gpuAge,
-    gpuUnlinked,
-    counters: [...counters.values()],
-    medians,
+export function recordingLanes(recording: PerformanceRecording) {
+  const cpu = new Map<string, TimingLane>();
+  const gpu = new Map<string, TimingLane>();
+  const unattributed: TimingLane = {
+    id: "unattributed",
+    label: "Unattributed",
+    group: "context",
+    description:
+      "Frame interval outside recorded CPU scopes: waiting and untracked work, not CPU busy time.",
+    values: new Map(),
   };
-}
-
-/** The two counters drawn as lanes: draw calls and objects when present. */
-export function primaryCounters(lanes: Lanes): Lane[] {
-  const preferred = ["draw calls", "objects"].flatMap((label) =>
-    lanes.counters.filter((entry) => entry.label === label).slice(0, 1),
-  );
-
-  return (preferred.length ? preferred : lanes.counters).slice(0, 2);
-}
-
-/** Smaller rises over the median are timer noise, not a likely cause. */
-const likelyFloorMs = 0.05;
-
-/**
- * LIKELY, a heuristic: the scope furthest above its own median across the recording.
- * Null when no scope is above its median in this frame.
- */
-export function likelyScope(lanes: Lanes, at: number) {
-  let best: { label: string; id: string; delta: number } | null = null;
-
-  for (const entry of lanes.cpu) {
-    const value = entry.values[at]!;
-
-    const median = lanes.medians.get(entry.id);
-
-    if (Number.isNaN(value) || median === undefined) continue;
-
-    const delta = value - median;
-
-    if (delta > likelyFloorMs && (!best || delta > best.delta))
-      best = { label: entry.label, id: entry.id, delta };
-  }
-
-  return best;
-}
-
-export interface CaptureMark {
-  rank: number;
-  at: number;
-  id: number;
-  ms: number;
-  near: string;
-}
-
-/** Over-threshold frames this close together are one spike. */
-const spikeFrames = 10;
-
-/**
- * Frames that crossed the capture threshold. In an automatic recording that is the
- * monitor's rule, a cooldown apart. Otherwise every spike counts once: frames over the
- * threshold within ten frames of each other are one spike, kept at its longest frame.
- * Ranked by frame time, longest first.
- */
-export function findCaptures(recording: PerformanceRecording, limit = 50) {
-  const { capture, budget, frames } = recording;
-
-  const automatic = capture.mode === automaticCapture;
-
-  const threshold = capture.thresholdMs ?? budget.frameMs * 2;
-
-  const marks: Omit<CaptureMark, "rank" | "near">[] = [];
-
-  let next = -Infinity;
-
-  frames.forEach((frame, at) => {
-    const trigger = frame.id === capture.triggerFrame;
-
-    if (!trigger && frame.interval <= threshold) return;
-
-    const last = marks.at(-1);
-
-    if (automatic) {
-      if (!trigger && frame.at < next) return;
-
-      next = frame.at + capture.cooldownMs;
-    } else if (last && at - last.at <= spikeFrames) {
-      if (frame.interval > last.ms)
-        Object.assign(last, { at, id: frame.id, ms: frame.interval });
-
-      return;
+  const profiler: TimingLane = {
+    id: "profiler",
+    label: "Profiler",
+    group: "context",
+    description:
+      "Recorded synchronous collection + refresh cost; may overlap scopes. Excludes deferred layout, paint and GPU work.",
+    values: new Map(),
+  };
+  let cpuPeak = recording.budget.frameMs;
+  let gpuPeak = 1;
+  for (const [index, frame] of recording.frames.entries()) {
+    const complete = frame.coverage === "complete" && frame.droppedScopes === 0;
+    const scopes = new Map<string, typeof frame.scopes>();
+    for (const scope of frame.scopes) {
+      const id = JSON.stringify([scope.system, scope.label]);
+      if (!cpu.has(id))
+        cpu.set(id, {
+          id,
+          label: scope.label || scope.system,
+          group: "cpu",
+          description: `${scope.system} · ${scope.label}. Union of matching scope intervals; different lanes may overlap.`,
+          values: new Map(),
+        });
+      const group = scopes.get(id) ?? [];
+      group.push(scope);
+      scopes.set(id, group);
     }
-
-    marks.push({ at, id: frame.id, ms: frame.interval });
-  });
-
-  const ranked = marks
-    .toSorted((a, b) => b.ms - a.ms)
-    .slice(0, limit)
-    .map((mark, i): CaptureMark => {
-      return {
-        at: mark.at,
-        id: mark.id,
-        ms: mark.ms,
-        rank: i + 1,
-        near: nearbyEventLabels(recording, mark.at),
-      };
+    for (const [id, intervals] of scopes) {
+      const value = unionDuration(intervals);
+      cpuPeak = Math.max(cpuPeak, value);
+      cpu.get(id)?.values.set(index, {
+        value,
+        status: complete ? "measured" : "partial",
+        reason: complete
+          ? "Recorded scope intervals"
+          : "Retained scopes only; CPU coverage is incomplete",
+      });
+    }
+    const value = Math.max(0, frame.interval - unionDuration(frame.scopes));
+    unattributed.values.set(index, {
+      value: complete ? value : null,
+      status: complete ? "measured" : "unknown",
+      reason: complete ? unattributed.description : "Complete CPU scope coverage is required",
     });
-
+    const cost = frame.overhead.collectionMs + frame.overhead.refreshMs;
+    const legacy = recording.metadata.importedFromVersion === 1;
+    const knownCost = !legacy && Number.isFinite(cost);
+    profiler.values.set(index, {
+      value: knownCost ? cost : null,
+      status: knownCost ? "measured" : "unknown",
+      reason: legacy
+        ? "Legacy recordings did not retain profiler cost"
+        : knownCost
+          ? profiler.description
+          : "Recorded profiler cost exceeds the numeric range",
+    });
+    cpuPeak = Math.max(cpuPeak, complete ? value : 0, knownCost ? cost : 0);
+  }
+  const gpuFrames = new Map<number, GpuFrame>();
+  const indices = new Map(recording.frames.map((frame, index) => [frame.id, index]));
+  for (const record of recording.gpuTiming?.frames ?? []) {
+    const index = indices.get(record.frameId);
+    if (index === undefined) continue;
+    gpuFrames.set(index, record);
+    const occurrences = new Map<string, number>();
+    for (const pass of record.invocations) {
+      const key = JSON.stringify([pass.kind, pass.label]);
+      const occurrence = (occurrences.get(key) ?? 0) + 1;
+      occurrences.set(key, occurrence);
+      const id = JSON.stringify([pass.kind, pass.label, occurrence]);
+      if (!gpu.has(id))
+        gpu.set(id, {
+          id,
+          label: `${pass.label || "Untitled pass"} ×${occurrence}`,
+          group: "gpu",
+          description: `${pass.kind} · occurrence ${occurrence} of this label within each frame, not a persistent invocation ID. GPU clock.`,
+          values: new Map(),
+        });
+      gpu.get(id)?.values.set(index, {
+        value: pass.milliseconds,
+        status: pass.state === "timed" ? "measured" : pass.state,
+        reason:
+          pass.reason ??
+          (pass.state === "pending" ? "GPU readback pending" : "Recorded GPU duration"),
+      });
+      gpuPeak = Math.max(gpuPeak, pass.milliseconds ?? 0);
+    }
+  }
   return {
-    rule: automatic
-      ? `auto · threshold ${fixed(threshold)} ms · ${capture.beforeFrames} before, ${capture.afterFrames} after`
-      : `${capture.mode} · frames over ${fixed(threshold)} ms`,
-    marks: ranked,
+    cpu: [...cpu.values()],
+    gpu: [...gpu.values()],
+    context: [unattributed, profiler],
+    gpuFrames,
+    cpuCeiling: Math.min(Number.MAX_VALUE, Math.ceil(cpuPeak / 10) * 10),
+    gpuCeiling: Math.ceil(gpuPeak),
+    events: readEvents(recording.events, recording.frames) ?? [],
   };
 }
 
-const safariToken = "Safari",
-  edgeToken = "Edg";
-
-/** The browser and major version from a user agent, e.g. "Chrome 131". */
-function browserName(agent: string | null) {
-  if (!agent) return "browser unknown";
-
-  const match =
-    /(Edg|Firefox|Chrome)\/(\d+)/.exec(agent) ??
-    /Version\/(\d+).*(Safari)/.exec(agent);
-
-  if (!match) return "browser unknown";
-
-  return match[2] === safariToken
-    ? `Safari ${match[1]}`
-    : `${match[1] === edgeToken ? "Edge" : match[1]} ${match[2]}`;
+export function laneValue(
+  lane: TimingLane,
+  index: number,
+  recording: PerformanceRecording,
+  gpuFrames: Map<number, GpuFrame>,
+): LaneValue {
+  const value = lane.values.get(index);
+  if (value) return value;
+  if (lane.group === "gpu") {
+    const record = gpuFrames.get(index);
+    if (!record)
+      return { value: null, status: "missing", reason: "No GPU record linked to this frame" };
+    if (record.inventory === "unknown" || record.omitted > 0)
+      return {
+        value: null,
+        status: "unknown",
+        reason: "Invocation inventory is unknown or has omitted records",
+      };
+    return {
+      value: null,
+      status: "absent",
+      reason: "This invocation was not recorded in the complete inventory",
+    };
+  }
+  const frame = recording.frames[index];
+  return frame?.coverage === "complete" && frame.droppedScopes === 0
+    ? {
+        value: 0,
+        status: "measured",
+        reason: "No matching CPU scope observed in this complete frame",
+      }
+    : { value: null, status: "unknown", reason: "CPU scopes are unavailable or incomplete" };
 }
 
-/** The recording's metadata in one line, as the core exported it. */
-export function environmentLine(recording: PerformanceRecording, lanes: Lanes) {
-  const { metadata }: { metadata: RecordingMetadata } = recording;
-
-  const environment = metadata.environment;
-
-  const viewport = environment.viewport;
-
-  const honesty = timerHonesty(environment);
-
-  const instrumented = [
-    lanes.cpu.length ? "cpu" : "",
-    lanes.gpu.length ? "gpu" : "",
-    lanes.counters.length ? "counters" : "",
-    metadata.devTools ? "devtools" : "",
-  ].filter(Boolean);
-
-  return [
-    `jank.js ${metadata.jankVersion ?? "unknown"}`,
-    metadata.application
-      ? `${metadata.application.name} ${metadata.application.version ?? ""}`.trim()
-      : "app unknown",
-    browserName(environment.userAgent),
-    environment.platform ?? "platform unknown",
-    viewport
-      ? `${viewport.width}×${viewport.height} @${viewport.pixelRatio}`
-      : "viewport unknown",
-    honesty.cpu,
-    honesty.gpu,
-    `instrumented: ${instrumented.length ? instrumented.join(", ") : "frames only"}`,
-  ].join(" · ");
+export function laneGeometry(values: LaneValue[], ceiling: number) {
+  const pitch = 300 / Math.max(1, values.length);
+  let bars = "",
+    missing = "",
+    rejected = "",
+    pending = "",
+    unknown = "",
+    zero = "";
+  let min = Infinity,
+    max = -Infinity;
+  for (const [index, cell] of values.entries()) {
+    const x = (index + 0.5) * pitch;
+    if (cell.value !== null) {
+      min = Math.min(min, cell.value);
+      max = Math.max(max, cell.value);
+      const height = (cell.value / ceiling) * 40;
+      if (height === 0) zero += `M${x - pitch * 0.3},39h${pitch * 0.6}`;
+      else bars += `M${x - pitch * 0.35},40v-${height}h${pitch * 0.7}v${height}Z`;
+    } else if (cell.status === "missing") missing += `M${x - pitch * 0.3},40l${pitch * 0.6},-5`;
+    else if (cell.status === "rejected")
+      rejected += `M${x - pitch * 0.35},34l${pitch * 0.7},6m0,-6l-${pitch * 0.7},6`;
+    else if (cell.status === "pending") pending += `M${x - pitch * 0.3},36h${pitch * 0.6}`;
+    else if (cell.status !== "absent") unknown += `M${x},35v5`;
+  }
+  return {
+    bars,
+    missing,
+    rejected,
+    pending,
+    unknown,
+    zero,
+    quiet: max >= 0 && max <= ceiling * 0.1 && max - min <= ceiling * 0.02,
+  };
 }
-
-const secondsPerMinute = 60;
-
-/** The recording's wall-clock length, in seconds or minutes and seconds. */
-export function span(recording: PerformanceRecording) {
-  const first = recording.frames[0],
-    last = recording.frames.at(-1);
-
-  if (!first || !last) return "0 s";
-
-  const seconds = (last.at - (first.at - first.interval)) / msPerSecond;
-
-  return seconds >= secondsPerMinute
-    ? `${Math.floor(seconds / secondsPerMinute)}m ${Math.round(seconds % secondsPerMinute)}s`
-    : `${seconds.toFixed(1)} s`;
-}
-
-/** A frame count with thousands separators, e.g. "1,200 frames". */
-export const frames = (value: number) => `${count(value)} frames`;

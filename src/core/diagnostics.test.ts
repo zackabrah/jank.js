@@ -53,6 +53,68 @@ describe("exact frame capture", () => {
     expect(frame).toMatchObject({ update: 0, render: Number.MAX_VALUE });
   });
 
+  it("refuses a frame boundary too far away to give a finite interval", () => {
+    const monitor = createDiagnostics(() => 0);
+
+    monitor.beginFrame(-1e308);
+
+    expect(() => monitor.beginFrame(Number.MAX_VALUE)).toThrow(RangeError);
+    expect(monitor.snapshot().frames).toHaveLength(0);
+  });
+
+  it("keeps frame times ordered from the origin whatever the host's timestamps do", () => {
+    const monitor = createDiagnostics(() => 100);
+
+    // A first animation timestamp can precede the monitor's creation.
+    monitor.frame(90, 16, 1, 1);
+    monitor.frame(120, 16, 1, 1);
+    monitor.frame(110, 16, 1, 1);
+    monitor.frame(130, 16, 1, 1);
+
+    expect(monitor.snapshot().frames.map((frame) => frame.at)).toEqual([
+      0, 20, 20, 30,
+    ]);
+
+    monitor.clear();
+    monitor.frame(90, 16, 1, 1);
+
+    expect(monitor.snapshot().frames.map((frame) => frame.at)).toEqual([0]);
+  });
+
+  it("keeps a scope shorter than one clock tick without repeating it", () => {
+    let now = 0;
+
+    const monitor = createDiagnostics(() => now);
+
+    monitor.startRecording();
+    monitor.beginFrame(0);
+
+    const fast = monitor.register("fast", "Fast"),
+      open = monitor.register("open", "Open");
+
+    now = 5;
+    fast.end(fast.begin());
+
+    now = 16;
+
+    // Started on the boundary and still open, so it belongs to the next frame only.
+    const running = open.begin();
+
+    monitor.beginFrame(16);
+
+    now = 32;
+    open.end(running);
+    monitor.beginFrame(32);
+
+    const [first, second] = monitor.snapshot().frames;
+
+    expect(first?.coverage).toBe("complete");
+    expect(first?.scopes).toEqual([
+      { system: "fast", label: "Fast", start: 5, end: 5 },
+    ]);
+    expect(second?.scopes.map((scope) => scope.system)).toEqual(["open"]);
+  });
+
   it("unions nested and overlapping systems and does not invent CPU work in the remainder", () => {
     let now = 0;
 

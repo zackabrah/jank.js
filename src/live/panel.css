@@ -1,0 +1,7 @@
+@import "../shadow.css";
+@source "./*.tsx";
+@source "../capture/*.tsx";
+@source "../loading/*.tsx";
+@source "../measurement-value.tsx";
+@source "../ui";
+@source "../compare/*.tsx";

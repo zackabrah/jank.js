@@ -2,13 +2,15 @@
 
 ## Ownership
 
-Use one diagnostics monitor and one panel per container in the current document. The panel (jank.js) is a guest: it is `position: fixed` in a corner of the viewport, overlays the page without resizing its renderer, captures no keyboard shortcuts unless focused and never prevents default on host events. Creating a second panel in the same container throws; dispose the first before replacing it. Different containers can have independent monitors.
+Use one diagnostics monitor per application. The panel is a guest: by default it is `position: fixed` in a corner of the viewport, overlays the page without resizing it, and renders inside its own Shadow DOM, so page styles and panel styles cannot affect each other. Importing any entry is safe without a DOM; creating the panel requires a browser document.
 
-The host owns requestAnimationFrame, renderer settings, clocks and GPU resources. jank.js never creates a second animation loop. Call `monitor.beginFrame(at)` at the start of an application frame, `monitor.endFrame(updateMs, renderMs)` after CPU submission, and `tray.refresh(at)` from the same loop. The next `beginFrame` seals the preceding interval, so the final pending frame is deliberately excluded from an immediate export. Legacy `frame(at, interval, update, render)` still collects pacing, with exact scope attribution unavailable; do not mix the two APIs. All arguments are milliseconds on the same monotonic clock as `performance.now()` / the requestAnimationFrame timestamp. Supplying a custom diagnostics clock requires frame timestamps from that same clock.
+The host owns requestAnimationFrame, renderer settings, clocks and GPU resources. jank.js never creates a second animation loop. Call `monitor.beginFrame(at)` at the start of an application frame, `panel.refresh(at)` straight after it, and `monitor.endFrame(update, render)` when the work is done. `beginFrame` is what seals the previous frame, so refreshing there observes that frame before the next one's work starts. A comparison switches workloads at that boundary too.
 
-`tray.dispose()` removes the UI and listeners and is safe to repeat. A late `refresh` is ignored. It does not dispose the host monitor, stop its recording, change renderer settings, or release host resources. Dispose channels and the monitor when their owner ends. GPU toggles and debug settings stay under the host's ownership.
+`panel.destroy()` removes the UI and listeners and is safe to repeat. A late `refresh` is ignored. It does not dispose the host monitor, change renderer settings or release host resources. It does stop a running comparison and discard unsaved capture state. Dispose the monitor separately with `monitor.dispose()`.
 
-Importing the library is safe without a DOM; creating the tray or bounds overlay requires a browser. Shadow-root and cross-document/iframe mounting are not supported by this initial release.
+IDs must be unique within a monitor. Timed systems appear as CPU rows in registration order; every system's values appear under Counters.
+
+Recordings can contain application-provided labels and values. There is no network transport: exports download locally and the viewer reads files in the browser. Strip anything private before sharing a recording.
 
 ## Systems, events, and recording
 
@@ -27,49 +29,58 @@ const recording = monitor.export();
 physics.dispose();
 ```
 
-IDs must be unique within a monitor. Timed systems appear as CPU rows in registration order; every system's values appear under COUNTERS. A system that only supplies values and is never timed has no CPU row. Readers return number, string, boolean or null values. Providers should be cheap and supply only data the host intends to display/export. Detailed channel timing activates while expanded, recording, armed for spike capture, or emitting DevTools tracks. Disabled `begin()` returns a sentinel which `end()` safely ignores.
+IDs must be unique within a monitor. Timed systems appear as CPU rows in registration order; every system's values appear under **Counters**. A system that only supplies values and is never timed has no CPU row. Readers return number, string, boolean or null values. Providers should be cheap and supply only data the host intends to display/export. `createPerformancePanel` keeps detailed channel timing on while it is mounted. Without it, timing activates after `monitor.setExpanded(true)`, while recording, while armed for capture, or while emitting DevTools tracks. Disabled `begin()` returns a sentinel which `end()` safely ignores.
 
-Recordings can contain application-provided labels and values. There is no network transport; EXPORT JSON downloads locally and OPEN IN VIEWER only posts to a window the panel opened. FREEZE freezes displayed measurements, not collection or the application. The export contains the collected/live data rather than a screenshot of the frozen view.
+Recordings can contain application-provided labels and values. There is no network transport: exports download locally and the viewer reads files in the browser. **Freeze** holds displayed measurements, not collection or the application. The export contains the collected/live data rather than a screenshot of the frozen view.
 
-## Optional sources
+## Panel options
 
-`createPerformanceTray` accepts an options object:
+`createPerformancePanel` from `jank.js/panel` accepts an options object. Only `shell` and `monitor` are required:
 
 ```js
-const tray = createPerformanceTray({
-  shell,
+import { createPerformancePanel } from "jank.js/panel";
+
+const panel = createPerformancePanel({
+  shell: document.body, // the panel is added to this element
   monitor,
-  gpu, // PerformanceGpuSource
-  culling, // PerformanceCullingSource
-  temporal, // PerformanceTemporalSource
-  preparation, // PerformancePreparationSource
-  mode: "line", // "line" (default), "mini" or "full"
-  corner: "top-right", // or "top-left", "bottom-right", "bottom-left"
-  viewerUrl: "/viewer/", // optional: where OPEN IN VIEWER sends recordings
-  capture: { thresholdMs: 33.3, beforeFrames: 120, afterFrames: 60 },
+  corner: "top-right", // or "top-left", "bottom-right", "bottom-left"; "none" renders inline
+  gpu, // an adapter's source, or a function returning the latest reading
+  capture, // frame-linked GPU evidence for recordings; see jank.js/gpu
+  loading, // fills the Loading tab, which is hidden without it
+  instrumentation, // extra host controls for Capture, such as GPU timing
+  comparison, // adds the Compare tab; see below
+  onOpenCapture, // replaces the built-in viewer, which loads only when first opened
 });
 ```
 
-Omit unsupported sources and their sections stay hidden. These are extension interfaces, not automatic instrumentation for every renderer. Public types are exported from `jank.js`.
+The result is `{ refresh(at, force), destroy(), capture, comparison }`. `capture` is the capture controller, for host-side actions such as saving an active recording when your renderer fails. Omit a source and its section stays hidden or reads as unavailable; nothing is estimated in its place.
 
-`mode` is the size the panel opens at the first time. After that it reopens at the size the user last chose, remembered per origin in `localStorage` under `jank.js:panel-mode`. The panel collects CPU scopes while it is MINI or FULL (`setExpanded(true)`), not while it is one line.
+The panel opens full size and offers mini and one-line views. Automatic capture rules are set in the Capture tab.
 
-`viewerUrl` names a recording viewer page the application hosts, such as the built `viewer/` page. **OPEN IN VIEWER** opens it with `window.open`; the viewer posts `{ type: "jank.js:viewer-ready" }` to its opener, and the panel replies to that window only with `{ type: "jank.js:recording", name, json }`. The viewer validates the JSON as it would a file. Without `viewerUrl` those buttons are disabled and **EXPORT JSON** remains.
+## A/B comparison
 
-`capture` sets the window AUTO CAPTURE arms the monitor with; unset values use the monitor's defaults (threshold twice the budget, 120 frames before and after, 5 s cooldown). The user can change them in the CAPTURE tab. The panel keeps up to ten completed automatic captures in memory; the monitor itself holds only the latest.
+Pass `comparison` to add the Compare tab. Report two variants and a synchronous way to switch between them. Save your own settings first and put them back in `restore`, which runs however the run ends:
 
-| Source           | Read contract                                      | Host controls                                                  |
-| ---------------- | -------------------------------------------------- | -------------------------------------------------------------- |
-| GPU              | `read(): GpuProfile \| undefined`                  | `setEnabled(boolean)`                                          |
-| Visibility       | `read(): CullingDiagnostics \| undefined`          | `setEnabled`, `setDebugBounds`, optional `setInstancesEnabled` |
-| Temporal history | `read(): TemporalDiagnostics \| undefined`         | `setEnabled`, `setDebugView`                                   |
-| Loading          | `read(): PreparationSnapshot \| null`, `history()` | Host owns recording scopes                                     |
+```js
+const shadows = getShadows();
+const panel = createPerformancePanel({
+  shell: document.body,
+  monitor,
+  comparison: {
+    change: "shadows", // the setting under test; other differences are reported as confounds
+    variants: {
+      A: { label: "Shadows on", settings: { shadows: true, objects: 500 } },
+      B: { label: "Shadows off", settings: { shadows: false, objects: 500 } },
+    },
+    activate: (variant) => setShadows(variant === "A"),
+    restore: () => setShadows(shadows),
+  },
+});
+```
 
-Return detached snapshots, especially loading snapshots which may be retained while frozen. Readers can return unavailable states during initialization. Reader exceptions are contained; setter errors remain the host's responsibility.
+Runs alternate AB, BA, AB… over 1–5 pairs, with 0–10 s warm-up and 0.1–30 s measurement per trial. Warm-up is excluded. Capture is locked during a run. Results use medians of per-trial values with equal trial weight and the observed range across pairs: a quick estimate, not a significance test. Verdicts have no minimum effect size, so read the size of the difference shown beside each label. If your host fails, call `panel.comparison.fail(reason)` so the export records why it ended. Finished trials stay exportable, up to the 32 MiB file limit.
 
-A GPU source may carry an optional `label` (for example `"three.js webgpu"`), which the panel shows as the source's name; it defaults to `renderer`. GPU providers must use asynchronous timestamps, preserve null for unavailable measurements, and identify samples by renderer frame number. `currentFrame` is the renderer's current frame, `sampleFrame` is the frame that was timed, and `sampleAgeFrames` describes its age. Samples may arrive late. jank.js deduplicates them. Supply `diagnosticFrame` from `beginFrame` for exact inspector correlation and capture-window filtering. Without that link, renderer frame numbers are never assumed to match CPU frame IDs; such samples remain unlinked. Unsupported timestamp queries must be reported as unsupported, never replaced with CPU durations. See `GpuProfile` for ready, pending, disabled, unsupported and error states.
-
-Visibility's main/shadow/reflection counts describe the views supplied by the host. The optional `createCullingBoundsOverlay(container)` is refreshed explicitly with a visibility snapshot. Its projector expects a column-major world-to-clip matrix with **WebGPU depth 0 ≤ z ≤ w**. Convert a WebGL projection before using that overlay. Debug drawing is bounded to 128 boxes and owns no GPU resources.
+See [the Three.js playground](three-playground.md#ab-comparison) for a complete host, and [the performance notes](performance.md) for the runner's overhead.
 
 ## Application-defined loading stages
 
@@ -100,13 +111,13 @@ renderer.render(scene, camera);
 rendering.end(start);
 ```
 
-This measures CPU submission and exposes calls, triangles, points, lines, geometry count and texture count. It does not measure GPU time or memory bytes. For multiple render calls per application frame, set `renderer.info.autoReset = false` and reset the counters once at the start of your frame; call `tray.refresh` after all submissions. The host owns that policy.
+This measures CPU submission and exposes calls, triangles, points, lines, geometry count and texture count. It does not measure GPU time or memory bytes. For multiple render calls per application frame, set `renderer.info.autoReset = false` and call `panel.refresh` first and reset the counters straight after it, so the panel reads the finished frame. The host owns that policy.
 
 ## Recording and custom views
 
 `monitor.export()` returns a detached version 2 recording. `serializeRecording(recording)` validates it and enforces a 32 MiB file limit; `parseRecording(text)` validates imports and migrates version 1 without inventing missing metadata. Handle `RecordingFormatError` in your UI. Optional host sections can remain in the downloaded JSON, but the generic parser/viewer intentionally reads only its supported schema.
 
-Use `createRecordingViewModel()` for new viewer designs, and `monitor.snapshot()` for live panels. `monitor.measureRefresh(() => renderView())` measures synchronous custom view work while subtracting nested collection cost. The built-in panel already does this; do not wrap its refresh a second time. See [data model and custom views](data-model.md) for contracts, controls and empty/error states.
+Use `monitor.snapshot()` for custom live views, and `inspectFrame` and `recordingSummary` for recordings. `monitor.measureRefresh(() => renderView())` measures synchronous custom view work while subtracting nested collection cost. The built-in panel already does this; do not wrap its refresh a second time. See [data model and custom views](data-model.md) for contracts, controls and empty/error states.
 
 ```js
 monitor.setTargetFps(60);
@@ -139,20 +150,22 @@ const gpu = createThreeWebGpuSource(renderer, {
   revision: REVISION,
   onSample: (profile) => monitor.observeGpu(profile),
 });
-// Pass gpu to createPerformanceTray({ shell, monitor, gpu }).
+// Pass gpu to createPerformancePanel({ shell, monitor, gpu }).
 renderer.setAnimationLoop((at) => {
   const id = monitor.beginFrame(at);
+  panel.refresh(at);
   const start = performance.now();
   renderer.render(scene, camera);
   monitor.endFrame(0, performance.now() - start);
   gpu.captureFrame(id);
-  tray.refresh(at);
 });
 // At shutdown: await renderer.setAnimationLoop(null); gpu.dispose();
-// Then dispose the tray, monitor and host-owned renderer/resources.
+// Then destroy the panel, dispose the monitor and release host-owned resources.
 ```
 
 Use `renderer.setAnimationLoop` so Three advances its native frame ID. The adapter exclusively owns `resolveTimestampsAsync("render")`; do not resolve the same renderer's render timestamps elsewhere. It resolves asynchronously with one request in flight, rejects stale cached results, and links accepted results to the originating diagnostics frame. Disabling or disposing invalidates in-flight results. Disposal restores the original tracking setting when still owned by the adapter, without disposing the renderer.
+
+On a display slower than the budget, this adapter reads as over budget and a Sustained capture rule will fire, because it can't show that it timed all the GPU work. To have readings follow the display's pace, use [frame-linked GPU evidence](gpu-measurements.md) and declare a complete inventory.
 
 The reported value is the **sum of render-pass durations** for one completed renderer frame. Queue span stays null. There are no individual named render-pass or compute timings in this adapter, and timestamps may be delayed or absent. For this intentionally small integration, [local hardware evidence](verification/webgpu.json) does not certify other devices. The current upstream [WebGPURenderer documentation](https://threejs.org/docs/pages/WebGPURenderer.html) describes the renderer; this adapter's pinned source contract remains authoritative for compatibility.
 
@@ -165,9 +178,10 @@ import { createWebGl2GpuSource } from "jank.js/adapters/webgl2";
 const gpu = createWebGl2GpuSource(gl, {
   onSample: (profile) => monitor.observeGpu(profile),
 });
-// Pass gpu to createPerformanceTray({ shell, monitor, gpu }).
+// Pass gpu to createPerformancePanel({ shell, monitor, gpu }).
 function frame(at) {
   const id = monitor.beginFrame(at);
+  panel.refresh(at);
   const start = performance.now();
   gpu.beginPass("shadows");
   drawShadows();
@@ -177,37 +191,25 @@ function frame(at) {
   gpu.endPass();
   monitor.endFrame(0, performance.now() - start);
   gpu.captureFrame(id);
-  tray.refresh(at);
   requestAnimationFrame(frame);
 }
-// At shutdown: gpu.dispose(), then the tray and monitor. The context stays yours.
+// At shutdown: gpu.dispose(), panel.destroy(), monitor.dispose(). The context stays yours.
 ```
 
 Passes run one after another: WebGL2 allows one timer query at a time, so beginning a pass while another is open throws, as does capturing a frame with a pass still open. Results arrive a few frames late and are linked to the diagnostics frame that drew them. Results read during a disjoint event, such as a GPU power-state change, are dropped and counted. A lost context reports an error and recovers on the first frame after it is restored. Each frame times at most 32 passes, and at most 64 frames wait for results; anything beyond is counted as omitted or dropped. Disposal deletes only the adapter's queries.
 
+Over-budget readings and capture rules keep using the budget with this adapter, for the same reason as the WebGPU adapter above. `jank.js/gpu` gives the same timer queries with a declared inventory.
+
 A timer query measures elapsed GPU time between its start and end, which can include other work the GPU interleaves, such as the page's compositor. Read pass times as an upper bound on the pass's own cost.
 
-## Appearance and theming
+## Appearance
 
-Import `jank.js/style.css` for the panel. It is self-contained: every rule is scoped under the panel root (`.jank`, with junkui's `.jl` for its shared controls) and sets the properties it needs (font, colours, box sizing, line height), so the host's CSS does not restyle the panel and the panel does not leak into the host. The panel and offline viewer use system monospace fonts with no font downloads. Existing `jank.js/font.css` imports still resolve to an empty compatibility stylesheet and can be removed. Override `--jank-font` to use a host-provided font.
+The panel and viewer style themselves inside a Shadow DOM, so there is nothing to import and nothing leaks either way. They use system fonts and follow the design tokens in `src/theme.css`, in dark and light themes. `jank.js/style.css` and `jank.js/font.css` remain as empty stylesheets so existing imports keep working. The `--jank-*` theming tokens from 0.3 are gone.
 
-The jank.js tokens are the theming surface. They are defined on `.jank` in `src/performance/tokens.css`, which `style.css` includes. Override any of them with a rule on `.jank` that loads after the stylesheet:
-
-| Token                                                                       | Default             | Used for                                                    |
-| --------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------- |
-| `--jank-ink`                                                                | `#0a0a0a`           | Panel background                                            |
-| `--jank-line`, `--jank-line-strong`, `--jank-control`                       | greys               | Section rules, the panel outline and inputs, button borders |
-| `--jank-graph`, `--jank-faint`, `--jank-dim`, `--jank-muted`, `--jank-soft` | greys               | Bars, leaders, labels, secondary values, ghost series       |
-| `--jank-text`, `--jank-bright`                                              | `#e8e8e8`, `#fff`   | Values, inverted controls, the newest frame                 |
-| `--jank-miss`                                                               | `#f26032`           | Over budget, and nothing else                               |
-| `--jank-row`                                                                | `#161616`           | The one highlighted row                                     |
-| `--jank-font`                                                               | Platform monospace  | The only typeface                                           |
-| `--jank-panel-w`, `--jank-mini-w`, `--jank-line-h`, `--jank-inset`          | 360, 240, 28, 20 px | Sizes and the distance from the docked corner               |
-
-Text sizes, tracking, padding and control heights have tokens too; see `tokens.css`. Set `--jank-z-index` on the container to change the panel's stacking order (default 30). Dark is the only theme: the panel is a measuring instrument, and orange keeps one meaning.
-
-An engine or editor integration can map its native renderer diagnostics to these public types and keep its own layout around the panel in its own CSS.
+V1 is designed for desktop widths. The full panel is 360 px wide, and the viewer needs a desktop-sized window.
 
 ## Hosting the recording viewer
 
-The package export `jank.js/viewer.html` is a self-contained offline viewer. Copy it to a same-origin static route such as `/viewer/index.html`, and set `viewerUrl: "/viewer/"` when creating the panel. The panel hands the recording to that window locally; no upload service is required. Serve it from your application’s own base path when hosted below a directory prefix.
+The panel's **Open** button loads the viewer on demand, from `jank.js/viewer`, as a full-window dialog in your page. To handle that yourself, pass `onOpenCapture`.
+
+The package export `jank.js/viewer.html` is a separate self-contained page: one file, with nothing fetched and nothing uploaded. Copy it anywhere, or open it directly, then choose a recording or comparison file. It reads files up to 32 MiB.

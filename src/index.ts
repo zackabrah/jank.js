@@ -12,16 +12,6 @@ export type {
   DiagnosticValues,
 } from "./core/diagnostics.ts";
 
-export { createPerformanceTray } from "./performance/tray.ts";
-
-export type {
-  PerformanceTrayOptions,
-  PerformanceGpuSource,
-  PerformanceCullingSource,
-  PerformanceTemporalSource,
-  PerformancePreparationSource,
-} from "./performance/tray.ts";
-
 export {
   createPreparationProfiler,
   measurePreparation,
@@ -61,23 +51,25 @@ export type {
 export type { DiagnosticsOptions } from "./core/diagnostics.ts";
 
 export type {
-  PerformanceRecording,
   DiagnosticScope,
   DiagnosticSystem,
   DiagnosticOverhead,
   FrameBudget,
-  CaptureStatus,
   AutoCaptureOptions,
   RecordingMetadata,
   RecordingEnvironment,
 } from "./core/recording-types.ts";
 
+export type { CaptureStatus, PerformanceRecording } from "./recording/types.ts";
+
+// The superset of the collector's own parser: it keeps capture rules, episode context and GPU
+// evidence, which panel exports carry and the collector's parser would silently drop.
 export {
   parseRecording,
   serializeRecording,
   RecordingFormatError,
   MAX_RECORDING_BYTES,
-} from "./core/recording.ts";
+} from "./recording/format.ts";
 
 export {
   inspectFrame,
@@ -91,9 +83,3 @@ export type { DiagnosticTraceSink } from "./core/devtools.ts";
 
 export { estimateTimerResolution } from "./core/environment.ts";
 
-export { createRecordingViewModel } from "./viewer/model.ts";
-
-export type {
-  RecordingViewModel,
-  RecordingViewerState,
-} from "./viewer/model.ts";

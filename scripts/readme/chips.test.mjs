@@ -2,11 +2,17 @@ import { test } from "node:test";
 
 import assert from "node:assert/strict";
 
-import { readFileSync } from "node:fs";
-
 import { chip, engineCounts, themeTokens, unitCount } from "./chips.mjs";
 
-const theme = themeTokens(readFileSync("src/ui/junkui.css", "utf8"));
+const theme = themeTokens(`
+  --jl-ink: #0a0a0a;
+  --jl-control: #3a3a3a;
+  --jl-text: #e8e8e8;
+  --jl-green: #00fd00;
+  --jl-size-label: 11px;
+  --jl-track-label: 0.12em;
+  --jl-font: ui-monospace, Menlo, Consolas, monospace;
+`);
 
 /** A Playwright JSON report with one test per browser and spec file, all with one status. */
 const report = (

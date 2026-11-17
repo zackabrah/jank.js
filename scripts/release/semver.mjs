@@ -17,10 +17,16 @@ export function bumpKind(messages) {
   return bump.patch;
 }
 
-/** Applies one major, minor or patch bump to a stable x.y.z version. */
+/** Promotes an RC to its stable target; otherwise applies the requested bump. */
 export function bumpVersion(version, kind) {
-  if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
-    throw new Error(`Expected stable semantic version, got ${version}`);
+  const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-rc\.(0|[1-9]\d*))?$/.exec(version);
+
+  if (!match)
+    throw new Error(`Expected stable or RC semantic version, got ${version}`);
+
+  if (!Object.values(bump).includes(kind)) throw new Error(`Unknown bump: ${kind}`);
+
+  if (match[4] !== undefined) return `${match[1]}.${match[2]}.${match[3]}`;
 
   const [major, minor, patch] = version.split(".").map(Number);
 
@@ -28,9 +34,7 @@ export function bumpVersion(version, kind) {
 
   if (kind === bump.minor) return `${major}.${minor + 1}.0`;
 
-  if (kind === bump.patch) return `${major}.${minor}.${patch + 1}`;
-
-  throw new Error(`Unknown bump: ${kind}`);
+  return `${major}.${minor}.${patch + 1}`;
 }
 
 /** Applies one bump per PR merged into main, in order, skipping repeats; returns the final version and each step. */

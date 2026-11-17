@@ -1,175 +1,93 @@
-import { buildInfo } from "../core/build-info.ts";
+import { expect, test } from "vitest";
+import { gpuFixture } from "../gpu/fixtures.ts";
+import { recordingFixture } from "../recording/fixtures.ts";
+import { laneGeometry, laneValue, recordingLanes } from "./lanes.ts";
 
-import { describe, expect, it } from "vitest";
+test("CPU lanes merge repeated overlapping scopes and context subtracts their union only with complete coverage", () => {
+  const recording = recordingFixture(3);
+  const first = recording.frames[0];
+  const second = recording.frames[1];
+  if (!first || !second) throw new Error("Missing fixture");
+  first.scopes = [
+    { system: "work", label: "Update", start: 0, end: 8 },
+    { system: "work", label: "Update", start: 4, end: 12 },
+    { system: "child", label: "Update", start: 3, end: 5 },
+  ];
+  second.coverage = "truncated";
+  second.droppedScopes = 3;
+  const model = recordingLanes(recording);
+  const [work, child] = model.cpu;
+  const [unattributed, profiler] = model.context;
+  if (!work || !child || !unattributed || !profiler) throw new Error("Missing lanes");
+  expect(work.values.get(0)?.value).toBe(12);
+  expect(child.values.get(0)?.value).toBe(2);
+  expect(unattributed.values.get(0)?.value).toBe(4);
+  expect(unattributed.values.get(1)?.value).toBeNull();
+  expect(laneValue(work, 1, recording, model.gpuFrames).status).toBe("unknown");
+  expect(laneValue(work, 2, recording, model.gpuFrames).value).toBe(0);
+  first.overhead = { collectionMs: Number.MAX_VALUE, refreshMs: Number.MAX_VALUE };
+  expect(recordingLanes(recording).context[1]?.values.get(0)?.value).toBeNull();
+  recording.metadata.importedFromVersion = 1;
+  expect(recordingLanes(recording).context[1]?.values.get(0)?.value).toBeNull();
+});
 
-import { createDiagnostics } from "../core/diagnostics.ts";
-
-import { parseRecording, serializeRecording } from "../core/recording.ts";
-
-import { eventsNear } from "../core/inspection.ts";
-
-import {
-  buildLanes,
-  environmentLine,
-  findCaptures,
-  likelyScope,
-  primaryCounters,
-  span,
-} from "./lanes.ts";
-
-/** A recorded session on a synthetic clock: 16 ms frames with 2 ms of nested work. */
-function session(automatic = false) {
-  let now = 0;
-
-  const monitor = createDiagnostics({
-    now: () => now,
-    application: { name: "lane fixture", version: "1.0" },
+test("GPU lanes use explicit frame links and distinguish missing, zero, rejection, pending and absent invocations", () => {
+  const recording = recordingFixture(6);
+  recording.frames.forEach((frame, index) => {
+    frame.id = 100 + index * 2;
   });
-
-  const physics = monitor.register("physics", "Physics", () => ({
-    objects: 10 + Math.floor(now / 100),
-    drawCalls: 3,
-  }));
-
-  monitor.register("hud", "HUD counters", () => ({ pending: 2 }));
-
-  if (automatic)
-    monitor.armCapture({
-      thresholdMs: 30,
-      beforeFrames: 3,
-      afterFrames: 3,
-      cooldownMs: 0,
-    });
-  else monitor.startRecording();
-
-  const frame = (interval: number, work: number) => {
-    const id = monitor.beginFrame(now);
-
-    const outer = physics.begin();
-
-    now += work / 2;
-
-    const inner = physics.begin();
-
-    now += work / 2;
-
-    physics.end(inner);
-    physics.end(outer);
-
-    now += interval - work;
-
-    return id;
+  const zero = gpuFixture(100);
+  const repeated = zero.invocations[0];
+  if (!repeated) throw new Error("Missing invocation");
+  zero.invocations.push({ ...repeated, id: "second", milliseconds: 4, startMs: 0, endMs: 4 });
+  const unknown = gpuFixture(108);
+  unknown.inventory = "unknown";
+  unknown.invocations = [];
+  const empty = gpuFixture(110);
+  empty.invocations = [];
+  recording.gpuTiming = {
+    version: 1,
+    frames: [zero, gpuFixture(104, "rejected"), gpuFixture(106, "pending"), unknown, empty],
   };
-
-  const spikes = new Map([
-    [20, 40],
-    [24, 40],
-    [60, 36],
+  const model = recordingLanes(recording);
+  const [lane, other] = model.gpu;
+  if (!lane || !other) throw new Error("Missing GPU lanes");
+  const values = recording.frames.map((_, index) =>
+    laneValue(lane, index, recording, model.gpuFrames),
+  );
+  expect(values.map((cell) => cell.status)).toEqual([
+    "measured",
+    "missing",
+    "rejected",
+    "pending",
+    "unknown",
+    "absent",
   ]);
+  expect(values[0]?.value).toBe(0);
+  expect(values[2]?.reason).toBe("GPU counter reset");
+  expect(other.label).toBe("Scene ×2");
+  expect(other.values.get(0)?.value).toBe(4);
+  const geometry = laneGeometry(values, model.gpuCeiling);
+  expect(geometry.zero).not.toBe("");
+  expect(geometry.bars).toBe("");
+  expect(geometry.missing).not.toBe("");
+  expect(geometry.rejected).not.toBe("");
+  expect(geometry.pending).not.toBe("");
+  expect(geometry.unknown).not.toBe("");
+});
 
-  for (let i = 0; i < 80; i++) {
-    if (i === 20) monitor.event("wave 3");
-
-    const id = frame(spikes.get(i) ?? 16, i === 20 ? 30 : 2);
-
-    if (i % 10 === 0)
-      monitor.observeGpu({
-        diagnosticFrame: id,
-        available: true,
-        enabled: true,
-        status: "ready",
-        currentFrame: i + 4,
-        sampleFrame: i,
-        sampleAgeFrames: 4,
-        gpuMilliseconds: null,
-        passes: [{ label: "opaque", milliseconds: 4 }],
-        droppedFrames: 0,
-        truncatedPasses: 0,
-        error: null,
-      });
-  }
-
-  monitor.beginFrame(now);
-
-  return parseRecording(serializeRecording(monitor.export()));
-}
-
-describe("viewer lanes", () => {
-  it("draws timed systems exactly per frame and places periodic data where it was taken", () => {
-    const recording = session();
-
-    const lanes = buildLanes(recording);
-
-    // HUD only reports counters, so it has no CPU lane.
-    expect(lanes.cpu.map((lane) => lane.label)).toEqual(["Physics"]);
-
-    const at = lanes.index.get(recording.frames[20]!.id)!;
-
-    // Nested physics scopes count once: 30 ms of work in a 40 ms frame.
-    expect(lanes.cpu[0]!.values[at]).toBeCloseTo(30);
-    expect(lanes.unattributed[at]).toBeCloseTo(10);
-    expect(lanes.medians.get("physics")).toBeCloseTo(2);
-
-    const gpuAt = lanes.gpu[0]!.values.findIndex(
-      (value) => !Number.isNaN(value),
-    );
-
-    expect(lanes.gpu[0]!.label).toBe("opaque");
-    expect(lanes.gpuAge[gpuAt]).toBe(4);
-    expect(
-      lanes.gpu[0]!.values.filter((value) => !Number.isNaN(value)).length,
-    ).toBe(8);
-    expect(primaryCounters(lanes).map((lane) => lane.label)).toEqual([
-      "draw calls",
-      "objects",
-    ]);
-
-    // Counters exist only at the frames a periodic sample was taken.
-    const sampled = lanes.counters[0]!.values.filter(
-      (value) => !Number.isNaN(value),
-    );
-
-    expect(sampled.length).toBe(recording.samples.length);
-    expect(likelyScope(lanes, at)).toMatchObject({ label: "Physics" });
-    expect(likelyScope(lanes, at)?.delta).toBeCloseTo(28);
-    expect(likelyScope(lanes, 5)).toBeNull();
-  });
-
-  it("lists every spike once in a manual recording and the monitor's captures in an automatic one", () => {
-    const manual = findCaptures(session());
-
-    expect(manual.rule).toBe("manual · frames over 33.3 ms");
-
-    // Frames 20 and 24 are one spike; frame 60 is another. Longest first.
-    expect(manual.marks.map((mark) => [mark.rank, mark.ms])).toEqual([
-      [1, 40],
-      [2, 36],
-    ]);
-    expect(manual.marks[0]!.near).toBe("+ wave 3");
-
-    const automatic = session(true);
-
-    const captured = findCaptures(automatic);
-
-    expect(captured.rule).toBe("auto · threshold 30.0 ms · 3 before, 3 after");
-    expect(captured.marks[0]!.id).toBe(automatic.capture.triggerFrame);
-  });
-
-  it("states the environment and events as recorded", () => {
-    const recording = session();
-
-    const lanes = buildLanes(recording);
-
-    const line = environmentLine(recording, lanes);
-
-    expect(line).toContain(`jank.js ${buildInfo.version}`);
-    expect(line).toContain("lane fixture 1.0");
-    expect(line).toContain("isolation unknown · cpu timer unknown");
-    expect(line).toContain("instrumented: cpu, gpu, counters");
-    expect(span(recording)).toMatch(/^\d+\.\d s$/);
-
-    const events = eventsNear(recording, 20);
-
-    expect(events.find((event) => event.label === "wave 3")?.offset).toBe(-1);
-  });
+test("events keep shared interval boundary rules and quiet lanes do not hide a spike", () => {
+  const recording = recordingFixture(3);
+  recording.events = [
+    { at: 16, label: "Boundary", detail: "belongs to the second frame" },
+    { at: -1, label: "Before", detail: "unmatched" },
+  ];
+  const model = recordingLanes(recording);
+  expect(model.events.map((event) => event.frameIndex)).toEqual([-1, 1]);
+  const cell = (value: number) => ({ value, status: "measured" as const, reason: "Test" });
+  expect(laneGeometry([cell(0.2), cell(0.3)], 70).quiet).toBe(true);
+  expect(laneGeometry([cell(0.2), cell(40)], 70).quiet).toBe(false);
+  expect(laneGeometry([{ value: null, status: "unknown", reason: "Not measured" }], 70).quiet).toBe(
+    false,
+  );
 });

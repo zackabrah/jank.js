@@ -1,21 +1,28 @@
 import { defineConfig } from "@playwright/test";
 
-// JANK on a phone keypad: a port of its own, so other local preview servers don't collide.
-const port = 5265;
-
-const origin = `http://127.0.0.1:${port}`;
+const { CI } = process.env;
 
 export default defineConfig({
   testDir: "./e2e",
-  workers: 1,
-  retries: 0,
-  // The JSON results feed the CI job summary (scripts/ci/summary.mjs).
-  reporter: [["list"], ["json", { outputFile: "artifacts/e2e/results.json" }]],
+  fullyParallel: true,
+  workers: 2,
+  forbidOnly: !!CI,
+  retries: CI ? 1 : 0,
+  // Hosted macOS runners have 3 cores and render in software, so everything can run far slower.
+  timeout: CI ? 120_000 : 30_000,
+  expect: { timeout: CI ? 20_000 : 5_000 },
+  globalTimeout: (CI ? 40 : 15) * 60_000,
+  reporter: [
+    ["list"],
+    ["html", { open: "never" }],
+    ["json", { outputFile: "artifacts/e2e/results.json" }],
+  ],
   use: {
-    headless: true,
-    baseURL: origin,
+    baseURL: "http://127.0.0.1:4178",
     viewport: { width: 1440, height: 1000 },
+    colorScheme: "dark",
     trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
@@ -23,8 +30,9 @@ export default defineConfig({
     { name: "webkit", use: { browserName: "webkit" } },
   ],
   webServer: {
-    command: `pnpm exec vite preview --outDir dist/viewer --host 127.0.0.1 --port ${port} --strictPort`,
-    url: `${origin}/viewer/`,
+    command: "pnpm dev --host 127.0.0.1 --port 4178 --strictPort",
+    url: "http://127.0.0.1:4178/checks/live.html",
     reuseExistingServer: false,
+    timeout: 30_000,
   },
 });

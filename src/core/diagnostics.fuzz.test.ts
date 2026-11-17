@@ -74,6 +74,7 @@ const command = fc.oneof(
       "arm" as const,
       "disarm" as const,
       "clear" as const,
+      "reset" as const,
       "expand" as const,
       "collapse" as const,
     ),
@@ -154,6 +155,7 @@ describe("monitor under random use", () => {
           else if (next.kind === "arm") monitor.armCapture();
           else if (next.kind === "disarm") monitor.disarmCapture();
           else if (next.kind === "clear") monitor.clear();
+          else if (next.kind === "reset") monitor.resetFrame();
           else monitor.setExpanded(next.kind === "expand");
         }
 

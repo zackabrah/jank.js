@@ -17,7 +17,7 @@ The [user manual](user-manual.md) describes the live panel and recording viewer.
 | One-file offline viewer         | `OPEN RECORDING VIEWER.html` imports a local JSON without network requests.                                                                                               |
 | Timer and environment context   | Every v2 recording stores CPU timer observations, isolation status, browser/platform, concurrency, viewport and application/version metadata. Unknown values remain null. |
 
-Also implemented: manual recording, a bounded rolling history, automatic spike windows with cooldown, configurable FPS budgets, frame/range inspection, v1 migration, strict import validation and lifecycle cleanup. Existing optional renderer counters, loading, visibility and temporal sources remain available through the tray's host interfaces.
+Also implemented: manual recording, a bounded rolling history, automatic spike windows with cooldown, configurable FPS budgets, frame/range inspection, v1 migration, strict import validation and lifecycle cleanup. Loading comes through the panel's `loading` option, and renderer counters and other host values appear under Counters.
 
 ## Building a live panel
 
@@ -46,30 +46,26 @@ Use these actions for labelled buttons, fields and selectors:
 | Export                  | `serializeRecording(monitor.export())`; show validation/size errors |
 | Remove                  | `dispose()`; also dispose the view and registered channels          |
 
-A new view should refresh its DOM at a controlled rate (the jank.js panel uses 100 ms, 250 ms on one line or when its own refresh averages over 0.25 ms), while the host continues recording every frame. Measure the synchronous rendering callback with `monitor.measureRefresh(() => renderPanel())`. It subtracts collection already measured inside that callback. Do not nest this measurement or wrap the existing tray's measured refresh. `recordOverhead("refresh", ms)` is available when the view already measures its own exclusive cost.
+A new view should refresh its DOM at a controlled rate (the jank.js panel uses 250 ms), while the host continues recording every frame. Measure the synchronous rendering callback with `monitor.measureRefresh(() => renderPanel())`. It subtracts collection already measured inside that callback. Do not nest this measurement or wrap the panel's measured refresh. `recordOverhead("refresh", ms)` is available when the view already measures its own exclusive cost.
 
-Freeze is a presentation choice: retain a detached snapshot and continue collecting. A stopped recording remains available until clear, a new manual recording, or the next eligible automatic trigger. The next trigger replaces the last automatic window, so disarm to preserve it indefinitely. Hidden-tab intervals are retained as wall-clock intervals; the host can choose a different visibility policy.
+Freeze is a presentation choice: retain a detached snapshot and continue collecting. A stopped recording remains available until clear, a new manual recording, or the next eligible automatic trigger. The next trigger replaces the last automatic window, so disarm to preserve it indefinitely. The host controls pause policy. By default, hidden-tab intervals remain wall-clock frame intervals. Call `monitor.resetFrame()` at a known discontinuity to discard the unfinished frame, ended scopes awaiting attribution, and open scope tokens. Completed frames, IDs, timestamps, recording state and automatic capture progress are preserved; the next `beginFrame(at)` starts a fresh interval. Do not use this to hide ordinary slow frames.
+
+For a host that pauses rendering in hidden tabs:
+
+```js
+const resetFrame = () => monitor.resetFrame();
+document.addEventListener("visibilitychange", resetFrame);
+// During host teardown:
+document.removeEventListener("visibilitychange", resetFrame);
+```
+
+Listening on both transitions also discards any partial interval from throttled background callbacks. The collector installs no document listeners and still works outside a browser. With the compatibility `frame(at, interval, ...)` API, the host must also reset its own interval clock.
+
+Recording duration retains wall-clock gaps; `recordingSummary` and `jank analyze` calculate FPS from measured frame intervals. Analysis does not merge episodes or look back for GPU evidence across a gap. Historical recordings without an explicit gap cannot distinguish a hidden tab from a real stall.
 
 ## Building a recording viewer
 
-```js
-import { createRecordingViewModel } from "jank.js";
-const view = createRecordingViewModel();
-view.load(await file.text());
-let state = view.snapshot();
-if (state?.frameIds.length) {
-  view.selectFrame(state.frameIds[0]);
-  view.step(1);
-}
-view.setRange(100, 500);
-state = view.snapshot(240); // Up to 240 timeline buckets; 1–1000 supported.
-```
-
-An empty model returns null. A failed load throws without replacing the previous recording. Each state is detached. Selection uses frame IDs, not array offsets. Timeline buckets retain the peak frame ID and mean/maximum interval so narrow views do not hide spikes. Ranges are in recording-relative milliseconds; the recording summary still describes the full recording.
-
-`state.selected` contains the frame, inclusive system timings, tracked/unattributed interval, explanation, frame-local events, preceding periodic counters with their age, explicitly linked GPU results, and budget exceedance. `state.unlinkedGpuSamples` counts samples without a matching recorded frame; do not attach these to a nearby frame based on arrival time.
-
-The jank.js viewer is `src/viewer/entry.ts` with `src/viewer/viewer.css`; it draws from per-frame lanes built once on load in `src/viewer/lanes.ts` and reads the recording through the model in `src/viewer/model.ts` (`recording()` returns a detached copy). The live panel is `src/performance/tray.ts`.
+`parseRecording` validates a file and returns detached data, or throws without touching what you already hold. `inspectFrame`, `recordingSummary` and `selectFrameRange` read it. Selection uses frame IDs, not array offsets. The jank.js viewer is `src/viewer/entry.tsx`; `jank.js/viewer` opens it over your page, and `jank.js/viewer.html` is the same viewer as one self-contained file.
 
 ## Required presentation states
 

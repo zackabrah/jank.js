@@ -53,3 +53,36 @@ Browser clocks may be coarsened or jittered, and isolation changes the permitted
 Targets modern browsers with ES2023, CSS nesting and OKLCH. The local browser suite covers pinned Playwright Chromium, Firefox and WebKit on macOS: packaged-panel fixtures, controls, automatic capture, DevTools emission, recording round trips, offline files, accessibility, remounting and narrow screens.
 
 WebGPU support is optional. The pinned Three r186 adapter was also tested with real timestamp results in headed Chromium on this machine; headless Chromium reported timestamps unavailable. Capability fallback tests are not timing validation. See [GPU evidence](verification/webgpu.json). Other renderer revisions, mobile devices, older browsers and different GPU drivers remain unverified.
+
+## Stats.js reference checks
+
+`e2e/stats-reference.spec.ts` runs the pinned, test-only `stats.js@0.17.0` package
+against the built jank.js package in Chromium, Firefox and WebKit. It observes
+Stats.js's actual panel updates and keeps its calculations and canvas drawing intact.
+See the [upstream implementation](https://github.com/mrdoob/stats.js/blob/master/src/Stats.js).
+No CDN or Stats.js code is included in jank.js's runtime package.
+
+The controlled-clock case covers steady frames, jitter, an 80 ms hitch, zero-length
+CPU work and repeated coarse timestamps. The animation-frame case sorts real data
+and compares at least three complete FPS windows. Both check each measured frame
+interval and CPU scope; the public summary and analyzer are compared against the
+same Stats.js FPS windows. The live rolling FPS readout is checked within one frame
+of Stats.js during the controlled steady-rate phase.
+
+Stats.js `update()` measures time between updates; its `begin()`/`end()` pair measures
+the bracketed work. Those correspond to jank.js frame intervals and named CPU scopes,
+respectively. CPU brackets include extra instrumentation, so the native-clock test
+allows up to 2 ms at p95 for timer coarsening and bracket overhead; controlled-clock
+scope durations must agree exactly. The analyzer rounds its FPS to two decimals.
+
+Stats.js counts updates even when the clock repeats. jank.js coalesces these into
+one measurable interval. The test retains and asserts that count difference rather
+than treating raw FPS as identical. The first Stats.js FPS window is excluded because
+it includes a bootstrap update without a preceding jank.js frame. Later windows are
+aligned exactly; their raw and adjusted values are attached to the test report.
+
+These checks establish agreement on a shared browser clock, not independent clock
+calibration. Different sampling windows can give different live readouts. They do
+not compare GPU timings, heap sizes or memory estimates.
+
+Run `pnpm build:package`, then `pnpm test:e2e e2e/stats-reference.spec.ts`.

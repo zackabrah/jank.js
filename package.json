@@ -1,56 +1,57 @@
 {
   "name": "jank.js",
-  "version": "0.3.0",
+  "version": "1.0.0-rc.1",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5183 --strictPort --open /viewer/",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json --noEmit",
-    "lint": "oxlint --type-aware --deny-warnings --format=agent .",
-    "lint:fix": "oxlint --type-aware --fix .",
-    "format": "oxlint --allow all --deny @stylistic/padding-line-between-statements --deny jank/group-object-statements --fix . && oxfmt --write .",
-    "format:check": "oxlint --allow all --deny @stylistic/padding-line-between-statements --deny jank/group-object-statements . && oxfmt --check .",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.e2e.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
+    "lint": "biome check . --error-on-warnings",
+    "fix": "biome check . --write",
     "test": "vitest run",
-    "test:run": "node --test scripts/release/*.test.mjs scripts/lint/*.test.mjs scripts/ci/*.test.mjs scripts/readme/*.test.mjs && vitest run --coverage",
-    "build": "pnpm typecheck && pnpm build:package",
-    "check": "pnpm verify:boundary && pnpm format:check && pnpm lint && pnpm knip && pnpm test:run && pnpm build",
-    "build:package": "vite build --config vite.library.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",
-    "prepack": "pnpm build:package",
-    "test:package": "node scripts/package/verify.mjs",
-    "knip": "knip --no-progress",
+    "test:watch": "vitest",
+    "test:run": "node --test scripts/release/*.test.mjs scripts/ci/*.test.mjs scripts/readme/*.test.mjs && vitest run --coverage",
     "test:e2e": "playwright test",
-    "docs:captures": "pnpm build:package && node scripts/capture.mjs",
-    "docs:chips": "node scripts/readme/update.mjs",
-    "docs:images": "pnpm build && playwright test --project=chromium && node scripts/update-doc-images.mjs",
+    "test:e2e:gpu": "playwright test -c playwright.gpu.config.ts",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:package": "node scripts/package/verify.mjs",
+    "build": "pnpm typecheck && pnpm build:package",
+    "build:package": "vite build --config vite.library.config.ts && vite build --config vite.cli.config.ts && tsc -p tsconfig.package.json && node scripts/package/assets.mjs && node scripts/build-viewer.mjs",
+    "prepack": "pnpm build:package",
+    "check": "pnpm verify:boundary && pnpm lint && pnpm knip && pnpm test:run && pnpm build",
     "check:full": "pnpm check && pnpm test:package && pnpm test:e2e",
     "release:prepare": "pnpm check:full && pnpm pack --pack-destination artifacts/npm",
+    "docs:chips": "node scripts/readme/update.mjs",
+    "docs:assets": "node scripts/readme/assets.mjs",
+    "docs:captures": "playwright test -c playwright.captures.config.ts",
     "bench": "pnpm build:package && node scripts/benchmark.mjs",
-    "stress": "pnpm build:package && node scripts/stress.mjs",
-    "preview": "vite preview --outDir dist/viewer --host 127.0.0.1 --port 5183 --strictPort",
+    "jank": "node cli/jank.ts",
+    "knip": "knip --no-progress",
     "verify:boundary": "node scripts/verify-boundary.mjs",
     "commit": "cz",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
-    "@playwright/test": "1.63.0",
-    "@stylistic/eslint-plugin": "5.10.0",
-    "@types/node": "22.20.3",
-    "@types/three": "0.186.0",
-    "@types/web": "0.0.356",
-    "@vitest/coverage-v8": "5.0.1",
+    "@biomejs/biome": "2.6.4",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/node": "26.6.6",
+    "@types/three": "0.187.0",
+    "@vitest/coverage-v8": "5.0.5",
+    "@webgpu/types": "0.1.74",
     "commitizen": "4.3.2",
     "cz-git": "1.14.0",
     "fast-check": "4.10.2",
+    "jsdom": "30.1.1",
     "knip": "6.43.0",
-    "oxfmt": "0.68.0",
-    "oxlint": "1.83.0",
-    "oxlint-tsgolint": "7.0.2001",
-    "stats-gl": "4.2.3",
+    "preact": "11.1.1",
     "stats.js": "0.17.0",
-    "three": "0.186.0",
-    "typescript": "7.0.2",
-    "vite": "8.3.0",
-    "vitest": "5.0.1"
+    "tailwindcss": "4.3.3",
+    "three": "0.187.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "5.0.5"
   },
   "config": {
     "commitizen": {
@@ -65,12 +66,12 @@
     "node": ">=22.12.0"
   },
   "packageManager": "pnpm@11.24.0",
-  "description": "An embeddable, dependency-free performance monitor for browser games and interactive graphics.",
+  "description": "An embeddable performance monitor for browser games and interactive graphics, with nothing else to install.",
   "license": "MIT",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "tag": "latest"
+    "tag": "beta"
   },
   "author": "Isaac Johnson",
   "homepage": "https://github.com/zackabrah/jank.js#readme",
@@ -89,8 +90,12 @@
     "webgpu",
     "game-development"
   ],
+  "bin": {
+    "jank": "dist-package/jank-cli.js"
+  },
   "files": [
     "dist-package",
+    "docs",
     "licenses",
     "THIRD_PARTY_NOTICES.md",
     "CHANGELOG.md",
@@ -107,12 +112,32 @@
       "types": "./dist-package/types/index.d.ts",
       "import": "./dist-package/index.js"
     },
+    "./style.css": "./dist-package/style.css",
+    "./font.css": "./dist-package/font.css",
+    "./panel": {
+      "types": "./dist-package/types/panel-api.d.ts",
+      "import": "./dist-package/panel.js"
+    },
+    "./gpu": {
+      "types": "./dist-package/types/gpu-api.d.ts",
+      "import": "./dist-package/gpu.js"
+    },
+    "./agent": {
+      "types": "./dist-package/types/agent-api.d.ts",
+      "import": "./dist-package/agent.js"
+    },
+    "./viewer": {
+      "types": "./dist-package/types/viewer/mount.d.ts",
+      "import": "./dist-package/viewer.js"
+    },
     "./adapters/three": {
       "types": "./dist-package/types/adapters/three.d.ts",
       "import": "./dist-package/adapters/three.js"
     },
-    "./style.css": "./dist-package/style.css",
-    "./font.css": "./dist-package/font.css",
+    "./adapters/three-host": {
+      "types": "./dist-package/types/adapters/three-host.d.ts",
+      "import": "./dist-package/adapters/three-host.js"
+    },
     "./adapters/three-webgpu": {
       "types": "./dist-package/types/adapters/three-webgpu.d.ts",
       "import": "./dist-package/adapters/three-webgpu.js"

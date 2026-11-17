@@ -16,6 +16,11 @@ import { join, resolve, delimiter } from "node:path";
 
 import { execFileSync } from "node:child_process";
 
+// Git exports these to hooks, and in a linked worktree GIT_DIR names the real repository. Left
+// set, every `git` below would commit, tag and configure there instead of in its temp repository.
+for (const name of Object.keys(process.env))
+  if (name.startsWith("GIT_")) delete process.env[name];
+
 const run = (cmd, args, cwd, env = process.env) =>
   execFileSync(cmd, args, {
     cwd,
@@ -53,13 +58,19 @@ await test(
 
       writeFileSync(
         join(repo, "package.json"),
-        JSON.stringify({ version: "0.1.0" }) + "\n",
+        JSON.stringify({ version: "0.2.0-rc.0", publishConfig: { tag: "beta" } }) + "\n",
       );
 
       writeFileSync(
         join(repo, "VERSION_HISTORY.md"),
         "# Versions\n\n<!-- versions -->\n",
       );
+
+      mkdirSync(join(repo, "docs/readme"), { recursive: true });
+      const assets = ["badge-version.svg", "badge-unit.svg", "social-preview.svg", "social-preview.png"];
+      for (const name of assets)
+        writeFileSync(join(repo, "docs/readme", name), "old asset");
+      writeFileSync(join(repo, "docs/readme/panel.png"), "original screenshot");
 
       git("add", ".");
 
@@ -115,6 +126,11 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
         "0.2.0",
       );
 
+      assert.equal(
+        JSON.parse(readFileSync(join(repo, "package.json"))).publishConfig.tag,
+        "latest",
+      );
+
       // CI already ran its required gates. A developer hook must neither repeat them
       // on the version runner nor stage unrelated generated files in the release.
       const hook = join(repo, ".git", "hooks", "pre-commit");
@@ -123,7 +139,17 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
         mode: 0o755,
       });
 
+      // Stand in for CI's regenerated assets; unrelated screenshots must stay out of the tag.
+      for (const name of assets)
+        writeFileSync(join(repo, "docs/readme", name), `generated ${name} for 0.2.0`);
+      writeFileSync(join(repo, "docs/readme/panel.png"), "unrelated change");
+
       run(process.execPath, [script, "publish"], repo, env);
+
+      for (const name of assets)
+        assert.equal(git("show", `v0.2.0:docs/readme/${name}`), `generated ${name} for 0.2.0`);
+      assert.equal(git("show", "v0.2.0:docs/readme/panel.png"), "original screenshot");
+      git("restore", "docs/readme/panel.png");
 
       // Only the automated version commit bypasses the hook; local commits retain it.
       assert.throws(

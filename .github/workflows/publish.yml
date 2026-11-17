@@ -37,16 +37,19 @@ jobs:
           package-manager-cache: false
       - name: Use the verified npm CLI with trusted publishing support
         run: npm install --global npm@11.20.0
-      - name: Require the matching release tag on main
+      - name: Verify the release tag and publication channel
+        id: release
         run: node scripts/release/verify-npm-release.mjs
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install chromium firefox webkit
       - name: Run the release gate and pack
         run: pnpm release:prepare
       - name: Verify the built identity and preview publication
+        env:
+          NPM_DIST_TAG: ${{ steps.release.outputs.dist_tag }}
         run: |
           node scripts/release/verify-npm-release.mjs --built
-          npm publish ./artifacts/npm/*.tgz --dry-run --ignore-scripts
+          npm publish ./artifacts/npm/*.tgz --tag "$NPM_DIST_TAG" --dry-run --ignore-scripts
       - uses: actions/upload-artifact@v6
         with:
           name: npm-${{ github.ref_name }}
@@ -55,7 +58,9 @@ jobs:
       - name: Publish the verified tarball with npm trusted publishing
         id: publish
         if: ${{ !inputs.dry_run }}
-        run: npm publish ./artifacts/npm/*.tgz --ignore-scripts
+        env:
+          NPM_DIST_TAG: ${{ steps.release.outputs.dist_tag }}
+        run: npm publish ./artifacts/npm/*.tgz --tag "$NPM_DIST_TAG" --ignore-scripts
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
@@ -68,6 +73,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           OUTCOME: ${{ steps.publish.outcome }}
           TAG: ${{ github.ref_name }}
+          NPM_DIST_TAG: ${{ steps.release.outputs.dist_tag }}
         run: |
           {
             echo "### npm"
@@ -80,7 +86,7 @@ jobs:
             if [ "$DRY_RUN" = "true" ]; then
               echo "Dry run: nothing was published."
             elif [ "$OUTCOME" = "success" ]; then
-              echo "Published to npm under the \`latest\` tag."
+              echo "Published to npm under the \`$NPM_DIST_TAG\` tag."
             elif [ "$OUTCOME" = "skipped" ]; then
               echo "An earlier step failed: nothing was published."
             else

@@ -1,4 +1,4 @@
-// Redraws the README's chips in junkui's theme: the fixed ones, and the version, the unit tests
+// Redraws the README's chips: the fixed ones, and the version, the unit tests
 // and each browser engine's tests passing and unit test line coverage from the last full test
 // run. Prints the files it wrote, so the pre-commit hook can stage them. Run `pnpm docs:chips`
 // after `pnpm check` and `pnpm test:e2e`.
@@ -23,7 +23,15 @@ const filesIn = (folder, ending) =>
     .map(String)
     .filter((file) => file.endsWith(ending));
 
-const theme = themeTokens(readFileSync("src/ui/junkui.css", "utf8"));
+const theme = themeTokens(`
+  --jl-ink: #0a0a0a;
+  --jl-control: #3a3a3a;
+  --jl-text: #e8e8e8;
+  --jl-green: #00fd00;
+  --jl-size-label: 11px;
+  --jl-track-label: 0.12em;
+  --jl-font: ui-monospace, Menlo, Consolas, monospace;
+`);
 
 const engineTests = engineCounts(
   json("artifacts/e2e/results.json"),
@@ -40,9 +48,9 @@ const lines = json("coverage/coverage-summary.json").total.lines.pct;
 const chips = {
   // Fixed chips: change the README's alt text and prose with them.
   "badge-measured.svg": chip(theme, "", "MEASURED · NOT SIMULATED"),
-  "badge-deps.svg": chip(theme, "", "ZERO DEPENDENCIES"),
-  "badge-core.svg": chip(theme, "~4.3", "KB CORE"),
-  "badge-panel.svg": chip(theme, "~23", "KB WITH THE LIVE PANEL"),
+  "badge-deps.svg": chip(theme, "", "NOTHING ELSE TO INSTALL"),
+  "badge-core.svg": chip(theme, "~4.6", "KB CORE"),
+  "badge-panel.svg": chip(theme, "~64", "KB WITH THE LIVE PANEL"),
   "badge-mit.svg": chip(theme, "", "MIT"),
   "badge-version.svg": chip(theme, "", `V${json("package.json").version}`),
   "badge-junklab.svg": chip(theme, "", "A JUNKLAB PRODUCTION"),
