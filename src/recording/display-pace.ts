@@ -35,13 +35,18 @@ export function recordingDisplayPace(
   recording: PerformanceRecording,
   budgetMs = recording.budget.frameMs,
 ) {
-  const spans = (recording.gpuTiming?.frames ?? []).flatMap((frame) =>
-    gpuFrameCoverage(frame).completeness === "complete" ? (gpuSpan(frame) ?? []) : [],
-  );
-  if (!recording.frames.length || !spans.length) return null;
+  if (!recording.frames.length || !recording.gpuTiming?.frames.length) return null;
+  const spans = new Map<number, number>();
+  for (const frame of recording.gpuTiming.frames) {
+    if (gpuFrameCoverage(frame).completeness !== "complete") continue;
+    const span = gpuSpan(frame);
+    if (span !== null) spans.set(frame.frameId, span);
+  }
+  // Missing spans can be arbitrarily slow. Only raise the limit if the median still shows headroom.
+  const gpuMs = medianOf(recording.frames.map((frame) => spans.get(frame.id) ?? Infinity));
   return displayPace(
     budgetMs,
     medianOf(recording.frames.map((frame) => frame.interval)),
-    Math.max(medianOf(recording.frames.map(frameCpuMs)), medianOf(spans)),
+    Math.max(medianOf(recording.frames.map(frameCpuMs)), gpuMs),
   );
 }

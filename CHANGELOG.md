@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Keep slow frames in recording reports when sparse or elapsed-only GPU timings cannot establish display pacing. Count only the selected bytes in a WebGPU buffer upload. Public recording types now include frame-linked GPU timing and capture context.
+
 ## 1.0.0-rc.1 — 2026-11-05
 
 - Include the documentation directory in the npm package, so README guide links and their supporting images and measurement evidence are available in installed packages.

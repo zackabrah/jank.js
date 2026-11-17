@@ -122,7 +122,7 @@ export function gpuFrameToLive(frame: GpuFrame, currentFrame: number): LiveGpu {
   const coverage = gpuFrameCoverage(frame);
   const timed = frame.invocations.filter((pass) => pass.state === "timed");
   const total = timed.reduce((sum, pass) => sum + (pass.milliseconds ?? 0), 0);
-  const intervals = timed.filter((pass) => pass.startMs !== null && pass.endMs !== null);
+  const span = coverage.completeness === "complete" ? (timed.length ? gpuSpan(frame) : 0) : null;
   return {
     status: coverage.pending ? "pending" : "ready",
     completeness: coverage.completeness,
@@ -137,13 +137,8 @@ export function gpuFrameToLive(frame: GpuFrame, currentFrame: number): LiveGpu {
         ? measured(total)
         : unknown("No valid GPU timings"),
     span:
-      coverage.completeness === "complete" && intervals.length === timed.length
-        ? measured(
-            intervals.length
-              ? Math.max(...intervals.map((p) => p.endMs ?? 0)) -
-                  Math.min(...intervals.map((p) => p.startMs ?? 0))
-              : 0,
-          )
+      span !== null
+        ? measured(span)
         : unknown("A complete set of GPU start/end timestamps is unavailable"),
     evidence: frame,
     passes: frame.invocations.map((pass) => ({
@@ -166,18 +161,15 @@ export function gpuFrameToLive(frame: GpuFrame, currentFrame: number): LiveGpu {
   };
 }
 
-const timedPasses = (frame: GpuFrame) =>
-  frame.invocations.flatMap((pass) =>
-    pass.state === "timed" && pass.startMs !== null && pass.endMs !== null
-      ? [{ startMs: pass.startMs, endMs: pass.endMs, milliseconds: pass.milliseconds ?? 0 }]
-      : [],
-  );
-
-/** First pass start to last pass end. Null with no timed pass. */
+/** Span of the timed passes. An elapsed-only pass has no position on the GPU clock. */
 export function gpuSpan(frame: GpuFrame) {
-  const passes = timedPasses(frame);
-  return passes.length
-    ? Math.max(...passes.map((pass) => pass.endMs)) -
-        Math.min(...passes.map((pass) => pass.startMs))
-    : null;
+  let first = Infinity;
+  let last = -Infinity;
+  for (const pass of frame.invocations) {
+    if (pass.state !== "timed") continue;
+    if (pass.startMs === null || pass.endMs === null) return null;
+    first = Math.min(first, pass.startMs);
+    last = Math.max(last, pass.endMs);
+  }
+  return first === Infinity ? null : last - first;
 }

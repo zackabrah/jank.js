@@ -51,16 +51,16 @@ export type {
 export type { DiagnosticsOptions } from "./core/diagnostics.ts";
 
 export type {
-  PerformanceRecording,
   DiagnosticScope,
   DiagnosticSystem,
   DiagnosticOverhead,
   FrameBudget,
-  CaptureStatus,
   AutoCaptureOptions,
   RecordingMetadata,
   RecordingEnvironment,
 } from "./core/recording-types.ts";
+
+export type { CaptureStatus, PerformanceRecording } from "./recording/types.ts";
 
 // The superset of the collector's own parser: it keeps capture rules, episode context and GPU
 // evidence, which panel exports carry and the collector's parser would silently drop.

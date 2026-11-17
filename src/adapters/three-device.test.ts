@@ -185,6 +185,23 @@ test("passes the encoder's label to the host so it can recognize a mip chain", (
   probe.dispose();
 });
 
+// Hosts can upload a slice of a typed view, a DataView or a raw buffer.
+test("counts only the source range passed to writeBuffer", () => {
+  const { device } = miniDevice();
+  const probe = instrumentThreeDevice(device, () => {});
+  const buffer = {} as GPUBuffer;
+  const data = new Float32Array(128);
+  probe.beginFrame(1);
+  device.queue.writeBuffer(buffer, 0, data, 5, 2);
+  device.queue.writeBuffer(buffer, 0, data.subarray(100, 110), 8);
+  device.queue.writeBuffer(buffer, 0, new DataView(data.buffer, 16, 24), 4);
+  device.queue.writeBuffer(buffer, 0, data.buffer, 4, 12);
+  device.queue.writeBuffer(buffer, 0, data, 0, 0);
+  probe.endFrame();
+  expect(probe.gpuCalls().bufferWriteBytesPerFrame).toBe(8 + 8 + 20 + 12);
+  probe.dispose();
+});
+
 test("counts GPU calls per frame and created resources per session, and restores on dispose", () => {
   const { raw, device } = miniDevice();
   const writeBuffer = raw.queue.writeBuffer;

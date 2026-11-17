@@ -412,11 +412,7 @@ function describeGpu(recording: PerformanceRecording, label: string, top: number
   const complete = (recording.gpuTiming?.frames ?? []).filter(
     (frame) => gpuFrameCoverage(frame).completeness === "complete",
   );
-  const spans = complete.flatMap((frame) =>
-    frame.invocations.every((pass) => pass.startMs !== null && pass.endMs !== null)
-      ? (gpuSpan(frame) ?? [])
-      : [],
-  );
+  const spans = complete.flatMap((frame) => gpuSpan(frame) ?? []);
   const sums = complete.map((frame) =>
     frame.invocations.reduce((sum, pass) => sum + (pass.milliseconds ?? 0), 0),
   );
