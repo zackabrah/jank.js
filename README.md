@@ -116,7 +116,7 @@ const panel = createPerformancePanel({
 });
 ```
 
-Other settings that differ are flagged as confounds. Results are a quick estimate, not a significance test: read the size of the difference beside each verdict. Stopped and failed runs keep their finished trials.
+Other settings that differ are flagged as confounds. A verdict means the range across pairs excludes zero. It isn't a significance test and has no minimum size, so read the size of the difference beside it. Stopped and failed runs keep their finished trials.
 
 <img alt="The comparison viewer on a real run of Baseline against CPU stress: verdict cards reading B slower on CPU and frame time, aligned frame-time graphs for A and B, and the paired frames under the cursor compared in the inspector." src="docs/readme/viewer-compare.png" width="800">
 
@@ -128,7 +128,7 @@ Open a saved capture from the panel, or use `jank.js/viewer.html`: one self-cont
 
 ## Adapters
 
-Optional, and none bundles a renderer. `jank.js/adapters/three` reads `renderer.info` counters. `jank.js/adapters/three-webgpu` and `jank.js/adapters/webgl2` time GPU passes: pass the source they return as `gpu`. `jank.js/adapters/three-host` adds renderer errors, instance and loading observers for Three.js hosts. `jank.js/gpu` gives frame-linked GPU evidence for recordings. `jank.js/agent` adds `window.jank`, so scripts and agents can record and read a short report ([guide](docs/agent-interface.md)).
+Optional, and none bundles a renderer. `jank.js/adapters/three` reads `renderer.info` counters. `jank.js/adapters/three-webgpu` and `jank.js/adapters/webgl2` time GPU passes: pass the source they return as `gpu`. `jank.js/adapters/three-host` adds renderer errors, instance and loading observers for Three.js hosts. `jank.js/gpu` gives frame-linked GPU evidence for recordings. `jank.js/agent` adds `window.jank`, so scripts and agents can record and read a short report ([guide](docs/agent-interface.md)). The agent interface and `jank analyze` are a prototype, and their report schema may still change.
 
 ## Upgrading from 0.3
 
@@ -148,7 +148,7 @@ Call `panel.refresh(at)` straight after `monitor.beginFrame(at)`, and `panel.des
 
 ## Docs
 
-[Integration](docs/integration.md) · [Data model](docs/data-model.md) · [Measurements and limits](docs/measurements.md) · [Overhead](docs/performance.md) · [GPU measurements](docs/gpu-measurements.md) · [Three.js playground](docs/three-playground.md) · [Architecture](docs/architecture.md)
+[User manual](docs/user-manual.md) · [Integration](docs/integration.md) · [Data model](docs/data-model.md) · [Measurements and limits](docs/measurements.md) · [Overhead](docs/performance.md) · [GPU measurements](docs/gpu-measurements.md) · [Three.js playground](docs/three-playground.md) · [Architecture](docs/architecture.md)
 
 See it catch something in [Junktro](https://junktro.junklab.au/), a deliberately heavy CRT desktop.
 

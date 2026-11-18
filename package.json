@@ -96,6 +96,11 @@
   "files": [
     "dist-package",
     "docs",
+    "!docs/readme/banner-*",
+    "!docs/readme/social-preview*",
+    "!docs/readme/badge-measured.svg",
+    "!docs/readme/junklab-mark.svg",
+    "!docs/readme/wordmark.txt",
     "licenses",
     "THIRD_PARTY_NOTICES.md",
     "CHANGELOG.md",

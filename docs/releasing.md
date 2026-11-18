@@ -33,8 +33,10 @@ Build and pack this repository, then install the archive in the other project wi
 
 ## Checklist audit — 5 November 2026
 
-The fixes below are committed locally. GitHub issues remain open until the changes
-are pushed and reviewed; this audit did not publish or change registry metadata.
+This section records the audit as it stood on 5 November 2026. The fixes below
+have since been pushed and reviewed, and their issues are closed; see the follow-up
+at the end of this section. The audit itself did not publish or change registry
+metadata.
 
 | Tickets | Resolution |
 | --- | --- |
@@ -86,6 +88,15 @@ when ready to publish; run CI on
 the final pushed commit; open and merge the release PR, then explicitly run the
 publication workflow. The local test gates and hardware measurements do not verify
 npm publishing permissions or license provenance.
+
+Follow-up, 18 November 2026: the fixes for #6 and #14–#20 were reviewed and
+merged into `v1`, and those issues are closed. `1.0.0-rc.1` was published under
+npm's `beta` tag through the manual workflow with trusted publishing and
+provenance. Candidate `f4aff3c` passed CI, the social image was uploaded, and
+the release PR (#21) was merged into `main` on 17 November 2026 (UTC). The
+version job tagged `1.0.0` (`ad8e650`), and the manual workflow published it to
+npm's `latest` tag with trusted publishing. Deprecating `0.0.0-stage` was left
+optional. [#3](https://github.com/zackabrah/jank.js/issues/3) is closed.
 
 ## Design-token licensing review — 5 November 2026
 
