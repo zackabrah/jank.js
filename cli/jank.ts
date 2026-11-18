@@ -8,7 +8,8 @@ const USAGE = `Usage:
 ${ANALYZE_HELP}
 
 experiment records fresh page loads in A-B-B-A order through each page's
-window.jank, then saves the trials and a comparison and prints the results.
+window.jank, then saves the trials, a comparison and a summary of load and
+frame times with the run's settings, and prints the results.
   --cdp <url>            Drive a browser already running, such as on another machine
   --headless             Use bundled headless Chromium instead of installed Chrome
   --pairs <n>            A/B pairs, 1-5 (default 2)

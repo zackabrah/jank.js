@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type Browser, chromium, type Page } from "@playwright/test";
-import { analyzeDocument } from "../src/agent/analyze.ts";
+import { analyzeComparison, analyzeDocument } from "../src/agent/analyze.ts";
 import {
   type ComparisonBundle,
   comparisonSchedule,
@@ -10,6 +10,7 @@ import {
   type VariantKey,
 } from "../src/compare/model.ts";
 import type { PerformanceRecording } from "../src/recording/types.ts";
+import { experimentSummary, type Script, type TrialMeasures } from "./experiment-summary.ts";
 
 export interface ExperimentOptions {
   a: string;
@@ -150,9 +151,15 @@ export function matchesGlob(url: string, glob: string) {
   return new RegExp(`^${pattern}$`).test(url);
 }
 
+interface Scripts {
+  init: Script[];
+  scenario: Script | undefined;
+}
+
 async function openPage(
   browser: Browser,
   options: ExperimentOptions,
+  scripts: Scripts,
   variant: VariantKey,
   url: string,
   nonce: number,
@@ -164,7 +171,7 @@ async function openPage(
   const failures: string[] = [];
   const applied = new Set<(typeof rules)[number]>();
   page.on("pageerror", (error) => errors.push(error.message));
-  for (const file of options.init) await page.addInitScript(await readFile(file, "utf8"));
+  for (const { text } of scripts.init) await page.addInitScript(text);
   // In the browser rather than here: only it can reach a remote machine's localhost.
   if (rules.length) {
     const cdp = await context.newCDPSession(page);
@@ -229,22 +236,37 @@ async function openPage(
       })),
     };
   });
-  if (options.scenario) await page.evaluate(await readFile(options.scenario, "utf8"));
+  if (scripts.scenario) await page.evaluate(scripts.scenario.text);
   return { context, page, errors, load };
 }
 
 async function record(page: Page, options: ExperimentOptions) {
   if (options.warmupMs) await page.waitForTimeout(options.warmupMs);
-  await page.evaluate(() => window.jank?.start());
+  // In the same task as start, so no measure can land between the two.
+  const measures = await page.evaluate(() => {
+    const entries = performance.getEntriesByType("measure").map((entry) => ({
+      name: entry.name,
+      start: entry.startTime,
+      end: entry.startTime + entry.duration,
+    }));
+    window.jank?.start();
+    return entries;
+  });
   await page.waitForTimeout(options.measureMs);
   const stopped = await page.evaluate(() => window.jank?.stop());
   if (!stopped) throw new Error("The page's window.jank went away during the trial.");
   const json = await page.evaluate((id) => window.jank?.export(id) ?? "", stopped.id);
-  return { json, recording: JSON.parse(json) as PerformanceRecording };
+  return { json, recording: JSON.parse(json) as PerformanceRecording, measures };
 }
 
 /** Fresh pages in A-B-B-A order, so slow drift on the machine affects both builds evenly. */
 export async function runExperiment(options: ExperimentOptions) {
+  // Read once, so every trial runs the same text and the summary's hash matches what ran.
+  const read = async (file: string) => ({ file, text: await readFile(file, "utf8") });
+  const scripts: Scripts = {
+    init: await Promise.all(options.init.map(read)),
+    scenario: options.scenario ? await read(options.scenario) : undefined,
+  };
   await mkdir(options.out, { recursive: true });
   const browser = options.cdp
     ? await chromium.connectOverCDP(options.cdp)
@@ -254,6 +276,7 @@ export async function runExperiment(options: ExperimentOptions) {
   const urls: Record<VariantKey, string> = { A: options.a, B: options.b };
   const trials: ComparisonBundle["trials"] = [];
   const loads: { pair: number; variant: VariantKey; errors: string[]; load: unknown }[] = [];
+  const measured: TrialMeasures[] = [];
   const hotspots: Partial<Record<VariantKey, ReturnType<typeof hotspotsFrom>>> = {};
   const screenshots: Record<VariantKey, Buffer[]> = { A: [], B: [] };
   const image: { noiseFloorDb: number | string | null; vsBaselineDb: number | string | null } = {
@@ -266,11 +289,12 @@ export async function runExperiment(options: ExperimentOptions) {
       const { context, page, errors, load } = await openPage(
         browser,
         options,
+        scripts,
         variant,
         urls[variant],
         ++nonce,
       );
-      const { json, recording } = await record(page, options);
+      const { json, recording, measures } = await record(page, options);
       if (options.screenshot) {
         if (options.hide)
           await page.addStyleTag({ content: `${options.hide} { display: none !important; }` });
@@ -292,11 +316,19 @@ export async function runExperiment(options: ExperimentOptions) {
         recording,
       });
       loads.push({ pair, variant, errors, load });
+      measured.push({ pair, variant, measures });
     }
     // Separate trials: the profiler slows the page, so it stays out of the timings above.
     if (options.profile)
       for (const variant of ["A", "B"] as const) {
-        const { context, page } = await openPage(browser, options, variant, urls[variant], ++nonce);
+        const { context, page } = await openPage(
+          browser,
+          options,
+          scripts,
+          variant,
+          urls[variant],
+          ++nonce,
+        );
         const cdp = await context.newCDPSession(page);
         await cdp.send("Profiler.enable");
         await cdp.send("Profiler.setSamplingInterval", { interval: 500 });
@@ -340,15 +372,32 @@ export async function runExperiment(options: ExperimentOptions) {
     trials,
   };
   const reports = trials.map((trial) => analyzeDocument(trial.recording));
-  let comparison: ReturnType<typeof analyzeDocument> | { error: string };
+  let comparison: ReturnType<typeof analyzeComparison> | { error: string };
   try {
     await writeFile(join(options.out, "comparison.json"), serializeComparison(bundle));
-    comparison = analyzeDocument(bundle);
+    comparison = analyzeComparison(bundle);
   } catch (error) {
     // A long recording can pass the import limit; the trials are still saved and reported.
     comparison = { error: error instanceof Error ? error.message : String(error) };
   }
+  const summary = experimentSummary(
+    {
+      pairs: options.pairs,
+      warmupMs: options.warmupMs,
+      measureMs: options.measureMs,
+      viewport: options.viewport,
+      browser: options.cdp ? "cdp" : options.headless ? "headless" : "chrome",
+      scenario: scripts.scenario,
+      init: scripts.init,
+      replace: options.replace,
+      replaceB: options.replaceB,
+    },
+    measured,
+    comparison,
+  );
+  await writeFile(join(options.out, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
   return {
+    summary,
     comparison,
     loads,
     ...(options.screenshot ? { image } : {}),
