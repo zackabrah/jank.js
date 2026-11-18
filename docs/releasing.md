@@ -92,9 +92,11 @@ npm publishing permissions or license provenance.
 Follow-up, 18 November 2026: the fixes for #6 and #14–#20 were reviewed and
 merged into `v1`, and those issues are closed. `1.0.0-rc.1` was published under
 npm's `beta` tag through the manual workflow with trusted publishing and
-provenance. The release PR (#21) is open. Uploading the social image, deprecating
-`0.0.0-stage`, CI on the final commit, merging and the stable publication remain
-on [#3](https://github.com/zackabrah/jank.js/issues/3).
+provenance. Candidate `f4aff3c` passed CI, the social image was uploaded, and
+the release PR (#21) was merged into `main` on 17 November 2026 (UTC). The
+version job tagged `1.0.0` (`ad8e650`), and the manual workflow published it to
+npm's `latest` tag with trusted publishing. Deprecating `0.0.0-stage` was left
+optional. [#3](https://github.com/zackabrah/jank.js/issues/3) is closed.
 
 ## Design-token licensing review — 5 November 2026
 

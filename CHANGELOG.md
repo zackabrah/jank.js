@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 — 2026-11-18
+
+- Leave repository artwork the README doesn't show (banners and social cards) out of the npm package, so the tarball is about 0.6 MB smaller.
+- Give the 1.0.0 fixes their own changelog section. The 1.0.0 package listed them under "Unreleased".
+- README: link the user manual, mark the agent interface and `jank analyze` as a prototype, and describe an A/B verdict as "the range across pairs excludes zero" instead of "a quick estimate".
+- Describe the release-candidate process in general terms in the publishing and versioning guides, and record the stable release in the release audit.
+
 ## 1.0.0 — 2026-11-18
 
 First stable release. It contains everything in 1.0.0-rc.0 and 1.0.0-rc.1 below, including the breaking panel and viewer changes and how to upgrade from 0.3, plus these fixes:
@@ -7,8 +14,6 @@ First stable release. It contains everything in 1.0.0-rc.0 and 1.0.0-rc.1 below,
 - Protect in-progress automatic captures when an agent requests a recording. Stop its machine observers when the shared recorder finishes, fills up or discards that recording.
 
 - Keep slow frames in recording reports when sparse or elapsed-only GPU timings cannot establish display pacing. Count only the selected bytes in a WebGPU buffer upload. Public recording types now include frame-linked GPU timing and capture context.
-
-- Leave repository artwork the README doesn't show (banners and social cards) out of the npm package, so the tarball is about 0.6 MB smaller.
 
 ## 1.0.0-rc.1 — 2026-11-05
 
