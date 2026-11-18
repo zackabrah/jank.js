@@ -87,6 +87,27 @@ describe("cold load", () => {
     });
   });
 
+  // Durations come back as end - start, which differs in the last bits for equal durations at
+  // different start times. Identical measurements must not read as a regression.
+  test("compares equal durations as equal whatever their start times", () => {
+    const summary = experimentSummary(
+      settings,
+      trials(
+        { load: [[100.1, 100.1 + 0.3]] },
+        { load: [[0.1, 0.1 + 0.3]] },
+        { load: [[0.1, 0.1 + 0.3]] },
+        { load: [[100.1, 100.1 + 0.3]] },
+      ),
+      analysis,
+    );
+    const { load } = coldRow(summary).measures ?? {};
+    expect(load).toMatchObject({
+      delta: 0,
+      range: [0, 0],
+      verdict: "No observed difference",
+    });
+  });
+
   // Missing is not zero: a phase only one build measures, or one a trial skipped, must not read
   // as free, and a verdict needs every pair.
   test("leaves a measure a build or trial didn't report unknown, not zero", () => {
@@ -171,29 +192,34 @@ describe("settings", () => {
       scenario: { file: "orbit.js" },
       init: [{ file: "seed.js" }],
       replace: ["**/*.wgsl::SEED::{nonce}"],
-      coldCompile: { A: true, B: true },
+      nonce: { A: true, B: true },
     });
     expect(first.scenario?.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(run("camera.orbit(1);").scenario?.sha256).toBe(first.scenario?.sha256);
     expect(run("camera.orbit(2);").scenario?.sha256).not.toBe(first.scenario?.sha256);
   });
 
-  // A {nonce} only in --replace-b makes B pay for shader compiles that A may skip, which would
-  // show up as B loading slower. That's a confound, so the notes name it.
-  test("warns when only B forces a cold compile", () => {
+  // A {nonce} only in --replace-b can make B pay for shader compiles that A skips, which would
+  // show up as B loading slower. That's a possible confound, so the notes name it.
+  test("warns when only B has a {nonce} rule", () => {
     const summary = experimentSummary(
       { ...settings, replaceB: [{ glob: "**/*.wgsl", find: "SEED", to: "{nonce}" }] },
       trials(),
       analysis,
     );
-    expect(summary.settings.coldCompile).toEqual({ A: false, B: true });
-    expect(summary.notes.join(" ")).toContain("Only B forces a cold shader compile");
+    expect(summary.settings.nonce).toEqual({ A: false, B: true });
+    expect(summary.notes.join(" ")).toContain("Only B has a {nonce} rule");
   });
 
-  // Fresh contexts empty the HTTP cache but not compiled shaders, so without a nonce the notes
-  // say later trials may be warmer than the first.
-  test("notes that shaders may be cached when no rule forces a compile", () => {
-    const { notes } = experimentSummary(settings, trials(), analysis);
+  // A {nonce} can land anywhere, such as a page title, so its presence says nothing about
+  // shaders. The shader-cache caveat stays whatever the rules are, and no rule reads as a
+  // verified cold compile.
+  test.each([
+    ["no rules", []],
+    ["a {nonce} rule for both builds", [{ glob: "**/*.html", find: "<title>", to: "{nonce}" }]],
+  ])("keeps the shader-cache caveat with %s", (_, replace) => {
+    const { notes } = experimentSummary({ ...settings, replace }, trials(), analysis);
     expect(notes.join(" ")).toContain("may skip compiles");
+    expect(notes.join(" ")).not.toContain("Only B");
   });
 });

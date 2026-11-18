@@ -91,10 +91,10 @@ side by side, with the settings that produced them, so two result folders can be
 | ---------------------- | ---------------------------------------------------------------------------- |
 | `settings`             | Pairs, warmup, recording length, viewport, browser and patch rules           |
 | `settings.scenario`    | The `--scenario` file and a SHA-256 of what ran; `init` lists `--init` files |
-| `settings.coldCompile` | Whether a `{nonce}` rule forced a first-visit compile in each build          |
+| `settings.nonce`       | Whether a `--replace` rule put `{nonce}` into each build's responses         |
 | `rows[0]`              | Cold load: each `performance.measure` name, from page load to recording      |
 | `rows[1]`              | Steady play: `comparison.results`, keyed by id                               |
-| `notes`                | How to read the above, and a warning if only B forces a cold compile         |
+| `notes`                | How to read the above, and a warning if only B has a `{nonce}` rule          |
 
 Each cold-load measure is compared like a frame result, with `a`, `b`, `delta`, `range`,
 `verdict`, `noise` and `withinNoise`, plus `runs`, the trials that reported it. Entries with
@@ -104,7 +104,9 @@ The row only shows what the host times: frames before recording aren't kept. Scr
 once per run, so every trial runs the same text.
 
 Every trial starts with an empty HTTP cache, but compiled shaders can outlive a browser
-context. Without `{nonce}`, trials after the first may skip compiles the first paid for.
+context, so trials after the first may skip compiles the first paid for. A `{nonce}` rule
+forces a compile only if it changes shader source. `settings.nonce` records that a rule used
+`{nonce}`, not what it changed.
 
 ## Host evidence
 

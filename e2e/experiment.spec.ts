@@ -57,9 +57,9 @@ test("jank experiment records a real host in fresh pages and reports the compari
     expect(report.summary.settings).toMatchObject({
       pairs: 1,
       scenario: { file: scenario },
-      coldCompile: { A: false, B: true },
+      nonce: { A: false, B: true },
     });
-    expect(report.summary.notes.join(" ")).toContain("Only B forces a cold shader compile");
+    expect(report.summary.notes.join(" ")).toContain("Only B has a {nonce} rule");
     expect(JSON.parse(await readFile(join(out, "summary.json"), "utf8"))).toEqual(report.summary);
     expect((await readdir(out)).toSorted()).toEqual([
       "comparison.json",

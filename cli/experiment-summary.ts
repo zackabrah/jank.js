@@ -41,6 +41,11 @@ type ComparisonAnalysis = ReturnType<typeof analyzeComparison>;
 
 const rounded = (value: number) => Number(value.toFixed(2));
 const roundedOrNull = (value: number | null) => (value === null ? null : rounded(value));
+/**
+ * Far below any timer's resolution, as comparisonResults rounds its paired differences: equal
+ * durations rebuilt from different start times (end - start) must compare as equal.
+ */
+const normalized = (value: number) => Math.round(value * 1e6) / 1e6;
 
 /** By content, not only by name: an edited scenario is a different run. */
 const fingerprint = ({ file, text }: Script) => ({
@@ -49,7 +54,7 @@ const fingerprint = ({ file, text }: Script) => ({
 });
 
 const ruleText = ({ glob, find, to }: Rule) => `${glob}::${find}::${to}`;
-const forcesCompile = (rules: readonly Rule[]) => rules.some((rule) => rule.to.includes(NONCE));
+const usesNonce = (rules: readonly Rule[]) => rules.some((rule) => rule.to.includes(NONCE));
 
 /**
  * One value per trial, compared as the comparison results are: the median for each build, the
@@ -70,7 +75,7 @@ function paired(
   for (let pair = 1; pair <= pairs; pair++) {
     const a = valueAt(pair, "A");
     const b = valueAt(pair, "B");
-    if (a !== null && b !== null) differences.push(b - a);
+    if (a !== null && b !== null) differences.push(normalized(b - a));
   }
   const range: [number, number] | null =
     differences.length === pairs && pairs > 0
@@ -109,7 +114,7 @@ function coldLoad(trials: readonly TrialMeasures[], pairs: number) {
         paired(
           trials.map(({ pair, variant, measures }) => {
             const spans = measures.filter((measure) => measure.name === name);
-            return { pair, variant, value: spans.length ? unionDuration(spans) : null };
+            return { pair, variant, value: spans.length ? normalized(unionDuration(spans)) : null };
           }),
           pairs,
         ),
@@ -139,22 +144,21 @@ export function experimentSummary(
   trials: readonly TrialMeasures[],
   comparison: ComparisonAnalysis | { error: string },
 ) {
-  const coldCompile = {
-    A: forcesCompile(settings.replace),
-    B: forcesCompile([...settings.replace, ...settings.replaceB]),
+  // That a rule put {nonce} into a build's responses, not that it reached a shader: only the
+  // rule's target decides whether it forces a compile, and the summary can't see that.
+  const nonce = {
+    A: usesNonce(settings.replace),
+    B: usesNonce([...settings.replace, ...settings.replaceB]),
   };
   const notes = [
     "cold load is each host performance.measure name's time, from page load until recording began (after the scenario and warmup). Overlapping entries with one name count once. It covers only what the host measures: frames before recording are not kept.",
     "steady play is comparison.results: the frames recorded for measureMs after the scenario and warmup.",
     "Both rows compare builds the same way: a and b are medians, delta is the median B - A difference within pairs, and a verdict needs the range across pairs to exclude zero. Treat a withinNoise result as no evidence either way.",
+    "Every trial starts with an empty HTTP cache, but compiled shaders can outlive a browser context, so trials after the first may skip compiles the first one paid for. A {nonce} rule forces a compile only if it changes shader source: settings.nonce records that a rule used {nonce}, not what it changed.",
   ];
-  if (!coldCompile.A && !coldCompile.B)
+  if (nonce.A !== nonce.B)
     notes.push(
-      "Every trial starts with an empty HTTP cache, but compiled shaders can outlive a browser context. Without {nonce} in a --replace rule, trials after the first may skip compiles the first one paid for.",
-    );
-  else if (coldCompile.A !== coldCompile.B)
-    notes.push(
-      "Only B forces a cold shader compile ({nonce} in --replace-b), so B's load times include compiles that A may have cached. Use --replace to force it for both builds.",
+      "Only B has a {nonce} rule (--replace-b). If it changes shader source, B's load times include compiles that A may have cached. Use --replace to apply it to both builds.",
     );
   return {
     settings: {
@@ -167,7 +171,7 @@ export function experimentSummary(
       init: settings.init.map(fingerprint),
       replace: settings.replace.map(ruleText),
       replaceB: settings.replaceB.map(ruleText),
-      coldCompile,
+      nonce,
     },
     rows: [coldLoad(trials, settings.pairs), steadyPlay(comparison)],
     notes,
