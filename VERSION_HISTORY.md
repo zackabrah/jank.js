@@ -4,6 +4,8 @@ Automated semantic versions start at 0.1.0. Each merged PR contributes one bump.
 
 <!-- versions -->
 
+- 1.1.2 — patch — PR #32: fix(live): keep intermittent GPU pass rows stable
+
 - 1.1.1 — patch — PR #29: fix(ci): release through protected main pull requests
 - 1.1.0 — minor — PR #28: feat(experiment): summarize cold load and steady play with the run's settings
 
