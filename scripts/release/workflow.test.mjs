@@ -30,7 +30,7 @@ const run = (cmd, args, cwd, env = process.env) =>
   }).trim();
 
 await test(
-  "version publication is atomic, reruns do not double-bump, and newer main wins",
+  "release preparation respects protected main, and newer main wins",
   { skip: process.platform === "win32" },
   () => {
     const root = mkdtempSync(join(tmpdir(), "semver-workflow-"));
@@ -144,7 +144,26 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
         writeFileSync(join(repo, "docs/readme", name), `generated ${name} for 0.2.0`);
       writeFileSync(join(repo, "docs/readme/panel.png"), "unrelated change");
 
-      run(process.execPath, [script, "publish"], repo, env);
+      writeFileSync(join(remote, "hooks/update"), `#!/bin/sh
+if [ "$1" = refs/heads/main ]; then
+  echo "Changes must be made through a pull request" >&2
+  exit 1
+fi
+`, { mode: 0o755 });
+
+      run(process.execPath, [script, "prepare"], repo, env);
+
+      const release = git("rev-parse", "HEAD");
+      const branch = "refs/heads/release/v0.2.0-" + sha;
+      assert.match(git("ls-remote", "origin", branch), new RegExp("^" + release));
+      assert.match(git("ls-remote", "origin", "refs/heads/main"), new RegExp("^" + sha));
+      assert.equal(git("ls-remote", "origin", "refs/tags/v0.2.0"), "");
+
+      // Simulate GitHub merging the release PR through the protected path.
+      run("git", ["--git-dir", remote, "update-ref", "refs/heads/main", release], repo);
+      env.GITHUB_SHA = release;
+      run(process.execPath, [script, "tag"], repo, env);
+      run(process.execPath, [script, "tag"], repo, env);
 
       for (const name of assets)
         assert.equal(git("show", `v0.2.0:docs/readme/${name}`), `generated ${name} for 0.2.0`);
@@ -171,6 +190,9 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
         JSON.parse(readFileSync(join(repo, "package.json"))).version,
         "0.2.0",
       );
+
+      assert.match(readFileSync(output, "utf8"), /changed=false\n$/);
+      rmSync(join(remote, "hooks/update"));
 
       git("commit", "--allow-empty", "-m", "feat: second");
 
@@ -203,11 +225,11 @@ console.log(JSON.stringify(path.endsWith('/pulls') ? [path.includes(process.env.
 
       const remoteHead = git("ls-remote", "origin", "refs/heads/main");
 
-      run(process.execPath, [script, "publish"], repo, env);
+      run(process.execPath, [script, "prepare"], repo, env);
 
       assert.equal(git("ls-remote", "origin", "refs/heads/main"), remoteHead);
       assert.equal(git("rev-parse", "HEAD"), env.GITHUB_SHA);
-      assert.match(readFileSync(output, "utf8"), /created=false\n$/);
+      assert.match(readFileSync(output, "utf8"), /prepared=false\n$/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

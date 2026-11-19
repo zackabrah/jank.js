@@ -16,7 +16,7 @@ const mainRef = `refs/heads/${mainBranch}`;
 /** The only run allowed to write versions: a GitHub Actions push to main. */
 const versionRun = { actions: "true", event: "push", ref: mainRef };
 
-const step = { plan: "plan", publish: "publish" };
+const step = { plan: "plan", prepare: "prepare", tag: "tag" };
 
 /** Runs git and returns its trimmed stdout. */
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
@@ -62,6 +62,9 @@ const planPath = join(temp, "semantic-version-plan.json");
 const current = () =>
   git("ls-remote", "origin", mainRef).split(/\s/)[0] === expected;
 
+if (git("rev-parse", "HEAD") !== expected)
+  throw new Error("Checkout is not the checked commit");
+
 if (process.argv[2] === step.plan) {
   output("changed", "false");
 
@@ -72,9 +75,6 @@ if (process.argv[2] === step.plan) {
 
     process.exit(0);
   }
-
-  if (git("rev-parse", "HEAD") !== expected)
-    throw new Error("Checkout is not the checked commit");
 
   const state = JSON.parse(readFileSync(".release-state.json", "utf8"));
 
@@ -94,6 +94,10 @@ if (process.argv[2] === step.plan) {
   const seen = new Set();
 
   for (const sha of commits) {
+    // A release PR records bumps for earlier source PRs.
+    if (git("diff", "--name-only", sha + "^1", sha, "--", ".release-state.json"))
+      continue;
+
     for (const pr of api(`repos/${repo}/commits/${sha}/pulls`)) {
       if (
         !pr.merged_at ||
@@ -156,12 +160,12 @@ if (process.argv[2] === step.plan) {
   output("version", plan.version);
 
   console.log(`Prepared ${plan.entries.length} PR bumps: ${plan.version}`);
-} else if (process.argv[2] === step.publish) {
-  output("created", "false");
+} else if (process.argv[2] === step.prepare) {
+  output("prepared", "false");
 
   const plan = JSON.parse(readFileSync(planPath, "utf8"));
 
-  if (plan.source !== expected || git("rev-parse", "HEAD") !== expected)
+  if (plan.source !== expected)
     throw new Error("Release plan does not match checkout");
 
   if (!current()) {
@@ -173,28 +177,47 @@ if (process.argv[2] === step.plan) {
   if (JSON.parse(readFileSync("package.json", "utf8")).version !== plan.version)
     throw new Error("Version changed after verification");
 
-  git("add", "package.json", ".release-state.json", "VERSION_HISTORY.md",
-    "docs/readme/badge-*.svg", "docs/readme/social-preview.svg", "docs/readme/social-preview.png");
+  const branch = "release/v" + plan.version + "-" + expected;
+  const ref = "refs/heads/" + branch;
+  if (!git("ls-remote", "origin", ref)) {
+    git("add", "package.json", ".release-state.json", "VERSION_HISTORY.md",
+      "docs/readme/badge-*.svg", "docs/readme/social-preview.svg", "docs/readme/social-preview.png");
 
-  // The workflow requires passing check/browser jobs and rechecks the versioned
-  // package before this step. Developer hooks would repeat browser tests on a
-  // runner and could stage unrelated changes. CI explicitly regenerates the release assets.
-  git("commit", "--no-verify", "-m", `chore(release): v${plan.version}`);
+    // The workflow requires passing check/browser jobs and rechecks the versioned
+    // package before this step. Developer hooks would repeat browser tests on a
+    // runner and could stage unrelated changes. CI explicitly regenerates the release assets.
+    git("commit", "--no-verify", "-m", `chore(release): v${plan.version}`);
 
-  git("tag", `v${plan.version}`);
+    git("push", "origin", "HEAD:" + ref);
+  }
 
-  // A concurrent merge causes a non-fast-forward rejection; never force-push.
-  git(
-    "push",
-    "--atomic",
-    "origin",
-    "HEAD:refs/heads/main",
-    `refs/tags/v${plan.version}`,
-  );
+  output("prepared", "true");
+  const server = process.env.GITHUB_SERVER_URL ?? "https://github.com";
+  output("url", server + "/" + repo + "/compare/" + mainBranch + "..." + branch + "?expand=1");
+} else if (process.argv[2] === step.tag) {
+  output("created", "false");
+
+  // Recover the exact release merge if its workflow was superseded.
+  const commit = git("log", "-1", "--first-parent", "--format=%H", "--", ".release-state.json");
+  if (!commit || git("rev-list", "--parents", "-1", commit) === commit)
+    process.exit(0);
+
+  const release = JSON.parse(git("show", commit + ":package.json"));
+  const parent = JSON.parse(git("show", commit + "^1:package.json"));
+  if (release.version === parent.version || release.publishConfig.tag !== "latest")
+    process.exit(0);
+
+  const ref = "refs/tags/v" + release.version;
+  const existing = git("ls-remote", "origin", ref, ref + "^{}");
+  if (existing) {
+    const tagged = existing.split("\n").at(-1).split(/\s/)[0];
+    if (tagged !== commit) throw new Error(ref + " already points to " + tagged);
+  } else {
+    git("push", "origin", commit + ":" + ref);
+    git("fetch", "origin", ref + ":" + ref);
+  }
 
   output("created", "true");
-
-  output("commit", git("rev-parse", "HEAD"));
-
-  output("version", plan.version);
-} else throw new Error("Use plan or publish");
+  output("commit", commit);
+  output("version", release.version);
+} else throw new Error("Use plan, prepare or tag");
