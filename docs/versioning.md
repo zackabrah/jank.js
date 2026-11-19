@@ -23,11 +23,13 @@ breaking-change marker from skipping straight to 2.0.0. With no new merged PR,
 the candidate version stays unchanged.
 
 The version job checks the merged source, prepares package.json and the history,
-reruns project/package checks, regenerates the README assets, then commits and atomically pushes main plus the
-final `vX.Y.Z` tag. It never force-pushes. If main advances, the newer workflow
-catches up the pending PRs. Build artifacts are produced again from the tagged
-commit so their displayed commit is accurate. This does not publish to npm or
-create a GitHub release.
+reruns project/package checks, regenerates the README assets, and pushes a
+release branch. Use the link in the newest main run's **Version** summary to
+open a release PR. Close superseded release PRs if a newer main run prepared a
+replacement. Merge the release PR once its checks pass. The main workflow tags
+the merged version and builds artifacts from the tag's commit. The release PR
+itself receives no version bump. If main advances during preparation, the newer
+workflow catches up pending PRs.
 
 The **Generate README assets** CI job uses unit/coverage reports from the Linux
 check job and browser results from the same workflow run. It validates the report
@@ -44,12 +46,9 @@ Generating the PNG does not upload it to GitHub's repository Social preview sett
 
 npm publication is a separate, manually dispatched workflow. See [npm publishing](publishing.md) for the initial account setup, dry runs and publishing an existing version tag. Versioning does not trigger it automatically.
 
-Enable Actions write access for contents and allow the version job's bot to
-update main/tags under your repository rules. The workflow declares only the
-required write permission; it does not bypass branch protection. If your rules
-require PR-only writes, configure an approved bot/app exception rather than
-removing review requirements. No credentials or repository settings are changed
-by adding this code. GitHub's built-in token prevents recursive push workflows.
+The version job needs contents write access to create release branches and tags.
+A maintainer opens the release PR so normal pull request checks run with the
+repository's existing Actions settings.
 
 `buildInfo` is a public, immutable export containing `version`, full `commit`
 (or null when Git is unavailable), and `dirty`. Recording metadata takes its

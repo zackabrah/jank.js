@@ -134,6 +134,19 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Tag a merged release
+        id: release
+        run: node scripts/release/version-main.mjs tag
+      - name: Build the tagged package identity
+        if: steps.release.outputs.created == 'true' && steps.release.outputs.commit == github.sha
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm pack --pack-destination artifacts
+      - uses: actions/upload-artifact@v6
+        if: steps.release.outputs.created == 'true' && steps.release.outputs.commit == github.sha
+        with:
+          name: versioned-jank-js-${{ steps.release.outputs.version }}
+          path: artifacts/*.tgz
       - name: Plan pending PR version bumps
         id: plan
         env:
@@ -153,39 +166,29 @@ jobs:
       - name: Regenerate chips and social card for the release version
         if: steps.plan.outputs.changed == 'true'
         run: pnpm docs:assets
-      - name: Commit and tag the verified version
+      - name: Prepare the verified release branch
         if: steps.plan.outputs.changed == 'true'
-        id: release
+        id: prepare
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          node scripts/release/version-main.mjs publish
-      - name: Build the tagged package identity
-        if: steps.release.outputs.created == 'true'
-        run: pnpm pack --pack-destination artifacts
-      - uses: actions/upload-artifact@v6
-        if: steps.release.outputs.created == 'true'
-        with:
-          name: versioned-jank-js-${{ steps.release.outputs.version }}
-          path: artifacts/*.tgz
+          node scripts/release/version-main.mjs prepare
       - name: Summarise the version
         if: ${{ !cancelled() }}
         env:
-          CHANGED: ${{ steps.plan.outputs.changed }}
-          CREATED: ${{ steps.release.outputs.created }}
-          VERSION: ${{ steps.plan.outputs.version }}
+          RELEASE_PR: ${{ steps.prepare.outputs.url }}
           COMMIT: ${{ steps.release.outputs.commit }}
+          VERSION: ${{ steps.release.outputs.version }}
         run: |
           {
             echo "### Version"
             echo
-            if [ "$CREATED" = "true" ]; then
-              echo "Tagged \`v$VERSION\` at \`${COMMIT:0:8}\`."
-            elif [ "$CHANGED" = "true" ]; then
-              echo "Merged PRs were waiting for \`v$VERSION\`, but no tag was created. See the job log."
-            else
-              echo "No merged PRs were waiting for a version."
+            if [ -n "$VERSION" ]; then
+              echo "Release v$VERSION is tagged at ${COMMIT:0:8}."
+            fi
+            if [ -n "$RELEASE_PR" ]; then
+              echo "[Open the release PR]($RELEASE_PR)."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
