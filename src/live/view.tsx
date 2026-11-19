@@ -15,9 +15,10 @@ import { Notice } from "../ui/notice.tsx";
 import { BudgetControl } from "./budget-control.tsx";
 import { CompactMetrics, MiniContent } from "./compact-view.tsx";
 import { LiveDetails } from "./details.tsx";
+import type { LivePanelView } from "./gpu-pass-rows.ts";
 import { FullMetrics } from "./metrics.tsx";
 import { ModeIcon } from "./mode-icon.tsx";
-import { judgeBudget, type LiveView } from "./model.ts";
+import { judgeBudget } from "./model.ts";
 import { OverheadFooter } from "./overhead-footer.tsx";
 import { captureState, type PanelMode, StateStrip } from "./state-strip.tsx";
 
@@ -29,7 +30,7 @@ export function LivePanel({
   instrumentation,
   comparison,
 }: {
-  view: LiveView;
+  view: LivePanelView;
   comparison?: ComparisonController | undefined;
   initialMode?: PanelMode | undefined;
   onBudgetChange?: ((milliseconds: number) => void) | undefined;
@@ -37,7 +38,7 @@ export function LivePanel({
   instrumentation?: ReadInstrumentation | undefined;
 }) {
   const [mode, setMode] = useState<PanelMode>(initialMode);
-  const [frozen, setFrozen] = useState<LiveView | null>(null);
+  const [frozen, setFrozen] = useState<LivePanelView | null>(null);
   const surface = useRef<HTMLElement>(null);
   const tabsId = useId();
   const [tab, setTab] = useState("live");

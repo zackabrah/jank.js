@@ -6,15 +6,16 @@ import { DisclosureSection } from "../ui/disclosure-section.tsx";
 import { GpuExplanation } from "../ui/gpu-explanation.tsx";
 import { EventList } from "./event-list.tsx";
 import { FrameChart } from "./frame-chart.tsx";
+import type { LivePanelView } from "./gpu-pass-rows.ts";
 import { MetricRow } from "./metric-row.tsx";
-import { type LiveView, unknown } from "./model.ts";
+import { unknown } from "./model.ts";
 export function LiveDetails({
   view,
   frozen,
   recordingAfterFrame,
   automatic,
 }: {
-  view: LiveView;
+  view: LivePanelView;
   frozen: boolean;
   recordingAfterFrame?: number | null | undefined;
   automatic?: AutomaticCapture | null | undefined;
@@ -96,13 +97,14 @@ export function LiveDetails({
                   . Pass sum can double-count overlapping work.
                 </p>
               )}
-              {gpu.passes.map((pass) => (
+              {view.gpuPasses.map((pass) => (
                 <MetricRow
                   key={pass.id}
                   label={pass.label}
                   detail={pass.kind === "unknown" ? "" : pass.kind}
                   precision={1}
                   duration={pass.duration}
+                  durationLabel={pass.durationLabel}
                   budget={view.budget}
                   overLimit={view.overLimit}
                 />

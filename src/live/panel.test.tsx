@@ -4,10 +4,109 @@ import { expect, test, vi } from "vitest";
 import { createCaptureController } from "../capture/controller.ts";
 import { captureFixture } from "../capture/fixtures.ts";
 import { createComparisonController } from "../compare/controller.ts";
+import { gpuFixture } from "../gpu/fixtures.ts";
+import { gpuFrameToLive } from "../gpu/model.ts";
 import { loadingFixture } from "../loading/fixtures.ts";
 import { adaptGpu, mountDiagnosticsPanel } from "./diagnostics-adapter.ts";
 import { liveFixture } from "./fixtures.ts";
 import { mountLivePanel } from "./panel.tsx";
+
+function gpuSample(id: number, labels: string[], computeIndex = -1) {
+  const frame = gpuFixture(id);
+  frame.invocations = labels.map((label, index) => ({
+    id: String(index),
+    label,
+    kind: index === computeIndex ? "compute" : "render",
+    state: "timed",
+    milliseconds: index + 1,
+    startMs: null,
+    endMs: null,
+    reason: null,
+  }));
+  return frame;
+}
+
+// A half-rate submission must leave its slot intact, even when the other pass IDs shift.
+test("keeps intermittent GPU rows in place until their last sighting expires", async () => {
+  const doc = document.implementation.createHTMLDocument("Host");
+  const panel = mountLivePanel(doc.body);
+  const now = vi.spyOn(performance, "now");
+  const root = doc.body.firstElementChild?.shadowRoot;
+  const passRows = () =>
+    Array.from(
+      root?.querySelectorAll('[title="A"], [title="B"], [title="C"]') ?? [],
+      (node) => node.parentElement,
+    );
+  const press = async (label: string) => {
+    const button = Array.from(root?.querySelectorAll("button") ?? []).find((node) =>
+      node.textContent?.endsWith(label),
+    );
+    if (!button) throw new Error(`Missing ${label} button`);
+    await act(() => button.click());
+  };
+  const update = (id: number, at: number, labels: string[]) => {
+    now.mockReturnValue(at);
+    panel.update({ ...liveFixture(true), gpu: gpuFrameToLive(gpuSample(id, labels), id) });
+  };
+  try {
+    update(1, 16, ["A", "B", "C"]);
+    const initial = passRows();
+    expect(initial).toHaveLength(3);
+    update(2, 32, ["A", "C"]);
+    expect(passRows()[1]).toBe(initial[1]);
+    expect(passRows()[2]).toBe(initial[2]);
+    expect(passRows()[1]?.textContent).toContain("not in this frame");
+    expect(passRows()[1]?.querySelector('[aria-hidden="true"]')).toBeNull();
+    expect(passRows()[2]?.lastElementChild?.textContent).toBe("2.0");
+    update(3, 48, ["A", "B", "C"]);
+    expect(passRows()[1]).toBe(initial[1]);
+    expect(passRows()[1]?.textContent).not.toContain("not in this frame");
+    update(4, 3047, ["C", "A"]);
+    expect(passRows()[2]).toBe(initial[2]);
+    await press("Freeze");
+    update(5, 3048, ["C", "A"]);
+    expect(passRows()[1]).toBe(initial[1]);
+    await press("Resume");
+    expect(passRows()).toHaveLength(2);
+    expect(passRows()[0]).toBe(initial[0]);
+    expect(passRows()[1]).toBe(initial[2]);
+  } finally {
+    panel.destroy();
+    now.mockRestore();
+  }
+});
+
+// Same-label passes match by kind and occurrence, and a new GPU epoch drops old rows.
+test("keeps repeated GPU labels distinct and clears rows when the timing session restarts", () => {
+  const doc = document.implementation.createHTMLDocument("Host");
+  const panel = mountLivePanel(doc.body);
+  const root = doc.body.firstElementChild?.shadowRoot;
+  const bloomRows = () =>
+    Array.from(root?.querySelectorAll('[title="Bloom"]') ?? [], (node) => node.parentElement);
+  const update = (frame: ReturnType<typeof gpuSample>) =>
+    panel.update({ ...liveFixture(true), gpu: gpuFrameToLive(frame, frame.frameId) });
+  try {
+    update(gpuSample(1, ["Bloom", "Bloom", "Bloom"], 2));
+    const initial = bloomRows();
+    expect(new Set(initial).size).toBe(3);
+
+    const second = gpuSample(2, ["Bloom", "Bloom"], 0);
+    second.inventory = "unknown";
+    update(second);
+    expect(bloomRows()[0]).toBe(initial[0]);
+    expect(bloomRows()[1]).toBe(initial[1]);
+    expect(bloomRows()[1]?.textContent).toContain("not listed");
+    expect(bloomRows()[2]).toBe(initial[2]);
+    expect(bloomRows()[2]?.lastElementChild?.textContent).toBe("1.0");
+
+    const restarted = gpuSample(3, []);
+    restarted.epoch = 1;
+    update(restarted);
+    expect(bloomRows()).toHaveLength(0);
+  } finally {
+    panel.destroy();
+  }
+});
 
 test("keeps GPU completeness and busy time unknown when the legacy source cannot prove them", () => {
   const gpu = adaptGpu({

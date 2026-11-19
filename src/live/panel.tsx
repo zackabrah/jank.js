@@ -2,6 +2,7 @@ import type { CaptureConnection } from "../capture/controller.ts";
 import type { ReadInstrumentation } from "../capture/instrumentation-model.ts";
 import type { ComparisonController } from "../compare/controller.ts";
 import { mountShadowView } from "../shadow-view.ts";
+import { createGpuPassRows } from "./gpu-pass-rows.ts";
 import { type LiveSnapshot, readLive, validateSelectedBudget } from "./model.ts";
 import styles from "./panel.css?inline";
 import type { PanelMode } from "./state-strip.tsx";
@@ -20,6 +21,7 @@ export function mountLivePanel(
   if (options.comparison && options.comparison.capture !== options.capture?.controller)
     throw new Error("Comparison and panel must use the same capture controller.");
   const view = mountShadowView(container, styles);
+  const gpuPassRows = createGpuPassRows();
   return {
     update(snapshot: LiveSnapshot) {
       if (view.destroyed) return;
@@ -28,7 +30,7 @@ export function mountLivePanel(
         <>
           <style>{styles}</style>
           <LivePanel
-            view={model}
+            view={{ ...model, gpuPasses: gpuPassRows(model.gpu) }}
             initialMode={options.initialMode}
             capture={options.capture}
             comparison={options.comparison}

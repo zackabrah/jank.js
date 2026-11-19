@@ -64,6 +64,8 @@ The graph runs oldest to newest, left to right, and its caption says how many fr
 
 **GPU passes** needs a timing source from the application, and reads **unknown** without one. With one, it reports how many expected passes were timed, the sum of their times, each pass, and the span from first to last. GPU results arrive a few frames late, so the line beneath gives the frame they came from and its age. These times are on the GPU's own clock. They are not device busy time, and a sum can double-count overlapping work.
 
+Live pass rows keep their first-seen order. A pass stays in its slot for three seconds after the panel last saw it. Between appearances its row reads **not in this frame**, or **not listed** if the timing source could not establish the full inventory. The numeric timings and totals come from the displayed GPU sample.
+
 **Counters** shows values the application reports, such as draw calls or triangles. **Events** lists the moments it marks.
 
 **unknown** means the measurement was not captured. It never means zero.
