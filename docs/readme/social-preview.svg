@@ -21,7 +21,7 @@
     </g>
     <g font-size="12" fill="#aaa">
       <text x="64" y="475">Zero runtime dependencies · MIT</text>
-      <text id="release-version" x="64" y="496">V1.0.1</text>
+      <text id="release-version" x="64" y="496">V1.1.1</text>
     </g>
   </g>
   <!-- Live panel frame from docs/readme/panel-running.gif at 1.4 s. -->
