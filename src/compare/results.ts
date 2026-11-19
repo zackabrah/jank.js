@@ -51,7 +51,7 @@ function summarize(values: number[], count = values.length, limit = Infinity) {
     over: count ? (100 * values.filter((value) => value > limit).length) / count : null,
   };
 }
-const median = (values: number[]) => {
+export const median = (values: readonly number[]) => {
   const sorted = values.toSorted((a, b) => a - b);
   return sorted.length
     ? (sorted[Math.floor((sorted.length - 1) / 2)] ?? 0) / 2 +
@@ -60,7 +60,7 @@ const median = (values: number[]) => {
 };
 const percent = (value: number) => `${Number((value * 100).toFixed(2))}%`;
 
-function verdict(range: readonly [number, number] | null): Verdict {
+export function verdict(range: readonly [number, number] | null): Verdict {
   if (!range) return "Unknown";
   if (range[0] > 0) return "B slower";
   if (range[1] < 0) return "B faster";

@@ -495,7 +495,7 @@ export function spreadWithinVariants(
   return gaps.length ? rounded(Math.max(...gaps)) : null;
 }
 
-function analyzeComparison(bundle: ComparisonBundle) {
+export function analyzeComparison(bundle: ComparisonBundle) {
   const model = comparisonResults(bundle);
   const trialSummaries = bundle.trials.map((trial) => analyzeRecording(trial.recording, 1).summary);
   const round = (value: number | null) => (value === null ? null : rounded(value));

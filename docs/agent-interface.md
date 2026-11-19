@@ -59,9 +59,9 @@ From this repository:
 pnpm -s jank experiment --a <url> --b <url> --out results --label-a before --label-b after
 ```
 
-This loads fresh pages in A-B-B-A order, records each through `window.jank`, saves the trials
-and a comparison the viewer can open, and prints the results as JSON. `--cdp <url>` drives a
-browser already running, such as on another machine over an SSH tunnel.
+This loads fresh pages in A-B-B-A order, records each through `window.jank`, saves the trials,
+a comparison the viewer can open and a summary, and prints the results as JSON. `--cdp <url>`
+drives a browser already running, such as on another machine over an SSH tunnel.
 
 - **To try a change without a second build:** use the same URL for both, with
   `--replace-b 'glob::find::to'` patching B's responses. A patch that matches no request, or
@@ -82,11 +82,38 @@ read `Display-paced` instead of a faster or slower verdict, unless a trial's p95
 slow-frame limit, so use the CPU and GPU results. `machineBusy` means the browser reported CPU
 pressure. That reading is coarse, so `noise` is the better guard.
 
+### Summary
+
+`summary`, also saved as `summary.json`, is the place to start. It puts load cost and frame time
+side by side, with the settings that produced them, so two result folders can be compared:
+
+| Field                  | Meaning                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `settings`             | Pairs, warmup, recording length, viewport, browser and patch rules           |
+| `settings.scenario`    | The `--scenario` file and a SHA-256 of what ran; `init` lists `--init` files |
+| `settings.nonce`       | Whether a `--replace` rule put `{nonce}` into each build's responses         |
+| `rows[0]`              | Cold load: each `performance.measure` name, from page load to recording      |
+| `rows[1]`              | Steady play: `comparison.results`, keyed by id                               |
+| `notes`                | How to read the above, and a warning if only B has a `{nonce}` rule          |
+
+Each cold-load measure is compared like a frame result, with `a`, `b`, `delta`, `range`,
+`verdict`, `noise` and `withinNoise`, plus `runs`, the trials that reported it. Entries with
+one name that overlap count once. A measure missing from a trial stays out of its build's
+median and leaves the verdict `Unknown`, and with no measures at all `measures` is `null`.
+The row only shows what the host times: frames before recording aren't kept. Scripts are read
+once per run, so every trial runs the same text.
+
+Every trial starts with an empty HTTP cache, but compiled shaders can outlive a browser
+context, so trials after the first may skip compiles the first paid for. A `{nonce}` rule
+forces a compile only if it changes shader source. `settings.nonce` records that a rule used
+`{nonce}`, not what it changed.
+
 ## Host evidence
 
 The more a host reports, the more a report can say:
 
-- **Startup:** `performance.measure` around each phase shows up under `loads[].load.measures`.
+- **Startup:** `performance.measure` around each phase shows up under `loads[].load.measures`,
+  and, compared across builds, in the summary's cold-load row.
 - **Moments:** `monitor.event` for meaningful moments gives `eventCosts`, which separates a
   cost paid only the first time from one paid every time. Those need different fixes.
 - **GPU passes:** `describePass`, the third argument to `instrumentThreeDevice`, names them.
