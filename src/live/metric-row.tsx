@@ -5,6 +5,7 @@ export function MetricRow({
   label,
   detail,
   duration,
+  durationLabel,
   budget,
   overLimit,
   precision = 2,
@@ -12,6 +13,7 @@ export function MetricRow({
   label: string;
   detail?: string;
   duration: Measurement;
+  durationLabel?: string | undefined;
   budget: number;
   overLimit: number;
   precision?: number;
@@ -31,7 +33,7 @@ export function MetricRow({
         {detail && <span class="ml-1 text-label-12 text-jank-text-secondary">{detail}</span>}
       </span>
       <span class="relative shrink-0 font-mono tabular-nums">
-        <MeasurementValue measurement={duration} precision={precision} />
+        <MeasurementValue measurement={duration} precision={precision} label={durationLabel} />
       </span>
     </div>
   );
